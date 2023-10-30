@@ -30,7 +30,7 @@ class AdminOrderController {
   }
 
   static update = async (req: Request, res: Response): Promise<Response> => {
-    const { orderId, transportation, workerId } = req.body;
+    const { orderId, workerId } = req.body;
     let order: Order, user: User;
     try {
       order = await this.orders().findOneOrFail(orderId, {
@@ -51,13 +51,11 @@ class AdminOrderController {
       return;
     }
     order.worker = user
-    order.transportation = transportation ?? 0;
-    order.status = 'ASSIGNED'
+    order.status = orderStatus.Assigned
     const errors = await validate(order);
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
-
     try {
       await this.orders().save(order);
     } catch (e) {
@@ -68,5 +66,4 @@ class AdminOrderController {
   };
 
 }
-// AdminOrderController._initialize()
 export default AdminOrderController;

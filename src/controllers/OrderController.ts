@@ -12,6 +12,7 @@ import { User } from "../entity/User";
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { getObjectValue, omit } from "../utils/funs";
+import sms from '../utils/sms';
 
 class OrderController {
 
@@ -343,6 +344,7 @@ class OrderController {
           status: orderStatus.Paid
         })
       })
+      // send sms here
       return res.status(200).send({code: 200, data: ''})
     }catch (e){
       console.log(e)

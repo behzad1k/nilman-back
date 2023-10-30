@@ -7,8 +7,8 @@
       "name": "Behzad"
    },
    "exports": {
-   "require": "./cjs/index.js",
-   "import": "./esm/index.js"
+      "require": "./cjs/index.js",
+      "import": "./esm/index.js"
    },
    "main": "cjs/index.js",
    "devDependencies": {
@@ -37,6 +37,7 @@
       "jalali-moment": "^3.3.11",
       "jsonwebtoken": "^8.5.1",
       "jwt-decode": "^2.2.0",
+      "kavenegar": "^1.1.4",
       "mysql": "^2.14.1",
       "passport": "^0.4.1",
       "passport-jwt": "^4.0.0",
