@@ -11,6 +11,7 @@ import {
 import { Length, IsNotEmpty, IsEmail } from "class-validator";
 import * as bcrypt from "bcryptjs";
 import { Address } from "./Address";
+import { Discount } from './Discount';
 import { Order } from "./Order";
 import { Service } from "./Service";
 import { Like } from "./Like";
@@ -81,6 +82,9 @@ export class User {
 
   @OneToMany(() => Order, order => order.user,{ eager: true, onDelete: 'CASCADE' })
   orders: Order[]
+
+  @OneToMany(() => Discount, discount => discount.user,{ eager: true, onDelete: 'CASCADE' })
+  discounts: Discount[]
 
   @OneToMany(() => Order, order => order.worker, { nullable: true, onDelete: 'CASCADE' })
   jobs: Order[]

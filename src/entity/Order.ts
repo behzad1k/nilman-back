@@ -9,6 +9,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { Address } from "./Address";
+import { Discount } from './Discount';
 import { Service } from "./Service";
 import { User } from "./User";
 
@@ -25,7 +26,7 @@ export class Order {
   @Column({
     nullable: true
   })
-  discount?: number
+  discountId?: number
 
   @Column({
     default: 0
@@ -82,6 +83,10 @@ export class Order {
   @JoinColumn({name: 'userId', referencedColumnName: 'id'})
   user: User
 
+  @ManyToOne(() => Discount, (discount) => discount.orders, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({name: 'discountId', referencedColumnName: 'id'})
+  discount?: Discount
+
   @ManyToOne(() => Service, (service) => service.orders, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'serviceId', referencedColumnName: 'id'})
   service: Service
@@ -90,9 +95,7 @@ export class Order {
   @JoinColumn({name: 'addressId', referencedColumnName: 'id'})
   address: Address
 
-  @ManyToOne(() => User, (user) => user.jobs, {
-    nullable: true,onDelete: 'CASCADE'
-  })
+  @ManyToOne(() => User, (user) => user.jobs, { nullable: true,onDelete: 'CASCADE' })
   @JoinColumn({name: 'workerId', referencedColumnName: 'id'})
   worker?: User
 

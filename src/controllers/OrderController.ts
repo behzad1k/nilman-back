@@ -5,6 +5,7 @@ import * as jwtDecode from "jwt-decode";
 import { getRepository } from "typeorm";
 import { validate } from "class-validator";
 import { Address } from "../entity/Address";
+import { Discount } from '../entity/Discount';
 import { Order } from "../entity/Order";
 import { Service } from "../entity/Service";
 import { User } from "../entity/User";
@@ -19,6 +20,7 @@ class OrderController {
   static services = () => getRepository(Service)
   static addresses = () => getRepository(Address)
   static workerOffs = () => getRepository(WorkerOffs)
+  static discounts = () => getRepository(Discount)
   static index = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
@@ -95,6 +97,7 @@ class OrderController {
     const nearest = await this.findFreeWorker(workers, parseInt(section?.toString()));
     return res.status(200).send({ code: 200, data: {
         workers: workers,
+        transportation: 100000,
         nearest:{
           date: nearest.date,
           workerId: nearest.worker
@@ -142,8 +145,8 @@ class OrderController {
   static create = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    const { service, attributes, date, time, addressId, workerId } = req.body;
-    let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker;
+    const { service, attributes, date, time, addressId, workerId, discount } = req.body;
+    let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj;
     try {
       user = await this.users().findOneOrFail(userId);
     } catch (error) {
@@ -186,6 +189,18 @@ class OrderController {
       return res.status(400).send({'code': 400, data: 'Invalid Address'})
     }
 
+    if (discount) {
+      try {
+        discountObj = await this.discounts().findOneOrFail({where: {code: discount}})
+      } catch (error) {
+        res.status(400).send({ code: 400, data: 'Invalid discount' });
+        return;
+      }
+      if (discountObj.userId && discountObj.userId !== userId){
+        res.status(400).send({ code: 400, data: 'Invalid discount User' });
+        return;
+      }
+    }
 
     if (workerId) {
       try {
@@ -203,13 +218,18 @@ class OrderController {
         return;
       }
     }
-
-    let totalPrice = serviceObj.price, sections = 0;
+    const transportation = 100000
+    let totalPrice = 0, sections = 0;
+    const order  = new Order();
     attributeObjs.map((attr) => {
       totalPrice += attr.price;
       sections += attr.section;
     })
-    const order = new Order();
+    if (discountObj && (discountObj.amount || discountObj.percent)){
+      order.discountId = discountObj.id;
+      totalPrice = discountObj.percent ? totalPrice - (totalPrice * discountObj.percent / 100) : totalPrice - discountObj.amount
+    }
+    totalPrice += transportation;
     order.attributes = attributeObjs
     order.price = totalPrice;
     order.service = serviceObj

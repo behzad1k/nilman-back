@@ -79,7 +79,7 @@ class AdminServiceController {
     if (section)
       serviceObj.section = section
     if (hasColor)
-      service.hasColor = hasColor
+      serviceObj.hasColor = hasColor
     const errors = await validate(serviceObj);
     if (errors.length > 0) {
       return res.status(400).send(errors);
