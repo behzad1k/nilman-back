@@ -76,19 +76,19 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Address , address => address.user, { eager: true })
+  @OneToMany(() => Address , address => address.user, { eager: true, onDelete: 'CASCADE'  })
   addresses: Address[];
 
-  @OneToMany(() => Order, order => order.user,{ eager: true })
+  @OneToMany(() => Order, order => order.user,{ eager: true, onDelete: 'CASCADE' })
   orders: Order[]
 
-  @OneToMany(() => Order, order => order.worker, { nullable: true})
+  @OneToMany(() => Order, order => order.worker, { nullable: true, onDelete: 'CASCADE' })
   jobs: Order[]
 
-  @OneToMany(() => WorkerOffs, userOffs => userOffs.worker, { nullable: true})
+  @OneToMany(() => WorkerOffs, userOffs => userOffs.worker, { nullable: true, onDelete: 'CASCADE' })
   workerOffs: WorkerOffs[]
 
-  @ManyToOne(() => Service, service => service.users)
+  @ManyToOne(() => Service, service => service.users, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'serviceId',
     referencedColumnName: 'id'

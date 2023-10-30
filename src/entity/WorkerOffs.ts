@@ -24,11 +24,11 @@ export class WorkerOffs {
   @Column()
   workerId: number
 
-  @ManyToOne(() => User, user => user.workerOffs)
+  @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'workerId', referencedColumnName: 'id'})
   worker: User
 
-  @ManyToOne(() => Order, order => order.worker)
+  @ManyToOne(() => Order, order => order.worker, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'orderId', referencedColumnName: 'id'})
   order: Order
 

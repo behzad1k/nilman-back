@@ -48,7 +48,7 @@ export class Service {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Order, (order) => order.service)
+  @OneToMany(() => Order, (order) => order.service, { onDelete: 'CASCADE' })
   orders: Order[]
 
   @TreeChildren()
@@ -57,10 +57,10 @@ export class Service {
   @TreeParent()
   parent: Service
 
-  @OneToMany(() => User, user => user.service)
+  @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })
   users: User[]
 
-  @ManyToMany(() => Order, order => order.attributes)
+  @ManyToMany(() => Order, order => order.attributes, { onDelete: 'CASCADE' })
   @JoinTable({
     name: 'order_attribute'
   })

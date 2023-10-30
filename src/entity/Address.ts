@@ -47,11 +47,11 @@ export class Address {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.addresses)
+  @ManyToOne(() => User, (user) => user.addresses, { onDelete: 'CASCADE' })
   @JoinColumn({ name:"userId", referencedColumnName: "id"})
   user: User
 
-  @OneToMany(() => Order, (order) => order.address)
+  @OneToMany(() => Order, (order) => order.address, { onDelete: 'CASCADE' })
   order: Order
 
   // @ManyToMany(() => User,(user) => user.likedTweaks)

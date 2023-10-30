@@ -78,25 +78,25 @@ export class Order {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.orders)
+  @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'userId', referencedColumnName: 'id'})
   user: User
 
-  @ManyToOne(() => Service, (service) => service.orders)
+  @ManyToOne(() => Service, (service) => service.orders, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'serviceId', referencedColumnName: 'id'})
   service: Service
 
-  @ManyToOne(() => Address, (address) => address.order)
+  @ManyToOne(() => Address, (address) => address.order, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'addressId', referencedColumnName: 'id'})
   address: Address
 
   @ManyToOne(() => User, (user) => user.jobs, {
-    nullable: true,
+    nullable: true,onDelete: 'CASCADE'
   })
   @JoinColumn({name: 'workerId', referencedColumnName: 'id'})
   worker?: User
 
-  @ManyToMany(() => Service, (service) => service.attributeOrders)
+  @ManyToMany(() => Service, (service) => service.attributeOrders, { onDelete: 'CASCADE' })
   @JoinTable({name: 'order_attribute'})
   attributes: Service[]
 
