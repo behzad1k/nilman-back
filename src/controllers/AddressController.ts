@@ -4,7 +4,7 @@ import { validate } from "class-validator";
 import config from "../config/config";
 import { User } from "../entity/User";
 import * as jwt from "jsonwebtoken";
-import * as jwtDecode from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import {Address} from "../entity/Address";
 
 class AddressController {

@@ -2,78 +2,75 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  Unique,
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  JoinColumn, ManyToMany, JoinTable, IsNull, ManyToOne
+  JoinColumn,
+  ManyToOne
 } from "typeorm";
-import { Length, IsNotEmpty, IsEmail } from "class-validator";
 import * as bcrypt from "bcryptjs";
+import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Order } from "./Order";
 import { Service } from "./Service";
-import { Like } from "./Like";
 import { WorkerOffs } from './WorkerOffs';
+import "reflect-metadata";
 
 @Entity()
-// @Unique(["email","username"])
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column(dataTypes.text)
   phoneNumber: string;
 
-  @Column({
+  @Column(dataTypes.text, {
     nullable: true
   })
   name: string
 
-  @Column({
+  @Column(dataTypes.text ,{
     nullable: true
   })
-  @Length(4, 100)
   lastName: string;
 
-  @Column({
+  @Column(dataTypes.text, {
     nullable: true
   })
   tmpCode: string;
 
-  @Column({
+  @Column(dataTypes.text)
+  code: string;
+
+  @Column(dataTypes.text, {
     nullable: true
   })
-  @Length(8, 11)
   nationalCode: string;
 
-  @Column()
-  @Length(4, 100)
-  @IsNotEmpty()
+  @Column(dataTypes.text, {nullable: false})
   password: string;
 
-  @Column()
-  @IsNotEmpty()
+  @Column(dataTypes.text, {nullable: false})
   role: string;
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true,
     default: null
   })
   serviceId: number
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true,
     default: 1
   })
   district: number
 
-  @Column()
+  @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;
 
@@ -102,15 +99,6 @@ export class User {
   hashPassword = async (): Promise<void> => {
     this.password = bcrypt.hashSync(this.password, 10);
   };
-  generatePassword = () => {
-    var length = 8,
-        charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-        retVal = "";
-    for (var i = 0, n = charset.length; i < length; ++i) {
-      retVal += charset.charAt(Math.floor(Math.random() * n));
-    }
-    return retVal;
-  }
 
   checkIfUnencryptedPasswordIsValid(unencryptedPassword: string): boolean {
     return bcrypt.compareSync(unencryptedPassword, this.password);

@@ -8,11 +8,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn
 } from 'typeorm';
+import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Service } from "./Service";
 import { User } from "./User";
-
+import "reflect-metadata";
 @Entity()
 
 export class Order {
@@ -20,62 +21,62 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column()
+  @Column(dataTypes.integer)
   price: number
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true
   })
   discountId?: number
 
-  @Column({
+  @Column(dataTypes.integer, {
     default: 0
   })
   transportation?: number
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true
   })
   userId?: number
 
-  @Column()
+  @Column(dataTypes.integer)
   serviceId?: number
 
-  @Column()
+  @Column(dataTypes.text)
   status: string
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true
   })
   workerId: number
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true
   })
   attributeId: number
 
-  @Column()
+  @Column(dataTypes.integer)
   addressId: number
 
-  @Column()
+  @Column(dataTypes.text)
   date: string
 
-  @Column()
+  @Column(dataTypes.integer)
   fromTime: number
 
-  @Column()
+  @Column(dataTypes.integer)
   toTime: number
 
-  @Column({
+  @Column(dataTypes.boolean, {
     default: true
   })
   inCart: boolean
 
-  @Column()
+  @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;
 

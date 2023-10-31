@@ -7,7 +7,7 @@ import { User } from "../../entity/User";
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
 import { roles } from '../../utils/enums';
-import { getObjectValue, getSlug } from "../../utils/funs";
+import { getObjectValue, getUniqueSlug } from "../../utils/funs";
 
 class AdminUserController {
   static users = () => getRepository(User)

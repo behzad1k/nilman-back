@@ -1,7 +1,6 @@
-/* eslint-disable no-console */
 import config from "../config/config";
 import { ExtractJwt, Strategy, JwtFromRequestFunction } from "passport-jwt";
-import * as passport from "passport";
+import passport from "passport";
 
 interface Opts {
   jwtFromRequest: JwtFromRequestFunction;

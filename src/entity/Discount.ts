@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -13,28 +14,28 @@ import {User} from "./User";
 @Entity()
 export class Discount {
   @PrimaryGeneratedColumn()
-  id: number;
-  @Column()
-  @Length(3, 100)
+  public readonly id: number;
+
+  @Column("text", {})
   title: string;
 
-  @Column({nullable: true})
+  @Column("int", {nullable: true})
   percent: number;
 
-  @Column({nullable: true})
+  @Column("int", {nullable: true})
   amount: number;
 
-  @Column()
+  @Column("text")
   code: string;
 
-  @Column({nullable: true})
+  @Column("int", {nullable: true})
   userId: number;
 
-  @Column()
+  @Column("date")
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column("date")
   @UpdateDateColumn()
   updatedAt: Date;
 

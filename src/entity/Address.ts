@@ -7,6 +7,7 @@ import {
   ManyToOne, JoinColumn, OneToMany
 } from "typeorm";
 import { Length } from "class-validator";
+import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
 import {User} from "./User";
 
@@ -14,36 +15,35 @@ import {User} from "./User";
 export class Address {
   @PrimaryGeneratedColumn()
   id: number;
-  @Column()
-  @Length(3, 100)
+
+  @Column(dataTypes.text, {})
   title: string;
 
-  @Column()
+  @Column('number')
   userId: number;
 
-  @Column()
-  @Length(3, 100)
+  @Column(dataTypes.text)
   description: string;
 
-  @Column({
+  @Column(dataTypes.boolean, {
     nullable: true
   })
   phoneNumber: string;
 
-  @Column()
+  @Column(dataTypes.text)
   longitude: string;
 
-  @Column()
+  @Column(dataTypes.text)
   latitude: string;
 
-  @Column()
+  @Column(dataTypes.integer)
   district: number;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;
 

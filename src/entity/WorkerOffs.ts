@@ -1,27 +1,28 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { dataTypes } from '../utils/enums';
 import { Order } from './Order';
 import { User } from './User';
-
+import "reflect-metadata";
 @Entity()
 export class WorkerOffs {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column()
+  @Column(dataTypes.integer)
   fromTime: number
 
-  @Column()
+  @Column(dataTypes.integer)
   toTime: number
 
-  @Column()
+  @Column(dataTypes.text)
   date: string
 
-  @Column({
+  @Column(dataTypes.integer, {
     nullable: true
   })
   orderId: number
 
-  @Column()
+  @Column(dataTypes.integer)
   workerId: number
 
   @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })

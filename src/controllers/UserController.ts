@@ -1,15 +1,14 @@
-import { CANCELLED } from "dns";
-import { Request, Response } from "express";
-import { getRepository } from "typeorm";
-import { validate } from "class-validator";
-import config from "../config/config";
-import { User } from "../entity/User";
-import * as jwt from "jsonwebtoken";
-import * as jwtDecode from "jwt-decode";
-import { Service } from "../entity/Service";
+import { validate } from 'class-validator';
+import { Request, Response } from 'express';
+import * as jwt from 'jsonwebtoken';
+import jwtDecode from 'jwt-decode';
+import { getRepository } from 'typeorm';
+import config from '../config/config';
+import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
-import { roles } from '../utils/enums';
-import { generateOTPCode, getUserId, isNumeric, omit } from '../utils/funs';
+import { dataTypes, roles } from '../utils/enums';
+import { generateCode, getUserId } from '../utils/funs';
+import sms from '../utils/sms';
 
 class UserController {
   static users = () => getRepository(User)
@@ -24,7 +23,21 @@ class UserController {
       },
       config.jwtSecret,
       {
-        expiresIn: exp ? exp : config.expiration,
+        expiresIn: exp || config.expiration,
+        issuer: config.issuer,
+        audience: config.audience,
+      },
+    );
+
+    return token;
+  };
+
+  static signTmpJWT = async (data, exp?): Promise<string> => {
+    const token = jwt.sign(
+      data,
+      config.jwtSecret,
+      {
+        expiresIn: exp || config.expiration,
         issuer: config.issuer,
         audience: config.audience,
       },
@@ -38,24 +51,24 @@ class UserController {
     if (!(phoneNumber)) {
       return res.status(400).send({ 'message': 'Phone number not set' });
     }
-    const userRepository = getRepository(User);
-    const code = generateOTPCode();
+    const code = generateCode();
     let token = '';
     let user: User;
-    user = await userRepository.findOne({ where: { phoneNumber } });
+    user = await this.users().findOne({ where: { phoneNumber } });
     if (!user) {
       user = new User()
       user.phoneNumber = phoneNumber;
       user.role = roles.USER
       user.password = '12345678';
+      user.code = generateCode(8, dataTypes.string);
       // user.password = user.generatePassword();
       await user.hashPassword();
-      user = await userRepository.save(user);
+      user = await this.users().save(user);
     }
     user.tmpCode = code;
-    user = await userRepository.save(user);
-    token = await UserController.signJWT(user, '2m');
-    console.log(code)
+    user = await this.users().save(user);
+    token = await UserController.signTmpJWT({id: user.id, code}, '2m');
+    sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,
       token: token
@@ -68,7 +81,9 @@ class UserController {
     if (!token && code) {
       return res.status(400).send({ 'message': 'Bad Request' })
     }
-    const userId = getUserId(token)
+    const tokens: any = jwtDecode(token);
+    const userId = tokens.id
+    const sysCode = tokens.code
     const userRepository = getRepository(User);
     let user: User;
     try {
@@ -76,17 +91,10 @@ class UserController {
     } catch (e) {
       return res.status(401).send({ 'message': 'User not found' })
     }
-    if (user.tmpCode !== code) {
+    if (sysCode !== code) {
       return res.status(401).send({ 'message': 'Code does not match' })
     }
     const newToken = await UserController.signJWT(user)
-    user.tmpCode = ''
-    try {
-      await userRepository.save(user)
-    } catch (e) {
-      return res.status(409).send({ 'code': 409, 'data': 'error try again later' })
-    }
-
     return res.status(200).send({
       code: 200,
       data: {

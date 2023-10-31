@@ -11,3 +11,12 @@ export enum orderStatus  {
   Canceled = 'Canceled',
   Done = 'Done'
 };
+
+export enum dataTypes {
+  string = 'string',
+  number = 'number',
+  datetime = 'datetime',
+  boolean = 'boolean',
+  text = 'text',
+  integer = 'integer'
+}

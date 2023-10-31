@@ -7,44 +7,44 @@ import {
   ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent
 } from 'typeorm';
 import { Length } from "class-validator";
+import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
 import { User } from "./User";
-
+import "reflect-metadata";
 @Entity()
 @Tree('nested-set')
 export class Service {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column(dataTypes.text)
   title: string;
 
-  @Column()
+  @Column(dataTypes.text)
   slug: string;
 
-  @Column()
-  @Length(3, 100)
+  @Column(dataTypes.text)
   description: string;
 
-  @Column({ nullable: true })
+  @Column(dataTypes.text, { nullable: true })
   parentId: string;
 
-  @Column()
+  @Column(dataTypes.integer)
   price: number;
 
-  @Column({
+  @Column(dataTypes.boolean, {
     default: false
   })
   hasColor: boolean;
 
-  @Column()
+  @Column(dataTypes.integer)
   section: number;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;
 

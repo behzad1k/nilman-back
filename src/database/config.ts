@@ -1,8 +1,8 @@
 
 const config = {
     // . . .
-    entities: ['src/database/entity/**/*.ts'],
-    migrations: ['src/database/migration/**/*.ts'],
+    entities: ['src/database/entity/**/*.js'],
+    migrations: ['src/database/migration/**/*.js'],
 };
 
 export default config;

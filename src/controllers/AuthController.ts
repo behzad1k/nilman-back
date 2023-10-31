@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import * as passport from "passport";
+import passport from "passport";
 import "../middlewares/passport";
-
 import { roles } from '../utils/enums';
 
 export default class AuthController {
@@ -11,7 +10,7 @@ export default class AuthController {
       if (err) {
         return res.status(401).json({ status: "error", code: "401" });
       }
-      if (!user) {
+      if (!user.userId) {
         return res.status(401).json({ status: "error", code: "401" });
       } else {
         return next();

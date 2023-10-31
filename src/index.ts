@@ -1,13 +1,12 @@
 import "reflect-metadata";
 import { createConnection } from "typeorm";
-import * as express from "express";
-import * as bodyParser from "body-parser";
-import * as helmet from "helmet";
-import * as cors from "cors";
+import express from "express";
+import bodyParser from "body-parser";
+import helmet from "helmet";
+import cors from "cors";
 import routes from "./routes";
-import * as passport from "passport";
-import config from "./database/config";
-// import * as passport from './middlewares/passport';
+import passport from "passport";
+
 class Server {
   public app: express.Application;
 
@@ -32,7 +31,6 @@ class Server {
 
   public start(): void {
     this.app.listen(this.app.get("port"), () => {
-      // eslint-disable-next-line no-console
       console.log("Server running at http://localhost:%d", this.app.get("port"));
     });
   }
@@ -41,7 +39,6 @@ class Server {
 const server = new Server();
 
 // Connects to the Database -> then starts the express
-// eslint-disable-next-line @typescript-eslint/require-await
 createConnection('default').then(async () => {
   server.start();
 });

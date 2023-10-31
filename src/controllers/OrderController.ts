@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { now } from 'jalali-moment';
-import * as moment from 'jalali-moment';
-import * as jwtDecode from "jwt-decode";
+import moment from 'jalali-moment';
+import jwtDecode from "jwt-decode";
 import { getRepository } from "typeorm";
 import { validate } from "class-validator";
 import { Address } from "../entity/Address";

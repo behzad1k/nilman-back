@@ -4,7 +4,7 @@ import { validate } from "class-validator";
 import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
 import { User } from "../../entity/User";
-import { getSlug } from "../../utils/funs";
+import { getUniqueSlug } from "../../utils/funs";
 
 class AdminServiceController {
   static users = () => getRepository(User)
@@ -38,7 +38,7 @@ class AdminServiceController {
     service.title = title;
     service.description = description;
     service.price = parseFloat(price);
-    service.slug = await getSlug(this.services(),title)
+    service.slug = await getUniqueSlug(this.services(),title)
     service.section = section
     service.parentId = parentObj?.id || null
     if (hasColor)
