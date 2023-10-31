@@ -21,7 +21,7 @@ class Server {
   }
 
   public config(): void {
-    this.app.set("port", process.env.PORT || 9002);
+    this.app.set("port", process.env.PORT || 9001);
     this.app.use(passport.initialize());
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
