@@ -19,13 +19,13 @@ export class Address {
   @Column(dataTypes.text, {})
   title: string;
 
-  @Column('number')
+  @Column(dataTypes.number)
   userId: number;
 
   @Column(dataTypes.text)
   description: string;
 
-  @Column(dataTypes.boolean, {
+  @Column(dataTypes.text, {
     nullable: true
   })
   phoneNumber: string;
@@ -37,7 +37,7 @@ export class Address {
   latitude: string;
 
   @Column(dataTypes.integer)
-  district: number;
+  district?: number;
 
   @Column(dataTypes.datetime)
   @CreateDateColumn()
