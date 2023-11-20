@@ -67,7 +67,7 @@ class UserController {
     }
     user.tmpCode = code;
     user = await this.users().save(user);
-    token = await UserController.signTmpJWT({id: user.id, code}, '2m');
+    token = await UserController.signJWT(user);
     sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,

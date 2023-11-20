@@ -41,6 +41,7 @@ class AddressController {
       });
     }
     catch (error) {
+
       res.status(400).send({code: 400, data: "Invalid UserId"});
       return;
     }
@@ -72,9 +73,7 @@ class AddressController {
     const addressRepository = getRepository(Address);
     let address: Address, user: User;
     try {
-      user = await this.users().findOneOrFail(userId,{
-        relations: ['addresses']
-      });
+      user = await this.users().findOneOrFail(userId,);
     }
     catch (error) {
       res.status(400).send({code: 400, data: "Invalid UserId"});
