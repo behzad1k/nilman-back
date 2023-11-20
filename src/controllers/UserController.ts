@@ -32,9 +32,12 @@ class UserController {
     return token;
   };
 
-  static signTmpJWT = async (data, exp?): Promise<string> => {
+  static signTmpJWT = async (user: { id: any; code: any }, exp?): Promise<string> => {
     const token = jwt.sign(
-      data,
+      {
+        userId: user.id,
+        code: user.code,
+      },
       config.jwtSecret,
       {
         expiresIn: exp || config.expiration,
@@ -67,7 +70,7 @@ class UserController {
     }
     user.tmpCode = code;
     user = await this.users().save(user);
-    token = await UserController.signJWT(user);
+    token = await UserController.signTmpJWT({id: user.id, code: code}, '2m');
     sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,
@@ -82,7 +85,8 @@ class UserController {
       return res.status(400).send({ 'message': 'Bad Request' })
     }
     const tokens: any = jwtDecode(token);
-    const userId = tokens.id
+    console.log(tokens);
+    const userId = tokens.userId
     const sysCode = tokens.code
     const userRepository = getRepository(User);
     let user: User;
@@ -92,8 +96,11 @@ class UserController {
       return res.status(401).send({ 'message': 'User not found' })
     }
     if (sysCode !== code) {
+      console.log(sysCode);
+      console.log(code);
       return res.status(401).send({ 'message': 'Code does not match' })
     }
+    console.log(user);
     const newToken = await UserController.signJWT(user)
     return res.status(200).send({
       code: 200,
