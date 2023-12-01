@@ -6,10 +6,9 @@ import {
   UpdateDateColumn,
   ManyToOne, JoinColumn, OneToMany
 } from "typeorm";
-import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
-import {User} from "./User";
+import { User } from "./User";
 
 @Entity()
 export class Address {

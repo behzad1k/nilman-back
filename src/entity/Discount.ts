@@ -7,7 +7,6 @@ import {
   UpdateDateColumn,
   ManyToOne, JoinColumn, OneToMany
 } from "typeorm";
-import { Length } from "class-validator";
 import { Order } from "./Order";
 import {User} from "./User";
 
@@ -30,6 +29,9 @@ export class Discount {
 
   @Column("int", {nullable: true})
   userId: number;
+
+  @Column("boolean", {default: false})
+  active: boolean;
 
   @Column("date")
   @CreateDateColumn()

@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["node"],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "src",
@@ -10,14 +13,12 @@
     "listEmittedFiles": false,
     "listFiles": false,
     "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
     "pretty": true,
     "resolveJsonModule": true,
     "rootDir": "src",
     "skipLibCheck": true,
     "traceResolution": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "types": ["node"]
   },
   "compileOnSave": false,
   "exclude": ["node_modules", "dist"],

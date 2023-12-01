@@ -149,7 +149,9 @@ class OrderController {
     const { service, attributes, date, time, addressId, workerId, discount } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj;
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail(userId, {
+        relations: ['orders']
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid User"});
       return;
@@ -197,10 +199,16 @@ class OrderController {
         res.status(400).send({ code: 400, data: 'Invalid discount' });
         return;
       }
+
+      if (!discountObj.active){
+        return res.status(400).send({ code: 400, data: 'Discount Not Active' });
+      }
+
       if (discountObj.userId && discountObj.userId !== userId){
         res.status(400).send({ code: 400, data: 'Invalid discount User' });
         return;
       }
+
     }
 
     if (workerId) {
@@ -338,12 +346,13 @@ class OrderController {
       return;
     }
     try {
-      user.orders.map((value: Order) => {
-        this.orders().update(value.id, {
-          inCart: false,
-          status: orderStatus.Paid
-        })
+      this.orders().update(user.orders[user.orders.length - 1]?.id, {
+        inCart: false,
+        status: orderStatus.Paid
       })
+      if (user.orders.length == 1){
+        //actiate code
+      }
       // send sms here
       return res.status(200).send({code: 200, data: ''})
     }catch (e){

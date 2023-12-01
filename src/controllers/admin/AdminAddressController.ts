@@ -75,8 +75,7 @@ class AdminAddressController {
     try {
       await addressRepository.findOneOrFail(id);
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Id"});
-      return;
+      return res.status(400).send({code: 400, data:"Invalid Id"});
     }
     try{
       await addressRepository.delete(id);
