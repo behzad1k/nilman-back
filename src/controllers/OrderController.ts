@@ -220,22 +220,22 @@ class OrderController {
 
     }
 
-    if (workerId) {
-      try {
-        worker = await this.users().findOneOrFail(workerId);
-      } catch (error) {
-        res.status(400).send({ code: 400, data: 'Invalid User' });
-        return;
-      }
-    }else{
-      try{
-        worker = await this.users().findOneOrFail({});
-      }
-      catch (e){
-        res.status(400).send({ code: 400, data: 'Invalid User' });
-        return;
-      }
-    }
+    // if (workerId) {
+    //   try {
+    //     worker = await this.users().findOneOrFail(workerId);
+    //   } catch (error) {
+    //     res.status(400).send({ code: 400, data: 'Invalid User' });
+    //     return;
+    //   }
+    // }else{
+    //   try{
+    //     worker = await this.users().findOneOrFail({});
+    //   }
+    //   catch (e){
+    //     res.status(400).send({ code: 400, data: 'Invalid User' });
+    //     return;
+    //   }
+    // }
     const transportation = 100000
     let totalPrice = 0, sections = 0;
     const order  = new Order();
