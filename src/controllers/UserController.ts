@@ -54,6 +54,8 @@ class UserController {
     if (!(phoneNumber)) {
       return res.status(400).send({ 'message': 'Phone number not set' });
     }
+    // console.log('ehe');
+    // sms.send('hi', '09385591115')
     const code = generateCode();
     let token = '';
     let user: User;
@@ -74,7 +76,7 @@ class UserController {
     sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,
-      token: token
+      data: token
     });
   };
   // TODO: auth check doesnt check the token
@@ -85,7 +87,6 @@ class UserController {
       return res.status(400).send({ 'message': 'Bad Request' })
     }
     const tokens: any = jwtDecode(token);
-    console.log(tokens);
     const userId = tokens.userId
     const sysCode = tokens.code
     const userRepository = getRepository(User);
@@ -100,8 +101,14 @@ class UserController {
       console.log(code);
       return res.status(401).send({ 'message': 'Code does not match' })
     }
-    console.log(user);
-    const newToken = await UserController.signJWT(user)
+
+    const newToken = await UserController.signJWT(user);
+
+    try{
+      await getRepository(User).update({ id: userId }, { lastEntrance: new Date() })
+    }catch (e){
+      return res.status(400).send({ 'message': 'Bad Request' })
+    }
     return res.status(200).send({
       code: 200,
       data: {
@@ -116,7 +123,9 @@ class UserController {
     const id: number = token.userId;
     let user;
     try {
-      user = await this.users().findOneOrFail(id)
+      user = await this.users().findOneOrFail({
+        where: { id: id },
+      })
     } catch (e) {
       return res.status(400).send({ 'code': 400, 'data': 'Invalid User' })
     }
@@ -136,7 +145,9 @@ class UserController {
     const userRepository = getRepository(User);
     let user: User;
     try {
-      user = await userRepository.findOneOrFail(id);
+      user = await userRepository.findOneOrFail({
+        where: { id: id },
+      });
     } catch (error) {
       res.status(401).send();
     }
@@ -166,7 +177,9 @@ class UserController {
     const id: number = token.userId;
     let user;
     try {
-      user = await this.users().findOneOrFail(id)
+      user = await this.users().findOneOrFail({
+        where: { id: id },
+      })
     } catch (e) {
       return res.status(400).send({ code: 400, data: "Invalid User" })
     }
@@ -179,6 +192,9 @@ class UserController {
       user.nationalCode = nationalCode
     if (phoneNumber)
       user.phoneNumber = phoneNumber
+
+    sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
+
     try {
       await this.users().save(user);
     } catch (e) {
@@ -192,7 +208,8 @@ class UserController {
     const userRepository = getRepository(User);
     let user;
     try {
-      user = await userRepository.findOneOrFail(id, {
+      user = await userRepository.findOneOrFail({
+        where: { id: id },
         relations: ['addresses']
       });
     } catch (error) {
@@ -216,7 +233,7 @@ class UserController {
         workerOff = await this.workerOffs().find({
           where: {
             workerId: Number(workerId),
-            date: Number(date)
+            date: date as string
           }
         })
       }catch (e){
@@ -226,7 +243,7 @@ class UserController {
       try{
         workerOff = await this.workerOffs().find({
           where: {
-            date: Number(date)
+            date: date as string
           }
         })
 

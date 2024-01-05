@@ -1,9 +1,8 @@
 const send = (text: string, to: string) => {
-
   const Kavenegar = require('kavenegar');
-  const api = Kavenegar.KavenegarApi({apikey: '352B4A496B4A58557A7A77536A75346D6875736D5A576246714E4B2B764F4A6576726B626E6331726D2F673D'});
-  api.Send({ message: text , sender: "10008663" , receptor: to });
-
+  const apiKey = '41393854744470492B444C6E31723350692F577873503634546344323133566D6A476B2B4E72736F4B31773D'
+  const api = Kavenegar.KavenegarApi({ apikey: apiKey });
+  api.Send({ message: text , sender: "1000000300033" , receptor: to });
 }
 
 const afterPaid = (name: string, phoneNumber: string, date: string, time: string) => {

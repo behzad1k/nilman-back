@@ -15,7 +15,8 @@ class AddressController {
     const id: number = token.userId;
     let user;
     try {
-      user = await this.users().findOneOrFail(id,{
+      user = await this.users().findOneOrFail({
+        where: { id: id },
         relations: ['addresses']
       });
     }
@@ -36,7 +37,8 @@ class AddressController {
     const id: number = token.userId;
     let user;
     try {
-      user = await this.users().findOneOrFail(id,{
+      user = await this.users().findOneOrFail({
+        where: { id: id },
         relations: ['addresses']
       });
     }
@@ -73,7 +75,9 @@ class AddressController {
     const addressRepository = getRepository(Address);
     let address: Address, user: User;
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+      });
     }
     catch (error) {
       res.status(400).send({code: 400, data: "Invalid UserId"});
@@ -117,7 +121,8 @@ class AddressController {
     const id: number = req.body.AddressId
     let user: User;
     try {
-      user = await this.users().findOneOrFail(userId,{
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
         relations: ['addresses']
       });
     }
@@ -128,7 +133,9 @@ class AddressController {
     const addressRepository = getRepository(Address);
     let address;
     try {
-      address = await addressRepository.findOneOrFail(id);
+      address = await addressRepository.findOneOrFail({
+        where: { id: id },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid Id"});
       return;

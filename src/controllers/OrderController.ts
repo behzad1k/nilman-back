@@ -28,7 +28,9 @@ class OrderController {
     const users = await this.users().find();
     let user;
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid User"});
       return;
@@ -66,20 +68,25 @@ class OrderController {
     const { serviceId, addressId, section } = req.query;
     let user, service, address;
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid User"});
       return;
     }
     try {
-      service = await this.services().findOneOrFail(Number(serviceId));
+      service = await this.services().findOneOrFail({
+        where: { id: Number(serviceId) },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid Service"});
       return;
     }
     try {
-      address = await this.addresses().findOneOrFail(Number(addressId), {
+      address = await this.addresses().findOneOrFail({
         where: {
+          id: Number(addressId),
           userId: user.id
         }
       });
@@ -149,7 +156,8 @@ class OrderController {
     const { service, attributes, date, time, addressId, workerId, discount } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj;
     try {
-      user = await this.users().findOneOrFail(userId, {
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
         relations: ['orders']
       });
     } catch (error) {
@@ -183,8 +191,9 @@ class OrderController {
     }
 
     try {
-      addressObj = await this.addresses().findOneOrFail(addressId, {
+      addressObj = await this.addresses().findOneOrFail({
         where: {
+          id: addressId,
           userId: user.id
         }
       })
@@ -220,7 +229,7 @@ class OrderController {
       }
     }else{
       try{
-        worker = await this.users().findOneOrFail();
+        worker = await this.users().findOneOrFail({});
       }
       catch (e){
         res.status(400).send({ code: 400, data: 'Invalid User' });
@@ -277,7 +286,9 @@ class OrderController {
     const userId: number = token.userId;
     let user, orderObj
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid User"});
       return;
@@ -315,7 +326,8 @@ class OrderController {
     const id: number = token.userId;
     let user;
     try {
-      user = await this.users().findOneOrFail(id,{
+      user = await this.users().findOneOrFail({
+        where: { id: id },
         relations: ['orders']
       });
     }
@@ -338,7 +350,8 @@ class OrderController {
     const userId: number = token.userId;
     let user, orderObj
     try {
-      user = await this.users().findOneOrFail(userId,{
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
         relations: ['orders']
       });
     } catch (error) {
@@ -366,7 +379,8 @@ class OrderController {
     const {orderId} = req.body;
     let user, orderObj
     try {
-      user = await this.users().findOneOrFail(userId,{
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
         relations: ['orders']
       });
     } catch (error) {

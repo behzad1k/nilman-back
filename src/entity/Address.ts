@@ -4,8 +4,8 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany
-} from "typeorm";
+  ManyToOne, JoinColumn, OneToMany, Relation
+} from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
 import { User } from "./User";
@@ -48,10 +48,10 @@ export class Address {
 
   @ManyToOne(() => User, (user) => user.addresses, { onDelete: 'CASCADE' })
   @JoinColumn({ name:"userId", referencedColumnName: "id"})
-  user: User
+  user: Relation<User>
 
   @OneToMany(() => Order, (order) => order.address, { onDelete: 'CASCADE' })
-  order: Order
+  order: Relation<Order>
 
   // @ManyToMany(() => User,(user) => user.likedTweaks)
   // @JoinTable({

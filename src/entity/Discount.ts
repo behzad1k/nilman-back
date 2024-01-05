@@ -5,10 +5,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany
-} from "typeorm";
+  ManyToOne, JoinColumn, OneToMany, Relation
+} from 'typeorm';
 import { Order } from "./Order";
-import {User} from "./User";
+import { User } from "./User";
 
 @Entity()
 export class Discount {
@@ -43,7 +43,7 @@ export class Discount {
 
   @ManyToOne(() => User, (user) => user.discounts, { onDelete: 'CASCADE' })
   @JoinColumn({ name:"userId", referencedColumnName: "id"})
-  user: User
+  user: Relation<User>
 
   @OneToMany(() => Order, (order) => order.discount, { onDelete: 'CASCADE' })
   orders: Order[]

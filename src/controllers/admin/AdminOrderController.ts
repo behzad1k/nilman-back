@@ -33,7 +33,8 @@ class AdminOrderController {
     const { orderId, workerId } = req.body;
     let order: Order, user: User;
     try {
-      order = await this.orders().findOneOrFail(orderId, {
+      order = await this.orders().findOneOrFail({
+        where: { id: orderId },
         relations: ['service']
       });
     } catch (error) {
@@ -41,9 +42,10 @@ class AdminOrderController {
       return;
     }
     try {
-      user = await this.users().findOneOrFail(workerId, {
+      user = await this.users().findOneOrFail({
         where: {
-          service: order.service
+          id: workerId,
+          serviceId: order.service.id,
         }
       });
     } catch (error) {

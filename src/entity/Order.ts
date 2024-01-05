@@ -5,7 +5,7 @@ import {
   JoinColumn, JoinTable, ManyToMany,
   ManyToOne,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryGeneratedColumn, Relation,
   UpdateDateColumn
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
@@ -82,26 +82,26 @@ export class Order {
 
   @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'userId', referencedColumnName: 'id'})
-  user: User
+  user: Relation<User>
 
   @ManyToOne(() => Discount, (discount) => discount.orders, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({name: 'discountId', referencedColumnName: 'id'})
-  discount?: Discount
+  discount?: Relation<Discount>
 
   @ManyToOne(() => Service, (service) => service.orders, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'serviceId', referencedColumnName: 'id'})
-  service: Service
+  service: Relation<Service>
 
   @ManyToOne(() => Address, (address) => address.order, { onDelete: 'CASCADE' })
   @JoinColumn({name: 'addressId', referencedColumnName: 'id'})
-  address: Address
+  address: Relation<Address>
 
   @ManyToOne(() => User, (user) => user.jobs, { nullable: true,onDelete: 'CASCADE' })
   @JoinColumn({name: 'workerId', referencedColumnName: 'id'})
-  worker?: User
+  worker?: Relation<User>
 
   @ManyToMany(() => Service, (service) => service.attributeOrders, { onDelete: 'CASCADE' })
   @JoinTable({name: 'order_attribute'})
-  attributes: Service[]
+  attributes: Relation<Service[]>
 
 }

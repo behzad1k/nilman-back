@@ -22,7 +22,7 @@ class AdminUserController {
       if (service) {
         serviceObj = await this.services().findOne({
           where: {
-            slug: service
+            slug: service as string
           }
         })
       }
@@ -85,7 +85,9 @@ class AdminUserController {
     if (service){
       try{
         serviceObj = await this.services().findOneOrFail({
-          slug: service
+          where: {
+            slug: service as string
+          }
         })
         user.service = serviceObj
       }catch(e){
@@ -168,7 +170,9 @@ class AdminUserController {
     const userId: number = req.body.userId
     let user;
     try {
-      user = await this.users().findOneOrFail(userId);
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid UserId"});
       return;

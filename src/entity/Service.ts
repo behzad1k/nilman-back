@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent
+  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
@@ -49,22 +49,22 @@ export class Service {
   updatedAt: Date;
 
   @OneToMany(() => Order, (order) => order.service, { onDelete: 'CASCADE' })
-  orders: Order[]
+  orders: Relation<Order[]>
 
   @TreeChildren()
-  attributes: Service[];
+  attributes: Relation<Service[]>
 
   @TreeParent()
-  parent: Service
+  parent: Relation<Service>
 
   @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })
-  users: User[]
+  users: Relation<User[]>
 
   @ManyToMany(() => Order, order => order.attributes, { onDelete: 'CASCADE' })
   @JoinTable({
     name: 'order_attribute'
   })
-  attributeOrders: Order[]
+  attributeOrders: Relation<Order[]>
 
   // @ManyToMany(() => User,(user) => user.likedTweaks)
   // @JoinTable({

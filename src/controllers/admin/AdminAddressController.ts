@@ -73,7 +73,10 @@ class AdminAddressController {
     const id: number = req.body.id
     const addressRepository = getRepository(Address);
     try {
-      await addressRepository.findOneOrFail(id);
+      await addressRepository.findOneOrFail({
+          where: { id: id },
+        }
+      );
     } catch (error) {
       return res.status(400).send({code: 400, data:"Invalid Id"});
     }

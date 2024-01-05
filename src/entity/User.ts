@@ -6,8 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
-  ManyToOne
-} from "typeorm";
+  ManyToOne, Relation
+} from 'typeorm';
 import * as bcrypt from "bcryptjs";
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
@@ -66,6 +66,11 @@ export class User {
   })
   district: number
 
+  @Column(dataTypes.datetime, {
+    nullable: true
+  })
+  lastEntrance: Date;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
@@ -75,26 +80,26 @@ export class User {
   updatedAt: Date;
 
   @OneToMany(() => Address , address => address.user, { eager: true, onDelete: 'CASCADE'  })
-  addresses: Address[];
+  addresses: Relation<Address[]>;
 
   @OneToMany(() => Order, order => order.user,{ eager: true, onDelete: 'CASCADE' })
-  orders: Order[]
+  orders: Relation<Order[]>
 
   @OneToMany(() => Discount, discount => discount.user,{ eager: true, onDelete: 'CASCADE' })
-  discounts: Discount[]
+  discounts: Relation<Discount[]>
 
   @OneToMany(() => Order, order => order.worker, { nullable: true, onDelete: 'CASCADE' })
-  jobs: Order[]
+  jobs: Relation<Order[]>
 
   @OneToMany(() => WorkerOffs, userOffs => userOffs.worker, { nullable: true, onDelete: 'CASCADE' })
-  workerOffs: WorkerOffs[]
+  workerOffs: Relation<WorkerOffs[]>
 
   @ManyToOne(() => Service, service => service.users, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'serviceId',
     referencedColumnName: 'id'
   })
-  service: Service
+  service: Relation<Service>
   // eslint-disable-next-line @typescript-eslint/require-await
   hashPassword = async (): Promise<void> => {
     this.password = bcrypt.hashSync(this.password, 10);

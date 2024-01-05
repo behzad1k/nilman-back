@@ -72,7 +72,9 @@ class AdminDiscountController {
     const id: number = req.body.id
     
     try {
-      await this.discounts().findOneOrFail(id);
+      await this.discounts().findOneOrFail({
+        where: { id: id },
+      });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid Id"});
       return;

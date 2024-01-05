@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Relation } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from './Order';
 import { User } from './User';
@@ -17,9 +17,7 @@ export class WorkerOffs {
   @Column(dataTypes.text)
   date: string
 
-  @Column(dataTypes.integer, {
-    nullable: true
-  })
+  @Column(dataTypes.integer, )
   orderId: number
 
   @Column(dataTypes.integer)
@@ -27,10 +25,10 @@ export class WorkerOffs {
 
   @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'workerId', referencedColumnName: 'id'})
-  worker: User
+  worker: Relation<User>
 
   @ManyToOne(() => Order, order => order.worker, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'orderId', referencedColumnName: 'id'})
-  order: Order
+  order: Relation<Order>
 
 }

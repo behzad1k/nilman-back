@@ -9,7 +9,6 @@
     "declaration": true,
     "esModuleInterop": true,
     "inlineSourceMap": false,
-    "lib": ["esnext"],
     "listEmittedFiles": false,
     "listFiles": false,
     "moduleResolution": "node",
@@ -19,6 +18,9 @@
     "rootDir": "src",
     "skipLibCheck": true,
     "traceResolution": false,
+  },
+  "ts-node": {
+    "esm": true
   },
   "compileOnSave": false,
   "exclude": ["node_modules", "dist"],
