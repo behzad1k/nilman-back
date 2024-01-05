@@ -30,6 +30,11 @@ export class User {
   })
   name: string
 
+  @Column(dataTypes.text, {
+    nullable: true
+  })
+  username: string
+
   @Column(dataTypes.text ,{
     nullable: true
   })

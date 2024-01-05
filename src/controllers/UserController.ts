@@ -1,9 +1,11 @@
+import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import * as jwt from 'jsonwebtoken';
 import jwtDecode from 'jwt-decode';
 import { getRepository } from 'typeorm';
 import config from '../config/config';
+import { Discount } from '../entity/Discount';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
@@ -54,8 +56,6 @@ class UserController {
     if (!(phoneNumber)) {
       return res.status(400).send({ 'message': 'Phone number not set' });
     }
-    // console.log('ehe');
-    // sms.send('hi', '09385591115')
     const code = generateCode();
     let token = '';
     let user: User;
@@ -76,6 +76,22 @@ class UserController {
     sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,
+      token: token
+    });
+  };
+  static loginAdmin = async (req: Request, res: Response): Promise<Response> => {
+    const { username, password } = req.body;
+    if (!(username && password)) {
+      return res.status(400).send({ code: 400, data: 'Invalid input' });
+    }
+    let user: User;
+    user = await this.users().findOne({ where: { username: username } });
+    if (!bcrypt.compareSync(password, user.password)){
+      return res.status(401).send({ code: 400, data: 'Invalid password' });
+    }
+    const token = await UserController.signJWT(user);
+    return res.status(200).send({
+      code: 200,
       data: token
     });
   };
@@ -83,16 +99,16 @@ class UserController {
 
   static authCheck = async (req: Request, res: Response): Promise<Response> => {
     const { token, code } = req.body
-    if (!token && code) {
-      return res.status(400).send({ 'message': 'Bad Request' })
-    }
     const tokens: any = jwtDecode(token);
     const userId = tokens.userId
     const sysCode = tokens.code
+    console.log(userId);
+    console.log(sysCode);
+    console.log(code);
     const userRepository = getRepository(User);
     let user: User;
     try {
-      user = await userRepository.findOneOrFail(userId);
+      user = await userRepository.findOneOrFail({ where: { id: Number(userId) } });
     } catch (e) {
       return res.status(401).send({ 'message': 'User not found' })
     }
@@ -107,6 +123,7 @@ class UserController {
     try{
       await getRepository(User).update({ id: userId }, { lastEntrance: new Date() })
     }catch (e){
+      console.log(e);
       return res.status(400).send({ 'message': 'Bad Request' })
     }
     return res.status(200).send({
@@ -197,6 +214,12 @@ class UserController {
 
     try {
       await this.users().save(user);
+      await getRepository(Discount).insert({
+        title: user.name + ' ' + user.lastName,
+        percent: 10,
+        code: user.code,
+        active: true
+      })
     } catch (e) {
       return res.status(409).send({ "code": 409 });
     }

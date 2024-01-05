@@ -16,6 +16,8 @@ export class AuthRoutes {
   routes() {
     // Login route
     this.router.post("/login", UserController.login);
+
+    this.router.post("/admin/login", UserController.loginAdmin);
     // Auth check
     this.router.post("/check", UserController.authCheck);
 
