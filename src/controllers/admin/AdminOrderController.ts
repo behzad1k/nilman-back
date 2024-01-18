@@ -9,6 +9,7 @@ import { User } from "../../entity/User";
 
 import { orderStatus } from '../../utils/enums';
 import { getObjectValue } from "../../utils/funs";
+import sms from '../../utils/sms';
 
 class AdminOrderController {
   static users = () => getRepository(User)
@@ -18,7 +19,7 @@ class AdminOrderController {
     let orders;
     try{
       orders = await this.orders().find({
-        relations: ['worker', 'service', 'address', 'attributes']
+        relations: ['worker', 'service', 'address', 'attributes', 'user']
       });
     }catch (e){
       return res.status(400).send({code: 400, data: 'Unexpected Error'})
@@ -35,12 +36,13 @@ class AdminOrderController {
     try {
       order = await this.orders().findOneOrFail({
         where: { id: orderId },
-        relations: ['service']
+        relations: ['service', 'user']
       });
     } catch (error) {
       res.status(400).send({code: 400, data:"Invalid Order"});
       return;
     }
+
     try {
       user = await this.users().findOneOrFail({
         where: {
@@ -54,6 +56,7 @@ class AdminOrderController {
     }
     order.worker = user
     order.status = orderStatus.Assigned
+
     const errors = await validate(order);
     if (errors.length > 0) {
       return res.status(400).send(errors);

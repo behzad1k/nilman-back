@@ -6,3 +6,4 @@ tmp/
 temp/
 dist
 ormconfig.json
+package-lock.json

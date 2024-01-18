@@ -44,7 +44,7 @@
    "scripts": {
       "tsc": "tsc",
       "start": "ts-node-dev src/index.ts --transpileOnly",
-      "build": "rm -fr dist/* && tsc && node --experimental-specifier-resolution=node dist/index.js ",
+      "build": "tsc && node build/index.js",
       "prod": "ts-node src/index.ts --transpileOnly",
       "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
    }

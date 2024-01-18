@@ -18,6 +18,7 @@
     "rootDir": "src",
     "skipLibCheck": true,
     "traceResolution": false,
+    "outDir": "build"
   },
   "ts-node": {
     "esm": true
