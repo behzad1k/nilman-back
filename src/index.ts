@@ -26,7 +26,7 @@ class Server {
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
     this.app.use(cors({
-      origin: ['https://app.nilman.co', 'http://app.nilman.co']
+      origin: "*"
     }));
     this.app.use(helmet());
   }
