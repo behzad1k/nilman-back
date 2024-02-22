@@ -10,7 +10,7 @@ import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
 import { generateCode, getUserId } from '../utils/funs';
-import sms from '../utils/sms';
+import sms from '../utils/smsLookup';
 
 class UserController {
   static users = () => getRepository(User)
@@ -73,7 +73,7 @@ class UserController {
     user.tmpCode = code;
     user = await this.users().save(user);
     token = await UserController.signTmpJWT({id: user.id, code: code}, '2m');
-    sms.welcome(code, phoneNumber);
+    await sms.welcome(code, phoneNumber);
     return res.status(200).send({
       code: code,
       token: token
@@ -103,10 +103,8 @@ class UserController {
     const tokens: any = jwtDecode(token);
     const userId = tokens.userId
     const sysCode = tokens.code
-    console.log(userId);
-    console.log(sysCode);
-    console.log(code);
     const userRepository = getRepository(User);
+
     let user: User;
     try {
       user = await userRepository.findOneOrFail({ where: { id: Number(userId) } });
@@ -114,8 +112,6 @@ class UserController {
       return res.status(401).send({ 'message': 'User not found' })
     }
     if (sysCode !== code) {
-      console.log(sysCode);
-      console.log(code);
       return res.status(401).send({ 'message': 'Code does not match' })
     }
 

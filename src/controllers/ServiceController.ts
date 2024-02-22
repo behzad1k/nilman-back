@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getRepository, getTreeRepository } from 'typeorm';
 import {Service} from "../entity/Service";
-import sms from '../utils/sms';
+import sms from '../utils/smsLookup';
 
 class ServiceController {
   static services = () => getRepository(Service)

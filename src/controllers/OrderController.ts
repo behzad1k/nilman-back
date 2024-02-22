@@ -12,7 +12,7 @@ import { User } from "../entity/User";
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { getObjectValue, omit } from "../utils/funs";
-import sms from '../utils/sms';
+import sms from '../utils/smsLookup';
 
 class OrderController {
 

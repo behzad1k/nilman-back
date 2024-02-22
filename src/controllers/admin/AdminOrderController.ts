@@ -9,7 +9,7 @@ import { User } from "../../entity/User";
 
 import { orderStatus } from '../../utils/enums';
 import { getObjectValue } from "../../utils/funs";
-import sms from '../../utils/sms';
+import sms from '../../utils/smsLookup';
 
 class AdminOrderController {
   static users = () => getRepository(User)
