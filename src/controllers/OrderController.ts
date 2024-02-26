@@ -12,6 +12,7 @@ import { User } from "../entity/User";
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { getObjectValue, omit } from "../utils/funs";
+import smsLookup from '../utils/smsLookup';
 import sms from '../utils/smsLookup';
 
 class OrderController {
@@ -358,20 +359,36 @@ class OrderController {
       res.status(400).send({code: 400, data:"Invalid User"});
       return;
     }
+
+    let order: Order = undefined;
+
     try {
-      this.orders().update(user.orders[user.orders.length - 1]?.id, {
-        inCart: false,
-        status: orderStatus.Paid
+      order = await this.orders().findOneOrFail({
+        where: { inCart: false },
       })
-      if (user.orders.length == 1){
-        //actiate code
-      }
+
       // send sms here
-      return res.status(200).send({code: 200, data: ''})
     }catch (e){
       console.log(e)
-      res.status(409).send({code: 409, data:"error try again later"});
+      return res.status(400).send({code: 400, data:"Invalid Order"});
     }
+
+    try {
+      await this.orders().update(
+        { id: order.id },{
+          status: orderStatus.Paid
+      })
+
+      smsLookup.afterPaid(user.name, user.phoneNumber, order.date, order.fromTime.toString());
+
+    }catch (e){
+      console.log(e)
+      return res.status(400).send({code: 400, data:"Invalid Order"});
+    }
+
+
+    return res.status(200).send({code: 200, data: ''})
+
   }
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
