@@ -1,5 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
+import moment from 'jalali-moment';
 import { getRepository } from 'typeorm';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
@@ -39,7 +40,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOneOrFail({
         where: { id: orderId },
-        relations: ['service', 'user']
+        relations: ['service', 'user', 'attributes', 'address']
       });
     } catch (error) {
       res.status(400).send({
@@ -72,8 +73,11 @@ class AdminOrderController {
     }
     try {
       await this.orders().save(order);
-      smsLookup.orderAssignUser(order.user.name, user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
+      console.log(order.date);
+      smsLookup.orderAssignUser(order.user.name, user.name, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+      smsLookup.orderAssignWorker(order.attributes?.map(e => e.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
     } catch (e) {
+      console.log(e);
       res.status(409).send('error try again later');
       return;
     }

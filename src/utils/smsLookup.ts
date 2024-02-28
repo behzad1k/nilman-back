@@ -1,3 +1,5 @@
+import { removeSpace } from './funs';
+
 const send = async (template: string, to: string, token1, token2 = null, token3 = null) => {
   const Kavenegar = require('kavenegar');
   const apiKey = '41393854744470492B444C6E31723350692F577873503634546344323133566D6A476B2B4E72736F4B31773D';
@@ -21,7 +23,7 @@ const send = async (template: string, to: string, token1, token2 = null, token3 
 };
 
 const afterPaid = (name: string, phoneNumber: string, date: string, time: string) => {
-  send('paid', phoneNumber, name, `${date} ساعت ${time}`);
+  send('pay', phoneNumber, removeSpace(name), removeSpace(`${date} ساعت ${time}`));
 };
 
 const feedback = (name: string, phoneNumber: string) => {
@@ -29,7 +31,11 @@ const feedback = (name: string, phoneNumber: string) => {
 };
 
 const orderAssignUser = (name: string, worker: string, phoneNumber: string, date: string, time: string) => {
-  send('assign', phoneNumber, name, worker, `${date} ساعت ${time}`);
+  send('assign', phoneNumber, removeSpace(name), removeSpace(worker), removeSpace(`${date} ساعت ${time}`));
+};
+
+const orderAssignWorker = (orderTitle: string, address: string, phoneNumber: string, date: string, time: string) => {
+  send('assignWorker', phoneNumber, removeSpace(orderTitle), removeSpace(address), removeSpace(`${date} ساعت ${time}`));
 };
 
 const welcome = async (code: string, phoneNumber: string) => {
@@ -46,5 +52,6 @@ export default {
   send,
   afterPaid,
   feedback,
-  orderAssignUser
+  orderAssignUser,
+  orderAssignWorker
 };

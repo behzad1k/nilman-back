@@ -3,6 +3,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "types": ["node"],
+    "lib": ["es2021"],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "src",

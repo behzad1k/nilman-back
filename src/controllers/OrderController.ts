@@ -1,28 +1,26 @@
-import { Request, Response } from "express";
-import { now } from 'jalali-moment';
+import { validate } from 'class-validator';
+import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import jwtDecode from "jwt-decode";
-import { getRepository } from "typeorm";
-import { validate } from "class-validator";
-import { Address } from "../entity/Address";
+import jwtDecode from 'jwt-decode';
+import { getRepository } from 'typeorm';
+import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
-import { Order } from "../entity/Order";
-import { Service } from "../entity/Service";
-import { User } from "../entity/User";
+import { Order } from '../entity/Order';
+import { Service } from '../entity/Service';
+import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
-import { getObjectValue, omit } from "../utils/funs";
+import { omit } from '../utils/funs';
 import smsLookup from '../utils/smsLookup';
-import sms from '../utils/smsLookup';
 
 class OrderController {
 
-  static users = () => getRepository(User)
-  static orders = () => getRepository(Order)
-  static services = () => getRepository(Service)
-  static addresses = () => getRepository(Address)
-  static workerOffs = () => getRepository(WorkerOffs)
-  static discounts = () => getRepository(Discount)
+  static users = () => getRepository(User);
+  static orders = () => getRepository(Order);
+  static services = () => getRepository(Service);
+  static addresses = () => getRepository(Address);
+  static workerOffs = () => getRepository(WorkerOffs);
+  static discounts = () => getRepository(Discount);
   static index = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
@@ -33,7 +31,10 @@ class OrderController {
         where: { id: userId },
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
     let orders;
@@ -44,7 +45,7 @@ class OrderController {
             workerId: user.id
           },
           relations: ['attributes', 'service', 'address', 'worker']
-        })
+        });
       } else {
         orders = await this.orders().find({
           where: {
@@ -52,28 +53,38 @@ class OrderController {
             inCart: false
           },
           relations: ['attributes', 'service', 'address', 'worker']
-        })
+        });
       }
-    } catch (e){
+    } catch (e) {
       console.log(e);
-      res.status(400).send({code: 400, data:"Unexpected Error"});
+      res.status(400).send({
+        code: 400,
+        data: 'Unexpected Error'
+      });
     }
     return res.status(200).send({
       code: 200,
       data: orders
-    })
-  }
+    });
+  };
   static workers = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    const { serviceId, addressId, section } = req.query;
+    const {
+      serviceId,
+      addressId,
+      section
+    } = req.query;
     let user, service, address;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
     try {
@@ -81,7 +92,10 @@ class OrderController {
         where: { id: Number(serviceId) },
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Service"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Service'
+      });
       return;
     }
     try {
@@ -92,7 +106,10 @@ class OrderController {
         }
       });
     } catch (error) {
-      res.status(400).send({ code: 400, data:"Invalid Address" });
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Address'
+      });
       return;
     }
 
@@ -102,34 +119,40 @@ class OrderController {
         district: address.district
       },
       relations: ['workerOffs']
-    })
+    });
     const nearest = await this.findFreeWorker(workers, parseInt(section?.toString()));
-    return res.status(200).send({ code: 200, data: {
+    return res.status(200).send({
+      code: 200,
+      data: {
         workers: workers,
         transportation: 100000,
-        nearest:{
+        nearest: {
           date: nearest.date,
           workerId: nearest.worker
         }
-    }})
-  }
+      }
+    });
+  };
   static findFreeWorker = async (workers: User[], section: number) => {
 
-    const allWorkerOffs = []
-    let nowHour = parseInt(moment().add(2,'h').format('HH'))
-    let nowDate = moment()
+    const allWorkerOffs = [];
+    let nowHour = parseInt(moment().add(2, 'h').format('HH'));
+    let nowDate = moment();
     if (nowHour >= 22) {
       nowHour = 8;
-      nowDate = moment().add(1,'d')
+      nowDate = moment().add(1, 'd');
     }
     if (nowHour < 8)
-      nowHour = 8
-    workers.map((worker) => allWorkerOffs.push(worker.workerOffs))
-    let nearestDate = moment().add(1,'y'), nearestTime = 23, nearestWorker;
+      nowHour = 8;
+    workers.map((worker) => allWorkerOffs.push(worker.workerOffs));
+    let nearestDate = moment(), nearestTime = Number(nearestDate.format('HH')), nearestWorker;
     for (const worker of workers) {
-      const userWorkOffs = worker.workerOffs.filter((value) =>  moment(parseInt(value.date)).format('jDD') === nowDate.format('jDD'))
-      if (userWorkOffs.length == 0){
-        return { worker: worker.id, date: nowDate.format('jYYYY/jMM/jDD') + ' ' + nowHour + '-' + (nowHour + section)}
+      const userWorkOffs = worker.workerOffs.filter((value) => moment(parseInt(value.date)).format('jDD') === nowDate.format('jDD'));
+      if (userWorkOffs.length == 0) {
+        return {
+          worker: worker.id,
+          date: nowDate.format('jYYYY/jMM/jDD') + ' ' + nowHour + '-' + (nowHour + section)
+        };
       }
       for (let nowHourTmp = (22 - section); nowHourTmp >= nowHour; nowHourTmp--) {
         for (const userWorkOff of userWorkOffs) {
@@ -143,18 +166,29 @@ class OrderController {
             continue;
           }
           nearestTime = nowHourTmp - section;
-          nearestDate = nowDate
-          nearestWorker = worker.id
+          nearestDate = nowDate;
+          nearestWorker = worker.id;
         }
       }
     }
-    return { worker: nearestWorker, date: nearestDate.format('jYYYY/jMM/jDD') + ' ' + nearestTime + '-' + (nearestTime + section)}
-  }
+    return {
+      worker: nearestWorker,
+      date: nearestDate.format('jYYYY/jMM/jDD') + ' ' + nearestTime + '-' + (nearestTime + section)
+    };
+  };
 
   static create = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    const { service, attributes, date, time, addressId, workerId, discount } = req.body;
+    const {
+      service,
+      attributes,
+      date,
+      time,
+      addressId,
+      workerId,
+      discount
+    } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj;
     try {
       user = await this.users().findOneOrFail({
@@ -162,7 +196,10 @@ class OrderController {
         relations: ['orders']
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
     try {
@@ -172,7 +209,10 @@ class OrderController {
         }
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Service"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Service'
+      });
       return;
     }
     try {
@@ -183,11 +223,14 @@ class OrderController {
               slug: attributes[value],
             }
           })
-        )
+        );
       }
     } catch (error) {
       console.log(error);
-      res.status(400).send({code: 400, data:"Invalid Attribute"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Attribute'
+      });
       return;
     }
 
@@ -197,25 +240,37 @@ class OrderController {
           id: addressId,
           userId: user.id
         }
-      })
-    }catch (e){
-      return res.status(400).send({'code': 400, data: 'Invalid Address'})
+      });
+    } catch (e) {
+      return res.status(400).send({
+        'code': 400,
+        data: 'Invalid Address'
+      });
     }
 
     if (discount) {
       try {
-        discountObj = await this.discounts().findOneOrFail({where: {code: discount}})
+        discountObj = await this.discounts().findOneOrFail({ where: { code: discount } });
       } catch (error) {
-        res.status(400).send({ code: 400, data: 'Invalid discount' });
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid discount'
+        });
         return;
       }
 
-      if (!discountObj.active){
-        return res.status(400).send({ code: 400, data: 'Discount Not Active' });
+      if (!discountObj.active) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Discount Not Active'
+        });
       }
 
-      if (discountObj.userId && discountObj.userId !== userId){
-        res.status(400).send({ code: 400, data: 'Invalid discount User' });
+      if (discountObj.userId && discountObj.userId !== userId) {
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid discount User'
+        });
         return;
       }
 
@@ -226,7 +281,7 @@ class OrderController {
     //     worker = await this.users().findOneOrFail(workerId);
     //   } catch (error) {
     //     res.status(400).send({ code: 400, data: 'Invalid User' });
-    //     return;
+    //     return
     //   }
     // }else{
     //   try{
@@ -237,27 +292,27 @@ class OrderController {
     //     return;
     //   }
     // }
-    const transportation = 100000
+    const transportation = 100000;
     let totalPrice = 0, sections = 0;
-    const order  = new Order();
+    const order = new Order();
     attributeObjs.map((attr) => {
       totalPrice += attr.price;
       sections += attr.section;
-    })
-    if (discountObj && (discountObj.amount || discountObj.percent)){
+    });
+    if (discountObj && (discountObj.amount || discountObj.percent)) {
       order.discountId = discountObj.id;
-      totalPrice = discountObj.percent ? totalPrice - (totalPrice * discountObj.percent / 100) : totalPrice - discountObj.amount
+      totalPrice = discountObj.percent ? totalPrice - (totalPrice * discountObj.percent / 100) : totalPrice - discountObj.amount;
     }
     totalPrice += transportation;
-    order.attributes = attributeObjs
+    order.attributes = attributeObjs;
     order.price = totalPrice;
-    order.service = serviceObj
-    order.user = user
-    order.status = 'CREATED'
+    order.service = serviceObj;
+    order.user = user;
+    order.status = 'CREATED';
     order.address = addressObj;
-    order.date = date
-    order.fromTime = time
-    order.toTime = time + sections
+    order.date = date;
+    order.fromTime = time;
+    order.toTime = time + sections;
     // order.worker = worker
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -275,26 +330,35 @@ class OrderController {
       // await this.workerOffs().save(workerOff);
     } catch (e) {
       console.log(e); //todo: delete order if workeroff not created
-      res.status(409).send({"code": 409});
+      res.status(409).send({ 'code': 409 });
       return;
     }
-    const finalOrder = omit(['user','worker','service','address'],order)
-    return res.status(201).send({ code: 201, data: finalOrder});
+    const finalOrder = omit(['user', 'worker', 'service', 'address'], order);
+    return res.status(201).send({
+      code: 201,
+      data: finalOrder
+    });
   };
 
   static update = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    let user, orderObj
+    let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
-    const { orderId, done } = req.body;
+    const {
+      orderId,
+      done
+    } = req.body;
     try {
       orderObj = await this.orders().findOneOrFail({
         where: {
@@ -304,25 +368,34 @@ class OrderController {
         }
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Order"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
       return;
     }
     if (!done) {
-      return res.status(400).send( {code: 400, data:"Invalid Status"})
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Status'
+      });
     }
 
-    orderObj.status = orderStatus.Done
+    orderObj.status = orderStatus.Done;
 
     try {
       await this.orders().save(orderObj);
     } catch (e) {
-      res.status(409).send("error try again later");
+      res.status(409).send('error try again later');
       return;
     }
-    return res.status(200).send({code: 200, data: ""})
-  }
+    return res.status(200).send({
+      code: 200,
+      data: ''
+    });
+  };
 
-  static cart = async (req: Request,res: Response): Promise<Response> => {
+  static cart = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const id: number = token.userId;
     let user;
@@ -331,9 +404,11 @@ class OrderController {
         where: { id: id },
         relations: ['orders']
       });
-    }
-    catch (error) {
-      res.status(400).send({code: 400, data: "Invalid UserId"});
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid UserId'
+      });
       return;
     }
     let orders = await this.orders().find({
@@ -342,21 +417,27 @@ class OrderController {
         inCart: true
       },
       relations: ['attributes', 'service', 'address']
-    })
-    return res.status(200).send({code: 200, data: orders})
-  }
+    });
+    return res.status(200).send({
+      code: 200,
+      data: orders
+    });
+  };
 
   static pay = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    let user, orderObj
+    let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
         relations: ['orders']
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
 
@@ -364,62 +445,82 @@ class OrderController {
 
     try {
       order = await this.orders().findOneOrFail({
-        where: { inCart: false },
-      })
+        where: {
+          inCart: true,
+          userId: user.id
+        },
+      });
 
-      // send sms here
-    }catch (e){
-      console.log(e)
-      return res.status(400).send({code: 400, data:"Invalid Order"});
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
     }
 
     try {
       await this.orders().update(
-        { id: order.id },{
-          status: orderStatus.Paid
-      })
+        { id: order.id }, {
+          status: orderStatus.Paid,
+          inCart: false
+        });
 
       smsLookup.afterPaid(user.name, user.phoneNumber, order.date, order.fromTime.toString());
 
-    }catch (e){
-      console.log(e)
-      return res.status(400).send({code: 400, data:"Invalid Order"});
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
     }
 
+    return res.status(200).send({
+      code: 200,
+      data: ''
+    });
 
-    return res.status(200).send({code: 200, data: ''})
-
-  }
+  };
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
-    const {orderId} = req.body;
-    let user, orderObj
+    const { orderId } = req.body;
+    let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
         relations: ['orders']
       });
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid User"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
       return;
     }
     try {
-      orderObj = await this.orders().findOneOrFail(orderId)
+      orderObj = await this.orders().findOneOrFail(orderId);
     } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Order"});
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
       return;
     }
-    if (user.id != orderObj.userId){
-      return res.status(403).send({code: 403, body: "Access Forbidden"})
+    if (user.id != orderObj.userId) {
+      return res.status(403).send({
+        code: 403,
+        body: 'Access Forbidden'
+      });
     }
-    try{
+    try {
       await this.orders().delete(orderObj.id);
-    }catch (e){
-      return res.status(409).send("error try again later");
+    } catch (e) {
+      return res.status(409).send('error try again later');
     }
-    return res.status(200).send({code: 200})
-  }
+    return res.status(200).send({ code: 200 });
+  };
 }
 
 export default OrderController;
