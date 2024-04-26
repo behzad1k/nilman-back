@@ -12,12 +12,12 @@ const afterPaid = (name: string, phoneNumber: string, date: string, time: string
   send(text, phoneNumber)
 }
 
-const feedback = (name: string, phoneNumber: string) => {
+const feedback = (name: string, phoneNumber: string, url: string) => {
   const text = `سلام ${name} عزیز
-ضمن تشكر از انتخاب نیلمان و آرزومندی جلب رضایت شما از سرویس انجام شده  ، ممنون میشویم تا میزان رضایتمندی و نظرات خود را در رابطه با سرویس انجام شده به ما انتقال دهید .
-
+ضمن تشكر از انتخاب نیلمان و آرزومندی جلب رضایت شما از سرویس انجام شده  ، ممنون میشویم تا میزان رضایتمندی و نظرات خود را در رابطه با سرویس انجام شده از طریق لینک زیر به ما انتقال دهید .
+${url}
 سپاس از مهر شما
-
+'
 نیلمان`
   send(text, phoneNumber);
 }

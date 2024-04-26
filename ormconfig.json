@@ -5,7 +5,7 @@
    "port": 3306,
    "username": "newuser",
    "password": "newpassword",
-   "database": "nilman",
+   "database": "nil",
    "synchronize": true,
    "logging": false,
    "entities": [

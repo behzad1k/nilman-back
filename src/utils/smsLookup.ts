@@ -26,8 +26,8 @@ const afterPaid = (name: string, phoneNumber: string, date: string, time: string
   send('pay', phoneNumber, removeSpace(name), removeSpace(`${date} ساعت ${time}`));
 };
 
-const feedback = (name: string, phoneNumber: string) => {
-  // send(text, phoneNumber);
+const feedback = (name: string, phoneNumber: string, code: string) => {
+  send('pay', phoneNumber, removeSpace(name), removeSpace(code));
 };
 
 const orderAssignUser = (name: string, worker: string, phoneNumber: string, date: string, time: string) => {

@@ -11,6 +11,7 @@ import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { omit } from '../utils/funs';
+import sms from '../utils/sms';
 import smsLookup from '../utils/smsLookup';
 
 class OrderController {
@@ -67,6 +68,38 @@ class OrderController {
       data: orders
     });
   };
+
+  static single = async (req: Request, res: Response): Promise<Response> => {
+    const token: any = jwtDecode(req.headers.authorization);
+    const userId: number = token.userId;
+    const { code } = req.params;
+
+    let order: Order = await getRepository(Order).findOne({
+      where: {
+        code: code,
+        userId: userId
+      },
+      relations: {
+        feedback: true,
+        user: true
+      }
+    });
+
+    sms.feedback(order.user.name, order.user.phoneNumber, order.code)
+    if (!order) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Order Not Found'
+      });
+    }
+
+    return res.status(200).send({
+      code: 200,
+      data: order
+    });
+
+  };
+
   static workers = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
@@ -308,6 +341,7 @@ class OrderController {
     order.price = totalPrice;
     order.service = serviceObj;
     order.user = user;
+    order.code = 'NIL-' + 10000 + await getRepository(Order).count();
     order.status = 'CREATED';
     order.address = addressObj;
     order.date = date;
@@ -365,7 +399,7 @@ class OrderController {
           id: orderId,
           status: orderStatus.Assigned,
           workerId: user.id,
-        }
+        }, relations: { user: true }
       });
     } catch (error) {
       res.status(400).send({
@@ -382,6 +416,8 @@ class OrderController {
     }
 
     orderObj.status = orderStatus.Done;
+
+    smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code)
 
     try {
       await this.orders().save(orderObj);

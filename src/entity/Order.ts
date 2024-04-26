@@ -4,13 +4,14 @@ import {
   Entity,
   JoinColumn, JoinTable, ManyToMany,
   ManyToOne,
-  OneToMany,
+  OneToMany, OneToOne,
   PrimaryGeneratedColumn, Relation,
   UpdateDateColumn
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
+import { Feedback } from './Feedback';
 import { Service } from "./Service";
 import { User } from "./User";
 import "reflect-metadata";
@@ -23,6 +24,9 @@ export class Order {
 
   @Column(dataTypes.integer)
   price: number
+
+  @Column(dataTypes.string)
+  code: string
 
   @Column(dataTypes.integer, {
     nullable: true
@@ -103,5 +107,8 @@ export class Order {
   @ManyToMany(() => Service, (service) => service.attributeOrders, { onDelete: 'CASCADE' })
   @JoinTable({name: 'order_attribute'})
   attributes: Relation<Service[]>
+
+  @OneToOne(() => Feedback, (feedback) => feedback.order, { onDelete: 'CASCADE'})
+  feedback: Feedback;
 
 }

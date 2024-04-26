@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getRepository, getTreeRepository } from 'typeorm';
 import {Service} from "../entity/Service";
+import { getUniqueSlug } from '../utils/funs';
 import sms from '../utils/smsLookup';
 
 class ServiceController {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { AddressRoutes } from "./address";
 import { AdminRoutes } from "./admin";
+import { FeedbackRoutes } from './feedback';
 import { OrderRoutes } from "./order";
 import { UserRoutes } from "./user";
 import { AuthRoutes } from "./auth";
@@ -14,5 +15,6 @@ routes.use("/address", new AddressRoutes().router);
 routes.use("/user", new UserRoutes().router);
 routes.use("/service", new ServiceRoutes().router);
 routes.use("/order", new OrderRoutes().router);
+routes.use("/feedback", new FeedbackRoutes().router);
 routes.use("", new AuthRoutes().router);
 export default routes;

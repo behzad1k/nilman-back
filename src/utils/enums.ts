@@ -13,7 +13,7 @@ export enum orderStatus  {
 };
 
 export enum dataTypes {
-  string = 'string',
+  string = 'varchar',
   number = 'number',
   datetime = 'datetime',
   boolean = 'boolean',

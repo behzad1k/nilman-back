@@ -12,6 +12,7 @@ import * as bcrypt from "bcryptjs";
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
+import { Feedback } from './Feedback';
 import { Order } from "./Order";
 import { Service } from "./Service";
 import { WorkerOffs } from './WorkerOffs';
@@ -98,6 +99,9 @@ export class User {
 
   @OneToMany(() => WorkerOffs, userOffs => userOffs.worker, { nullable: true, onDelete: 'CASCADE' })
   workerOffs: Relation<WorkerOffs[]>
+
+  @OneToMany(() => Feedback, feedbacks => feedbacks.user, { nullable: true, onDelete: 'CASCADE' })
+  feedbacks: Relation<Feedback[]>
 
   @ManyToOne(() => Service, service => service.users, { onDelete: 'CASCADE' })
   @JoinColumn({
