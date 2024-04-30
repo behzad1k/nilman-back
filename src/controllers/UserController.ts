@@ -1,3 +1,4 @@
+import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
@@ -232,12 +233,45 @@ class UserController {
       nationalCode,
       phoneNumber
     } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).send({
+        code: 1001,
+        data: 'Invalid Phone number'
+      });
+    }
+
     if (!name) {
       return res.status(400).send({
-        code: 400,
+        code: 1002,
         data: 'Invalid name'
       });
     }
+
+    if (!nationalCode) {
+      return res.status(400).send({
+        code: 1003,
+        data: 'Invalid National Code'
+      });
+    }
+
+    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+      nationalCode: nationalCode,
+      mobileNumber: phoneNumber
+    }, {
+      headers: {
+        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+        'Content-type': 'application/json'
+      }
+    });
+
+    if(!res2.data?.matched){
+      return res.status(400).send({
+        code: 1005,
+        data: 'کد ملی با شماره تلفن تطابق ندارد'
+      });
+    }
+
     let user;
     try {
       user = await this.users().findOneOrFail({
