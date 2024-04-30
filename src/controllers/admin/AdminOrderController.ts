@@ -74,7 +74,7 @@ class AdminOrderController {
     try {
       await this.orders().save(order);
       console.log(order.date);
-      smsLookup.orderAssignUser(order.user.name, user.name, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+      smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
       smsLookup.orderAssignWorker(order.attributes?.map(e => e.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
     } catch (e) {
       console.log(e);

@@ -234,13 +234,6 @@ class UserController {
       phoneNumber
     } = req.body;
 
-    if (!phoneNumber) {
-      return res.status(400).send({
-        code: 1001,
-        data: 'Invalid Phone number'
-      });
-    }
-
     if (!name) {
       return res.status(400).send({
         code: 1002,
@@ -252,23 +245,6 @@ class UserController {
       return res.status(400).send({
         code: 1003,
         data: 'Invalid National Code'
-      });
-    }
-
-    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
-      nationalCode: nationalCode,
-      mobileNumber: phoneNumber
-    }, {
-      headers: {
-        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-        'Content-type': 'application/json'
-      }
-    });
-
-    if(!res2.data?.matched){
-      return res.status(400).send({
-        code: 1005,
-        data: 'کد ملی با شماره تلفن تطابق ندارد'
       });
     }
 
@@ -284,14 +260,33 @@ class UserController {
       });
     }
 
+    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+      nationalCode: nationalCode,
+      mobileNumber: user.phoneNumber
+    }, {
+      headers: {
+        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+        'Content-type': 'application/json'
+      }
+    });
+
+    if(!res2.data?.matched){
+      return res.status(400).send({
+        code: 1005,
+        data: 'کد ملی با شماره تلفن تطابق ندارد'
+      });
+    }
+
     if (!user.name) {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
       try {
         await getRepository(Discount).insert({
+          userId: user.id,
           title: user.name + ' ' + user.lastName,
           percent: 10,
           code: user.code,
-          active: true
+          active: true,
+          maxCount: 10,
         });
       } catch (e) {
         return res.status(409).send({ 'code': 409 });

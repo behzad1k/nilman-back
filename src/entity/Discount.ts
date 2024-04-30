@@ -24,11 +24,20 @@ export class Discount {
   @Column("int", {nullable: true})
   amount: number;
 
+  @Column("int", {default: 0})
+  timesUsed: number;
+
+  @Column("int")
+  maxCount: number;
+
   @Column("text")
   code: string;
 
   @Column("int", {nullable: true})
   userId: number;
+
+  @Column("int", {nullable: true})
+  forUserId: number;
 
   @Column("boolean", {default: false})
   active: boolean;
@@ -44,6 +53,10 @@ export class Discount {
   @ManyToOne(() => User, (user) => user.discounts, { onDelete: 'CASCADE' })
   @JoinColumn({ name:"userId", referencedColumnName: "id"})
   user: Relation<User>
+
+  @ManyToOne(() => User, (user) => user.discounts, { onDelete: 'CASCADE' })
+  @JoinColumn({ name:"forUserId", referencedColumnName: "id"})
+  forUser: Relation<User>
 
   @OneToMany(() => Order, (order) => order.discount, { onDelete: 'CASCADE' })
   orders: Order[]

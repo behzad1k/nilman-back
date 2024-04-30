@@ -27,7 +27,7 @@ const afterPaid = (name: string, phoneNumber: string, date: string, time: string
 };
 
 const feedback = (name: string, phoneNumber: string, code: string) => {
-  send('pay', phoneNumber, removeSpace(name), removeSpace(code));
+  send('feedback', phoneNumber, removeSpace(name), removeSpace(code));
 };
 
 const orderAssignUser = (name: string, worker: string, phoneNumber: string, date: string, time: string) => {

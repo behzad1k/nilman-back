@@ -85,7 +85,6 @@ class OrderController {
       }
     });
 
-    sms.feedback(order.user.name, order.user.phoneNumber, order.code)
     if (!order) {
       return res.status(400).send({
         code: 400,
@@ -222,7 +221,7 @@ class OrderController {
       workerId,
       discount
     } = req.body;
-    let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj;
+    let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj: Discount;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -286,7 +285,7 @@ class OrderController {
         discountObj = await this.discounts().findOneOrFail({ where: { code: discount } });
       } catch (error) {
         res.status(400).send({
-          code: 400,
+          code: 1007,
           data: 'Invalid discount'
         });
         return;
@@ -294,19 +293,27 @@ class OrderController {
 
       if (!discountObj.active) {
         return res.status(400).send({
-          code: 400,
+          code: 1008,
           data: 'Discount Not Active'
         });
       }
 
-      if (discountObj.userId && discountObj.userId !== userId) {
+      if (discountObj.timesUsed > discountObj.maxCount ) {
+        return res.status(400).send({
+          code: 1009,
+          data: 'Discount Used Too Many Times'
+        });
+      }
+
+      if ((discountObj.forUserId && discountObj.forUserId !== userId) || discount.userId == userId) {
         res.status(400).send({
-          code: 400,
+          code: 1010,
           data: 'Invalid discount User'
         });
         return;
       }
 
+      await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
     // if (workerId) {
@@ -333,8 +340,10 @@ class OrderController {
       sections += attr.section;
     });
     if (discountObj && (discountObj.amount || discountObj.percent)) {
+      const discountAmount = discountObj.percent ? (totalPrice * discountObj.percent / 100) : discountObj.amount;
       order.discountId = discountObj.id;
-      totalPrice = discountObj.percent ? totalPrice - (totalPrice * discountObj.percent / 100) : totalPrice - discountObj.amount;
+      order.discountAmount = discountAmount;
+      totalPrice -= discountAmount;
     }
     totalPrice += transportation;
     order.attributes = attributeObjs;
@@ -346,7 +355,7 @@ class OrderController {
     order.address = addressObj;
     order.date = date;
     order.fromTime = time;
-    order.toTime = time + sections;
+    order.toTime = Number(time) + sections;
     // order.worker = worker
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -502,7 +511,7 @@ class OrderController {
           inCart: false
         });
 
-      smsLookup.afterPaid(user.name, user.phoneNumber, order.date, order.fromTime.toString());
+      smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
 
     } catch (e) {
       console.log(e);
