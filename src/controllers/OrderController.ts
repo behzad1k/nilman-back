@@ -350,7 +350,7 @@ class OrderController {
     order.price = totalPrice;
     order.service = serviceObj;
     order.user = user;
-    order.code = 'NIL-' + 10000 + await getRepository(Order).count();
+    order.code = 'NIL-' + (10000 + await getRepository(Order).count());
     order.status = 'CREATED';
     order.address = addressObj;
     order.date = date;
