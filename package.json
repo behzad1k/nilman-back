@@ -46,8 +46,8 @@
    "scripts": {
       "tsc": "tsc",
       "start": "ts-node-dev src/index.ts --transpileOnly",
-      "build": "tsc && node build/index.js",
-      "prod": "ts-node src/index.ts --transpileOnly",
+      "build": "ts-node src/index.ts --transpileOnly",
+      "prod": "tsc && node build/index.js",
       "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
    }
 }
