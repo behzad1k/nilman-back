@@ -83,7 +83,7 @@ class UserController {
       id: user.id,
       code: code
     }, '2m');
-    await sms.welcome(code, phoneNumber);
+    await sms.welcomeTest(code, phoneNumber);
     return res.status(200).send({
       token: token
     });

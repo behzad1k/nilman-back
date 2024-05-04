@@ -42,6 +42,10 @@ const welcome = async (code: string, phoneNumber: string) => {
   await send('otp', phoneNumber, code);
 };
 
+const welcomeTest = async (code: string, phoneNumber: string) => {
+  await send('test-auto-otp', phoneNumber, code, code);
+};
+
 const referral = (name: string, code: string, phoneNumber: string) => {
   send('referral', phoneNumber, code);
 };
@@ -49,6 +53,7 @@ const referral = (name: string, code: string, phoneNumber: string) => {
 export default {
   referral,
   welcome,
+  welcomeTest,
   send,
   afterPaid,
   feedback,
