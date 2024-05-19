@@ -281,7 +281,7 @@ class UserController {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
       try {
         await getRepository(Discount).insert({
-          userId: user.id,
+          userId: Number(id),
           title: user.name + ' ' + user.lastName,
           percent: 10,
           code: user.code,

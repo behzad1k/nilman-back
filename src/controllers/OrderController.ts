@@ -313,6 +313,14 @@ class OrderController {
         return;
       }
 
+      if (discountObj.code == user.code) {
+        res.status(400).send({
+          code: 1011,
+          data: 'Invalid discount User'
+        });
+        return;
+      }
+
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
