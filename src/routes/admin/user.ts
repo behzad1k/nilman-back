@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Router } from "express";
-import AdminServiceController from "../../controllers/admin/AdminServiceController";
+import multer from 'multer';
 import AdminUserController from "../../controllers/admin/AdminUserController";
 import AuthController from "../../controllers/AuthController";
-import UserController from "../../controllers/UserController";
+import multerConfig from '../../middlewares/multer';
 
 export class AdminUserRoutes {
   public router: Router;
@@ -17,7 +15,7 @@ export class AdminUserRoutes {
 
   routes() {
     this.router.get("", AdminUserController.index);
-    this.router.post("", AdminUserController.create);
+    this.router.post("", multer(multerConfig('uploads/workers')).single('file'), AdminUserController.create);
     this.router.put("", AdminUserController.update);
     this.router.delete("", AdminUserController.delete);
     this.router.post("/workerOff", AdminUserController.workerOff);

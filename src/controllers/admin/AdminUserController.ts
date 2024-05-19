@@ -63,9 +63,8 @@ class AdminUserController {
   }
   static create = async (req: Request, res: Response): Promise<Response> => {
     const { name, lastName, nationalCode, role, phoneNumber, service } = req.body;
-    console.log((req as any).files);
     console.log((req as any).file);
-    console.log((req as any).body);
+
     let serviceObj;
     if (!phoneNumber && await this.users().findOne({
       where: {
