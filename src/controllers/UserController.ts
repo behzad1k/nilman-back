@@ -168,6 +168,7 @@ class UserController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: id },
+        relations: { media: true }
       });
     } catch (e) {
       return res.status(400).send({
@@ -227,6 +228,19 @@ class UserController {
   static update = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const id: number = token.userId;
+
+    let user;
+    try {
+      user = await this.users().findOneOrFail({
+        where: { id: id },
+      });
+    } catch (e) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
+    }
+
     const {
       name,
       lastName,
@@ -241,42 +255,31 @@ class UserController {
       });
     }
 
-    if (!nationalCode) {
+    if (!user.nationalCode && !nationalCode) {
       return res.status(400).send({
         code: 1003,
         data: 'Invalid National Code'
       });
     }
 
-    let user;
-    try {
-      user = await this.users().findOneOrFail({
-        where: { id: id },
+    if (!user.nationalCode) {
+      const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+        nationalCode: nationalCode,
+        mobileNumber: user.phoneNumber
+      }, {
+        headers: {
+          Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+          'Content-type': 'application/json'
+        }
       });
-    } catch (e) {
-      return res.status(400).send({
-        code: 400,
-        data: 'Invalid User'
-      });
-    }
 
-    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
-      nationalCode: nationalCode,
-      mobileNumber: user.phoneNumber
-    }, {
-      headers: {
-        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-        'Content-type': 'application/json'
+      if (!res2.data?.matched) {
+        return res.status(400).send({
+          code: 1005,
+          data: 'کد ملی با شماره تلفن تطابق ندارد'
+        });
       }
-    });
-
-    if(!res2.data?.matched){
-      return res.status(400).send({
-        code: 1005,
-        data: 'کد ملی با شماره تلفن تطابق ندارد'
-      });
     }
-
     if (!user.name) {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
       try {

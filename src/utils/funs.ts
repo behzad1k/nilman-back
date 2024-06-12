@@ -16,23 +16,26 @@ export const generateCode = (length = 6, type = dataTypes.number) => {
     return retVal;
 }
 
-export const getUniqueSlug = async (repository: Repository<any>, value:string ) => {
+export const getUniqueSlug = async (repository: Repository<any>, value:string, key = 'slug' ) => {
     let index = 1;
-    let slug = value;
-    while(await repository.findOne({
-        where: {
-            slug: slug
+    let slug = value?.replaceAll(' ', '-');
+    let where = {}
+    where[key] = slug;
+    try{
+        while(await repository.findOne({
+            where: where,
+            withDeleted: true
+        })){
+            where[key] = slug + index;
+            await repository.findOne({
+                where: where
+            });
+            index = Number(index) + 1;
         }
-    })){
-        slug = slug + index
-        await repository.findOne({
-            where: {
-                slug: slug
-            }
-        });
-        ++index;
+    }catch (e){
+        return value;
     }
-    return slug;
+    return where[key];
 }
 
 export const getUniqueCode = async (repository: Repository<any>) => {

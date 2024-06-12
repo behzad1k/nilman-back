@@ -13,6 +13,7 @@ import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Feedback } from './Feedback';
+import Media from './Media';
 import { Order } from "./Order";
 import { Service } from "./Service";
 import { WorkerOffs } from './WorkerOffs';
@@ -68,6 +69,12 @@ export class User {
 
   @Column(dataTypes.integer, {
     nullable: true,
+    default: null
+  })
+  mediaId: number
+
+  @Column(dataTypes.integer, {
+    nullable: true,
     default: 1
   })
   district: number
@@ -109,6 +116,13 @@ export class User {
     referencedColumnName: 'id'
   })
   service: Relation<Service>
+
+  @ManyToOne(() => Media, media => media.users, { onDelete: 'CASCADE' })
+  @JoinColumn({
+    name: 'mediaId',
+    referencedColumnName: 'id'
+  })
+  media: Relation<Media>
   // eslint-disable-next-line @typescript-eslint/require-await
   hashPassword = async (): Promise<void> => {
     this.password = bcrypt.hashSync(this.password, 10);

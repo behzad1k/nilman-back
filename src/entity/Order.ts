@@ -83,6 +83,9 @@ export class Order {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column(dataTypes.datetime, { nullable: true })
+  doneDate: Date;
+
   @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;

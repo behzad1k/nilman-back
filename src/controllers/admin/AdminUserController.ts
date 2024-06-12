@@ -6,8 +6,9 @@ import { Service } from "../../entity/Service";
 import { User } from "../../entity/User";
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
-import { roles } from '../../utils/enums';
-import { getObjectValue, getUniqueSlug } from "../../utils/funs";
+import { dataTypes, roles } from '../../utils/enums';
+import { generateCode, getObjectValue, getUniqueSlug } from '../../utils/funs';
+import media from '../../utils/media';
 
 class AdminUserController {
   static users = () => getRepository(User)
@@ -62,8 +63,9 @@ class AdminUserController {
     return res.status(200).send({'code': 200, 'data': users})
   }
   static create = async (req: Request, res: Response): Promise<Response> => {
-    const { name, lastName, nationalCode, role, phoneNumber, service } = req.body;
+    const { name, lastName, nationalCode, role, phoneNumber, service, username, password } = req.body;
     console.log((req as any).file);
+
 
     let serviceObj;
     if (!phoneNumber && await this.users().findOne({
@@ -100,17 +102,30 @@ class AdminUserController {
     user.lastName = lastName
     user.nationalCode = nationalCode
     user.role = role
+    user.code = generateCode(8, dataTypes.string);
     user.phoneNumber = phoneNumber
-    user.password = '12345678'
+    if (username){
+      user.username = username;
+    }
+    if (username){
+      user.username = username;
+    }
+    user.password = password || '12345678';
     await user.hashPassword();
     const errors = await validate(user);
+
     if (errors.length > 0) {
       res.status(400).send(errors);
       return;
     }
+
+    if ((req as any).file) {
+      user.mediaId = await media.create(req, (req as any).file, user.name, '/public/uploads/workers/');
+    }
     try {
       await this.users().save(user);
     } catch (e) {
+      console.log(e);
       res.status(409).send({"code": 409});
       return;
     }

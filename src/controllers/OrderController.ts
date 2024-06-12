@@ -433,7 +433,7 @@ class OrderController {
     }
 
     orderObj.status = orderStatus.Done;
-
+    orderObj.doneDate = new Date();
     smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code)
 
     try {

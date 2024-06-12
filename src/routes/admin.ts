@@ -1,6 +1,7 @@
 import { Router } from "express";
 import AuthController from "../controllers/AuthController";
 import { AdminAddressRoutes } from "./admin/address";
+import { AdminDashboardRoutes } from './admin/dashboard';
 import { AdminDiscountRoutes } from './admin/discount';
 import { AdminOrderRoutes } from "./admin/order";
 import { AdminServiceRoutes } from "./admin/service";
@@ -17,6 +18,7 @@ export class AdminRoutes {
 
   routes() {
     this.router.use("/address",this.authController.authorizeJWTAdmin,new AdminAddressRoutes().router)
+    this.router.use("/dashboard",this.authController.authorizeJWTAdmin,new AdminDashboardRoutes().router)
     this.router.use("/discount",this.authController.authorizeJWTAdmin,new AdminDiscountRoutes().router)
     this.router.use("/service",this.authController.authorizeJWTAdmin,new AdminServiceRoutes().router)
     this.router.use("/order",this.authController.authorizeJWTAdmin,new AdminOrderRoutes().router)
