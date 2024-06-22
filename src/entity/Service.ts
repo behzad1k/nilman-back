@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
+import Media from './Media';
 import { Order } from "./Order";
 import { User } from "./User";
 import "reflect-metadata";
@@ -28,6 +29,9 @@ export class Service {
 
   @Column(dataTypes.text, { nullable: true })
   parentId: string;
+
+  @Column(dataTypes.text, { nullable: true })
+  mediaId: number;
 
   @Column(dataTypes.integer)
   price: number;
@@ -59,6 +63,9 @@ export class Service {
 
   @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })
   users: Relation<User[]>
+
+  @ManyToOne(() => Media, media => media.services, { onDelete: 'CASCADE' })
+  media: Relation<Media>
 
   @ManyToMany(() => Order, order => order.attributes, { onDelete: 'CASCADE' })
   @JoinTable({

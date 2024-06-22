@@ -3,6 +3,7 @@ import AuthController from "../controllers/AuthController";
 import { AdminAddressRoutes } from "./admin/address";
 import { AdminDashboardRoutes } from './admin/dashboard';
 import { AdminDiscountRoutes } from './admin/discount';
+import { AdminFeedbackRoutes } from './admin/feedback';
 import { AdminOrderRoutes } from "./admin/order";
 import { AdminServiceRoutes } from "./admin/service";
 import { AdminUserRoutes } from "./admin/user";
@@ -21,6 +22,7 @@ export class AdminRoutes {
     this.router.use("/dashboard",this.authController.authorizeJWTAdmin,new AdminDashboardRoutes().router)
     this.router.use("/discount",this.authController.authorizeJWTAdmin,new AdminDiscountRoutes().router)
     this.router.use("/service",this.authController.authorizeJWTAdmin,new AdminServiceRoutes().router)
+    this.router.use("/feedback",this.authController.authorizeJWTAdmin,new AdminFeedbackRoutes().router)
     this.router.use("/order",this.authController.authorizeJWTAdmin,new AdminOrderRoutes().router)
     this.router.use("/user",this.authController.authorizeJWTAdmin,new AdminUserRoutes().router)
 

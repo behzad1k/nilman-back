@@ -13,7 +13,7 @@ export class AddressRoutes {
 
   routes() {
     this.router.get("", this.authController.authenticateJWT, AddressController.index);
-    this.router.post("", this.authController.authenticateJWT, AddressController.create);
+    this.router.post("/:id?", this.authController.authenticateJWT, AddressController.basic);
     this.router.put("", this.authController.authenticateJWT, AddressController.update);
     this.router.delete("", this.authController.authenticateJWT, AddressController.delete);
   }

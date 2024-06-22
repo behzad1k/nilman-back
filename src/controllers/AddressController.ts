@@ -31,14 +31,15 @@ class AddressController {
     })
   }
 
-  static create = async (req: Request, res: Response): Promise<Response> => {
-    const { title, description, longitude, latitude, phoneNumber } = req.body;
+  static basic = async (req: Request, res: Response): Promise<Response> => {
+    const { title, description, longitude, latitude, phoneNumber, pelak, vahed, postalCode } = req.body;
+    const { id } = req.params;
     const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const userId: number = token.userId;
     let user;
     try {
       user = await this.users().findOneOrFail({
-        where: { id: id },
+        where: { id: userId },
         relations: ['addresses']
       });
     }
@@ -47,25 +48,41 @@ class AddressController {
       res.status(400).send({code: 400, data: "Invalid UserId"});
       return;
     }
-    const address = new Address();
+
+    let address: Address;
+
+    if (id){
+      try {
+        address = await getRepository(Address).findOneOrFail({ where: { id: Number(id) } });
+      }catch (e){
+        res.status(400).send({code: 400, data: "Invalid AddressId"});
+      }
+    } else {
+      address = new Address();
+      address.userId = user.id;
+    }
+
     address.title = title;
+    address.pelak = pelak;
+    address.vahed = vahed;
     address.description = description;
+    address.postalCode = postalCode;
     address.longitude = longitude;
     address.latitude = latitude;
     address.district = 1;
     address.phoneNumber = phoneNumber;
-    address.userId = user.id;
+
     const errors = await validate(address);
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
-    const addressRepository = getRepository(Address);
     try {
-      await addressRepository.save(address);
+      await getRepository(Address).save(address);
     } catch (e) {
-      return res.status(409).send({"code": 409});
+      console.log(e);
+      return res.status(409).send({"code": 409, data: 'Unsuccessful'});
     }
-    return res.status(201).send({ code: 201, data: address});
+    return res.status(201).send({ code: 200, data: address});
   };
 
   static update = async (req: Request, res: Response): Promise<Response> => {

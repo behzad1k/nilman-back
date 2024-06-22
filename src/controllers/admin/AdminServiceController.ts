@@ -5,6 +5,7 @@ import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
 import { User } from "../../entity/User";
 import { getUniqueSlug } from "../../utils/funs";
+import media from '../../utils/media';
 
 class AdminServiceController {
   static users = () => getRepository(User)
@@ -22,7 +23,7 @@ class AdminServiceController {
   }
   static create = async (req: Request, res: Response): Promise<Response> => {
     const { title, description, price, parent, section, hasColor } = req.body;
-    let parentObj;
+    let parentObj = null;
     if (parent){
       try {
         parentObj = await this.services().findOne({
@@ -41,6 +42,8 @@ class AdminServiceController {
     service.slug = await getUniqueSlug(this.services(),title)
     service.section = section
     service.parentId = parentObj?.id || null
+    service.parent = parentObj;
+
     if (hasColor)
       service.hasColor = hasColor
     const errors = await validate(service);
@@ -48,9 +51,11 @@ class AdminServiceController {
       res.status(400).send(errors);
       return;
     }
+    console.log(service);
     try {
       await this.services().save(service);
     } catch (e) {
+      console.log(e);
       res.status(409).send({"code": 409});
       return;
     }
@@ -59,6 +64,7 @@ class AdminServiceController {
 
   static update = async (req: Request, res: Response): Promise<Response> => {
     const { service, title, description, price, section, hasColor } = req.body;
+    console.log((req as any).file);
     let serviceObj: Service;
     try {
       serviceObj = await this.services().findOneOrFail({
@@ -78,15 +84,20 @@ class AdminServiceController {
       serviceObj.price = parseFloat(price);
     if (section)
       serviceObj.section = section
-    if (hasColor)
+    if (hasColor != 'false')
       serviceObj.hasColor = hasColor
     const errors = await validate(serviceObj);
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
+
+    if ((req as any).file) {
+      serviceObj.mediaId = await media.create(req, (req as any).file, serviceObj.slug, '/public/uploads/service/');
+    }
     try {
       await this.services().save(serviceObj);
     } catch (e) {
+      console.log(e);
       res.status(409).send("error try again later");
       return;
     }
@@ -110,9 +121,10 @@ class AdminServiceController {
       await this.services().delete(serviceObj.id);
 
     }catch (e){
+      console.log(e);
       res.status(409).send("error try again later");
     }
-    return res.status(204).send({});
+    return res.status(200).send({code: 200, data: 'Successful'});
   };
 
 }

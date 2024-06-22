@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn, } from 'typeorm';
 import { dataTypes } from '../utils/enums';
+import { Service } from './Service';
 import { User } from './User';
 
 @Entity()
@@ -36,6 +37,9 @@ export default class Media {
 
   @OneToMany(() => User, user => user.media, { nullable: true })
   users: User[];
+
+  @OneToMany(() => Service, service => service.media, { nullable: true })
+  services: Service[];
 
 }
 

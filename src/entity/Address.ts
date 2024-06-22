@@ -38,6 +38,15 @@ export class Address {
   @Column(dataTypes.integer)
   district?: number;
 
+  @Column(dataTypes.integer)
+  postalCode?: string;
+
+  @Column(dataTypes.integer)
+  pelak?: string;
+
+  @Column(dataTypes.integer)
+  vahed?: string;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
