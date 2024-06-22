@@ -92,7 +92,7 @@ class AdminServiceController {
     }
 
     if ((req as any).file) {
-      serviceObj.mediaId = await media.create(req, (req as any).file, serviceObj.slug, '/public/uploads/service/');
+      serviceObj.mediaId = await media.create(req, (req as any).file, serviceObj.title, '/public/uploads/service/');
     }
     try {
       await this.services().save(serviceObj);

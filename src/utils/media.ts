@@ -17,7 +17,7 @@ const create = async (req, file, title, filePath) => {
   const media = new Media();
 
   media.size = file.size;
-  media.title = newName;
+  media.title = title;
   media.originalTitle = file.originalname;
   media.mime = file.mimetype;
   media.path = newPath;
