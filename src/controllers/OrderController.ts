@@ -515,7 +515,7 @@ class OrderController {
     }
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
-      Amount: 1000, // In Tomans
+      Amount: 15000, // In Tomans
       // Amount: order.price, // In Tomans
       CallbackURL: 'https://app.nilman.co/payment/verify',
       Description: 'A Payment from Node.JS',
