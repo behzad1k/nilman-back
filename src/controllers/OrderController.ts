@@ -3,15 +3,16 @@ import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import jwtDecode from 'jwt-decode';
 import { getRepository } from 'typeorm';
+import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import { Order } from '../entity/Order';
+import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { omit } from '../utils/funs';
-import sms from '../utils/sms';
 import smsLookup from '../utils/smsLookup';
 
 class OrderController {
@@ -298,7 +299,7 @@ class OrderController {
         });
       }
 
-      if (discountObj.timesUsed > discountObj.maxCount ) {
+      if (discountObj.timesUsed > discountObj.maxCount) {
         return res.status(400).send({
           code: 1009,
           data: 'Discount Used Too Many Times'
@@ -416,7 +417,8 @@ class OrderController {
           id: orderId,
           status: orderStatus.Assigned,
           workerId: user.id,
-        }, relations: { user: true }
+        },
+        relations: { user: true }
       });
     } catch (error) {
       res.status(400).send({
@@ -434,7 +436,7 @@ class OrderController {
 
     orderObj.status = orderStatus.Done;
     orderObj.doneDate = new Date();
-    smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code)
+    smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
 
     try {
       await this.orders().save(orderObj);
@@ -511,16 +513,104 @@ class OrderController {
         data: 'Invalid Order'
       });
     }
+    const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+    const zarinpalResult = await zarinpal.PaymentRequest({
+      Amount: order.price, // In Tomans
+      CallbackURL: 'https://app.nilman.co/payment/verify',
+      Description: 'A Payment from Node.JS',
+      Email: 'info@nilman.co',
+      Mobile: '09126000061'
+    }).then(response => {
+      if (response.status === 100) {
+        return response;
+      }
+    }).catch(err => {
+      console.error(err);
+    });
+    if (!zarinpalResult) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Portal'
+      });
+    }
 
     try {
-      await this.orders().update(
-        { id: order.id }, {
-          status: orderStatus.Paid,
-          inCart: false
+      let payment = await getRepository(Payment).findOneBy({ orderId: order.id });
+      if (!payment) {
+        payment = new Payment();
+        payment.orderId = order.id;
+      }
+      payment.price = order.price;
+      payment.authority = zarinpalResult.authority;
+      await getRepository(Payment).save(payment);
+
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Payment'
+      });
+    }
+    return res.status(200).send({
+      code: 200,
+      data: { url: zarinpalResult.url }
+    });
+
+  };
+  static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
+    const token: any = jwtDecode(req.headers.authorization);
+    const userId: number = token.userId;
+    const {
+      authority,
+      status
+    } = req.body;
+
+    let user, orderObj;
+    try {
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+        relations: ['orders']
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
+      return;
+    }
+
+    let order: Order = undefined;
+
+    try {
+      order = await this.orders().findOneOrFail({
+        where: {
+          payments: { authority: authority }
+        }
+      });
+      const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+      const zarinpalRes = await zarinpal.PaymentVerification({
+        Amount: order.price,
+        Authority: authority,
+      }).then(function (response) {
+        console.log(response);
+        if (response.status == 101) {
+          return response.RefID;
+        } else {
+          console.log(response);
+        }
+      }).catch(function (err) {
+        console.log(err);
+      });
+      if (zarinpalRes) {
+        order.inCart = false;
+        order.status = orderStatus.Paid;
+
+        await getRepository(Order).save(order);
+        await getRepository(Payment).update({ orderId: order.id }, {
+          isPaid: true,
+          refId: zarinpalRes
         });
-
-      smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
-
+      }
     } catch (e) {
       console.log(e);
       return res.status(400).send({
@@ -529,9 +619,11 @@ class OrderController {
       });
     }
 
+    smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+
     return res.status(200).send({
       code: 200,
-      data: ''
+      data: 'Successful'
     });
 
   };
@@ -553,7 +645,7 @@ class OrderController {
       return;
     }
     try {
-      orderObj = await this.orders().findOneOrFail(orderId);
+      orderObj = await this.orders().findOneOrFail({ where: { id: Number(orderId) } });
     } catch (error) {
       res.status(400).send({
         code: 400,

@@ -12,6 +12,7 @@ import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Feedback } from './Feedback';
+import { Payment } from './Payment';
 import { Service } from "./Service";
 import { User } from "./User";
 import "reflect-metadata";
@@ -117,4 +118,6 @@ export class Order {
   @OneToOne(() => Feedback, (feedback) => feedback.order, { onDelete: 'CASCADE'})
   feedback: Feedback;
 
+  @OneToMany(() => Payment, payment => payment.order, { onDelete: 'CASCADE'})
+  payments: Payment[];
 }
