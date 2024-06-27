@@ -24,7 +24,7 @@ export class Service {
   @Column(dataTypes.text)
   slug: string;
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.text, { nullable: true })
   description: string;
 
   @Column(dataTypes.text, { nullable: true })

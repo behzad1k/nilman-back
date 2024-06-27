@@ -7,27 +7,45 @@ class HomeController {
   static services = () => getRepository(Service);
 
   static posts = async (req: Request, res: Response): Promise<Response> => {
-    const categories = await axios('https://nilman.co/wp-json/wp/v2/categories');
-    const data = await axios('https://nilman.co/wp-json/wp/v2/posts');
+    let categories, data;
+    try {
+      categories = await axios('https://nilman.co/wp-json/wp/v2/categories');
+      data = await axios('https://nilman.co/wp-json/wp/v2/posts');
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: '10000',
+        data: 'Blog Exception'
+      });
+    }
     const formattedData: any = [];
 
     for (const category of categories.data) {
       const object = category;
 
       for (const post of data.data.filter(e => e.categories.includes(object.id))) {
-        if (!Array.isArray(object.posts)) {
-          object.posts = [];
+        try {
+          if (!Array.isArray(object.posts)) {
+            object.posts = [];
+          }
+
+          const medias = await axios(`https://nilman.co/wp-json/wp/v2/media?parent=${post.id}`);
+          object.posts.push({
+            title: post.title?.rendered,
+            id: post.id,
+            content: post.content?.rendered,
+            date: post.date,
+            summary: post.excerpt?.rendered,
+            medias: medias.data.map(e => e.guid?.rendered),
+            link: post.link,
+          });
+        } catch (e) {
+          console.log(e);
+          return res.status(400).send({
+            code: '10000',
+            data: 'Blog Exception'
+          });
         }
-        const medias = await axios(`https://nilman.co/wp-json/wp/v2/media?parent=${post.id}`);
-        object.posts.push({
-          title: post.title?.rendered,
-          id: post.id,
-          content: post.content?.rendered,
-          date: post.date,
-          summary: post.excerpt?.rendered,
-          medias: medias.data.map(e => e.guid?.rendered),
-          link: post.link,
-        });
       }
       formattedData.push(object);
     }
