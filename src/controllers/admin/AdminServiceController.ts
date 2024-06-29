@@ -81,7 +81,7 @@ class AdminServiceController {
     if (price)
       serviceObj.price = parseFloat(price);
     if (parent)
-      serviceObj.parent = await getRepository(Service).findOneBy({ id: Number(parent)});
+      serviceObj.parent = await getRepository(Service).findOneBy({ slug: parent});
     if (section)
       serviceObj.section = section
     if (hasColor != 'false')
