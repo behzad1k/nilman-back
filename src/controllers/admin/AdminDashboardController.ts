@@ -70,7 +70,7 @@ class AdminDashboardController {
     service.price = parseFloat(price);
     service.slug = await getUniqueSlug(this.services(),title)
     service.section = section
-    service.parentId = parentObj?.id || null
+    // service.parentId = parentObj?.id || null
     if (hasColor)
       service.hasColor = hasColor
     const errors = await validate(service);

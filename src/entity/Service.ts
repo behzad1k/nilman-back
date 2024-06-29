@@ -13,7 +13,7 @@ import { Order } from "./Order";
 import { User } from "./User";
 import "reflect-metadata";
 @Entity()
-@Tree('nested-set')
+@Tree('materialized-path')
 export class Service {
   @PrimaryGeneratedColumn()
   id: number;
@@ -27,10 +27,10 @@ export class Service {
   @Column(dataTypes.text, { nullable: true })
   description: string;
 
-  @Column(dataTypes.text, { nullable: true })
-  parentId: string;
+  // @Column(dataTypes.text, { nullable: true })
+  // parentId: string;
 
-  @Column(dataTypes.text, { nullable: true })
+  @Column(dataTypes.integer, { nullable: true, default: null })
   mediaId: number;
 
   @Column(dataTypes.integer)
@@ -59,12 +59,12 @@ export class Service {
   attributes: Relation<Service[]>
 
   @TreeParent()
-  parent: Relation<Service>
+  parent: Service
 
   @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })
   users: Relation<User[]>
 
-  @ManyToOne(() => Media, media => media.services, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Media, media => media.services, { onDelete: 'CASCADE', nullable: true })
   media: Relation<Media>
 
   @ManyToMany(() => Order, order => order.attributes, { onDelete: 'CASCADE' })

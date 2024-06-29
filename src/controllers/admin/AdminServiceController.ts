@@ -41,8 +41,7 @@ class AdminServiceController {
     service.price = parseFloat(price);
     service.slug = await getUniqueSlug(this.services(),title)
     service.section = section
-    service.parentId = parentObj?.id || null
-    service.parent = parentObj;
+    service.parent = parentObj
 
     if (hasColor)
       service.hasColor = hasColor
@@ -63,8 +62,7 @@ class AdminServiceController {
   };
 
   static update = async (req: Request, res: Response): Promise<Response> => {
-    const { service, title, description, price, section, hasColor } = req.body;
-    console.log((req as any).file);
+    const { service, title, description, price, section, hasColor, parent } = req.body;
     let serviceObj: Service;
     try {
       serviceObj = await this.services().findOneOrFail({
@@ -82,6 +80,8 @@ class AdminServiceController {
       serviceObj.description = description;
     if (price)
       serviceObj.price = parseFloat(price);
+    if (parent)
+      serviceObj.parent = await getRepository(Service).findOneBy({ id: Number(parent)});
     if (section)
       serviceObj.section = section
     if (hasColor != 'false')
