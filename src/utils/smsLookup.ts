@@ -35,7 +35,7 @@ const orderAssignUser = (name: string, worker: string, phoneNumber: string, date
 };
 
 const orderAssignWorker = (orderTitle: string, address: string, phoneNumber: string, date: string, time: string) => {
-  send('assignWorker', phoneNumber, removeSpace(orderTitle), removeSpace(address), removeSpace(`${date} ساعت ${time}`));
+  send('assignWorker', phoneNumber, '', removeSpace(address), removeSpace(`${date} ساعت ${time}`));
 };
 
 const welcome = async (code: string, phoneNumber: string) => {

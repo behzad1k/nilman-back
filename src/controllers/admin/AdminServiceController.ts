@@ -21,6 +21,25 @@ class AdminServiceController {
       data: services
     })
   }
+  static single = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params
+    let service;
+    try {
+      service = await this.services().findOne({
+        where: { id: Number(id)},
+        relations: { media: true, parent: true }
+      });
+    }catch (e){
+      return res.status(400).send({
+        code: 404,
+        data: 'Service Not Found'
+      })
+    }
+    return res.status(200).send({
+      code: 200,
+      data: service
+    })
+  }
   static create = async (req: Request, res: Response): Promise<Response> => {
     const { title, description, price, parent, section, hasColor } = req.body;
     let parentObj = null;
@@ -61,27 +80,36 @@ class AdminServiceController {
     return res.status(201).send({ code: 201, data: service});
   };
 
-  static update = async (req: Request, res: Response): Promise<Response> => {
-    const { service, title, description, price, section, hasColor, parent } = req.body;
+  static basic = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const { title, description, price, section, hasColor, parentId } = req.body;
     let serviceObj: Service;
-    try {
-      serviceObj = await this.services().findOneOrFail({
-        where: {
-          slug: service
-        }
-      });
-    } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Id"});
-      return;
+    if (id) {
+      try{
+        serviceObj = await this.services().findOne({
+          where: {
+            id: Number(id)
+          }
+        });
+      }catch (e){
+        return res.status(400).send({
+          code: 1002,
+          data: 'Invalid Id'
+        });
+      }
+    }else{
+      serviceObj = new Service();
+      serviceObj.slug = await getUniqueSlug(getRepository(Service), title)
     }
+    console.log(serviceObj);
     if (title)
       serviceObj.title = title;
     if (description)
       serviceObj.description = description;
     if (price)
       serviceObj.price = parseFloat(price);
-    if (parent)
-      serviceObj.parent = await getRepository(Service).findOneBy({ slug: parent});
+    if (parentId)
+      serviceObj.parent = await getRepository(Service).findOneBy({ id: parentId});
     if (section)
       serviceObj.section = section
     if (hasColor != 'false')
@@ -90,10 +118,10 @@ class AdminServiceController {
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
-
-    if ((req as any).file) {
-      serviceObj.mediaId = await media.create(req, (req as any).file, serviceObj.title, '/public/uploads/service/');
-    }
+    //
+    // if ((req as any).file) {
+    //   serviceObj.mediaId = await media.create(req, (req as any).file, serviceObj.title, '/public/uploads/service/');
+    // }
     try {
       await this.services().save(serviceObj);
     } catch (e) {
@@ -102,6 +130,39 @@ class AdminServiceController {
       return;
     }
     return res.status(200).send({code: 200, data: serviceObj});
+  };
+
+  static medias = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    let service;
+
+    try {
+      service = await this.services().findOneOrFail({ where: { id: Number(id) } });
+    } catch (error) {
+      return res.status(400).send({
+        code: 1002,
+        data: 'Invalid Id'
+      });
+    }
+    console.log((req as any).files[0]);
+    if ((req as any).files[0]) {
+      service.mediaId = await media.create(req, (req as any).files[0], service.title, '/public/uploads/service/');
+    }
+
+    try {
+      await this.services().save(service);
+    } catch (e) {
+      console.log(e);
+      return res.status(409).send({
+        code: 409,
+        data: 'error try again later'
+      });
+    }
+
+    return res.status(201).send({
+      code: 200,
+      data: service
+    });
   };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {

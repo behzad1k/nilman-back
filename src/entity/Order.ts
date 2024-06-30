@@ -12,6 +12,7 @@ import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Feedback } from './Feedback';
+import { OrderService } from './OrderService';
 import { Payment } from './Payment';
 import { Service } from "./Service";
 import { User } from "./User";
@@ -111,13 +112,12 @@ export class Order {
   @JoinColumn({name: 'workerId', referencedColumnName: 'id'})
   worker?: Relation<User>
 
-  @ManyToMany(() => Service, (service) => service.attributeOrders, { onDelete: 'CASCADE' })
-  @JoinTable({name: 'order_attribute'})
-  attributes: Relation<Service[]>
-
   @OneToOne(() => Feedback, (feedback) => feedback.order, { onDelete: 'CASCADE'})
   feedback: Feedback;
 
   @OneToMany(() => Payment, payment => payment.order, { onDelete: 'CASCADE'})
   payments: Payment[];
+
+  @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
+  orderServices: OrderService[];
 }

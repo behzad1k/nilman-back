@@ -17,7 +17,7 @@ class AdminOrderController {
     let orders;
     try {
       orders = await this.orders().find({
-        relations: ['worker', 'service', 'address', 'attributes', 'user']
+        relations: ['worker', 'service', 'address', 'orderServices', 'user']
       });
     } catch (e) {
       return res.status(400).send({
@@ -31,16 +31,36 @@ class AdminOrderController {
     });
   };
 
-  static update = async (req: Request, res: Response): Promise<Response> => {
+  static single = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    let order;
+    try {
+      order = await this.orders().findOne({
+        where: { id: Number(id) },
+        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user']
+      });
+    } catch (e) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Unexpected Error'
+      });
+    }
+    return res.status(200).send({
+      code: 200,
+      data: order
+    });
+  };
+
+  static assign = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
     const {
-      orderId,
       workerId
     } = req.body;
     let order: Order, user: User;
     try {
       order = await this.orders().findOneOrFail({
-        where: { id: orderId },
-        relations: ['service', 'user', 'attributes', 'address']
+        where: { id: Number(id) },
+        relations: ['service', 'user', 'orderServices', 'address']
       });
     } catch (error) {
       res.status(400).send({
@@ -75,7 +95,7 @@ class AdminOrderController {
       await this.orders().save(order);
       console.log(order.date);
       smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
-      smsLookup.orderAssignWorker(order.attributes?.map(e => e.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+      smsLookup.orderAssignWorker(order.orderServices?.map(e => e.service.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');

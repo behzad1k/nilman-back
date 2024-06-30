@@ -101,11 +101,18 @@ class UserController {
       });
     }
     let user: User;
-    user = await this.users().findOne({ where: { username: username } });
+    try{
+      user = await this.users().findOne({ where: { username: username, role: 'SUPER_ADMIN'} });
+    }catch (e){
+      return res.status(401).send({
+        code: 400,
+        data: 'Invalid Credentials'
+      });
+    }
     if (!bcrypt.compareSync(password, user.password)) {
       return res.status(401).send({
         code: 400,
-        data: 'Invalid password'
+        data: 'Invalid Credentials'
       });
     }
     const token = await UserController.signJWT(user);

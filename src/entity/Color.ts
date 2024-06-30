@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
+import { OrderService } from './OrderService';
 import { User } from "./User";
 
 @Entity()
@@ -35,6 +36,8 @@ export class Color {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
+  orderServices: OrderService[];
   // @OneToMany(() => Order, (order) => order.color, { onDelete: 'CASCADE' })
   // orders: Relation<Order>[]
 

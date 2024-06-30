@@ -10,6 +10,7 @@ import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
 import Media from './Media';
 import { Order } from "./Order";
+import { OrderService } from './OrderService';
 import { User } from "./User";
 import "reflect-metadata";
 @Entity()
@@ -67,12 +68,8 @@ export class Service {
   @ManyToOne(() => Media, media => media.services, { onDelete: 'CASCADE', nullable: true })
   media: Relation<Media>
 
-  @ManyToMany(() => Order, order => order.attributes, { onDelete: 'CASCADE' })
-  @JoinTable({
-    name: 'order_attribute'
-  })
-  attributeOrders: Relation<Order[]>
-
+  @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
+  orderServices: OrderService[];
   // @ManyToMany(() => User,(user) => user.likedTweaks)
   // @JoinTable({
   //   name: "like",

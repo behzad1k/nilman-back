@@ -7,6 +7,7 @@ import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import { Order } from '../entity/Order';
+import { OrderService } from '../entity/OrderService';
 import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
@@ -46,7 +47,7 @@ class OrderController {
           where: {
             workerId: user.id
           },
-          relations: ['attributes', 'service', 'address', 'worker']
+          relations: ['orderServices', 'service', 'address', 'worker']
         });
       } else {
         orders = await this.orders().find({
@@ -54,7 +55,7 @@ class OrderController {
             userId: user.id,
             inCart: false
           },
-          relations: ['attributes', 'service', 'address', 'worker']
+          relations: ['orderServices', 'service', 'address', 'worker']
         });
       }
     } catch (e) {
@@ -355,7 +356,7 @@ class OrderController {
       totalPrice -= discountAmount;
     }
     totalPrice += transportation;
-    order.attributes = attributeObjs;
+    order.transportation = transportation;
     order.price = totalPrice;
     order.service = serviceObj;
     order.user = user;
@@ -373,7 +374,16 @@ class OrderController {
     }
     try {
       await this.orders().save(order);
-      // const workerOff = new WorkerOffs();
+
+      attributeObjs.map(async (attr) => {
+        const orderService = new OrderService();
+        orderService.orderId = order.id;
+        orderService.serviceId = attr.id;
+        orderService.price = attr.price;
+        // orderService.colorId = attr.id;
+        await getRepository(OrderService).save(orderService)
+      })
+        // const workerOff = new WorkerOffs();
       // workerOff.orderId = order.id;
       // workerOff.workerId = worker.id;
       // workerOff.date = order.date;
@@ -471,7 +481,7 @@ class OrderController {
         userId: user.id,
         inCart: true
       },
-      relations: ['attributes', 'service', 'address']
+      relations: [ 'service', 'address', 'orderServices']
     });
     return res.status(200).send({
       code: 200,
