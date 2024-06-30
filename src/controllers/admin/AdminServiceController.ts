@@ -101,7 +101,6 @@ class AdminServiceController {
       serviceObj = new Service();
       serviceObj.slug = await getUniqueSlug(getRepository(Service), title)
     }
-    console.log(serviceObj);
     if (title)
       serviceObj.title = title;
     if (description)
@@ -112,8 +111,8 @@ class AdminServiceController {
       serviceObj.parent = await getRepository(Service).findOneBy({ id: parentId});
     if (section)
       serviceObj.section = section
-    if (hasColor != 'false')
-      serviceObj.hasColor = hasColor
+    if (hasColor)
+      serviceObj.hasColor = hasColor == 'true'
     const errors = await validate(serviceObj);
     if (errors.length > 0) {
       return res.status(400).send(errors);
