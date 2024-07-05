@@ -67,6 +67,12 @@ export class User {
   })
   serviceId: number
 
+  @Column(dataTypes.string, {
+    nullable: true,
+    default: null
+  })
+  birthday: string
+
   @Column(dataTypes.integer, {
     nullable: true,
     default: null

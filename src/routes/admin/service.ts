@@ -17,6 +17,7 @@ export class AdminServiceRoutes {
     this.router.get("/single/:id", AdminServiceController.single);
     this.router.post("/basic/:id?", AdminServiceController.basic);
     this.router.post("/medias/:id", multer(multerConfig('uploads/service')).any(), AdminServiceController.medias);
-    this.router.delete("", AdminServiceController.delete);
+    this.router.delete("/medias/:id", AdminServiceController.deleteMedia);
+    this.router.delete("/:id", AdminServiceController.delete);
   }
 }

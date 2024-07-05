@@ -38,7 +38,7 @@ export default class Media {
   @OneToMany(() => User, user => user.media, { nullable: true })
   users: User[];
 
-  @OneToMany(() => Service, service => service.media, { nullable: true })
+  @OneToMany(() => Service, service => service.media, { onDelete:'CASCADE', nullable: true })
   services: Service[];
 
 }

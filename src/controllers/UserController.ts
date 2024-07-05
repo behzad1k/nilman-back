@@ -253,7 +253,8 @@ class UserController {
       name,
       lastName,
       nationalCode,
-      phoneNumber
+      phoneNumber,
+      birthday
     } = req.body;
 
     if (!name) {
@@ -269,7 +270,6 @@ class UserController {
         data: 'Invalid National Code'
       });
     }
-
     if (!user.nationalCode) {
       const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
         nationalCode: nationalCode,
@@ -288,6 +288,24 @@ class UserController {
         });
       }
     }
+    // if (!user.birthday) {
+    //   const res2 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
+    //     nationalCode: nationalCode,
+    //     birthday: birthday
+    //   }, {
+    //     headers: {
+    //       Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+    //       'Content-type': 'application/json'
+    //     }
+    //   });
+    //   console.log(res2.data);
+    //   if (!res2.data?.matched) {
+    //     return res.status(400).send({
+    //       code: 1005,
+    //       data: 'تاریخ تولد'
+    //     });
+    //   }
+    // }
     if (!user.name) {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
       try {
@@ -304,15 +322,11 @@ class UserController {
       }
     }
 
-    if (name)
       user.name = name;
-    if (lastName)
       user.lastName = lastName;
-    if (nationalCode)
       user.nationalCode = nationalCode;
-    if (phoneNumber)
       user.phoneNumber = phoneNumber;
-
+      user.birthday = birthday
     try {
       await this.users().save(user);
 

@@ -37,10 +37,23 @@ export class Service {
   @Column(dataTypes.integer)
   price: number;
 
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  sort: number;
+
   @Column(dataTypes.boolean, {
     default: false
   })
   hasColor: boolean;
+
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  hasMedia: boolean;
+
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isMulti: boolean;
 
   @Column(dataTypes.integer)
   section: number;
@@ -59,7 +72,7 @@ export class Service {
   @TreeChildren()
   attributes: Relation<Service[]>
 
-  @TreeParent()
+  @TreeParent({ onDelete: 'CASCADE'})
   parent: Service
 
   @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })

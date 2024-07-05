@@ -12,5 +12,6 @@ export class FeedbackRoutes {
 
   routes() {
     this.router.post("/", FeedbackController.submit);
+    this.router.get("/factors", FeedbackController.factors);
   }
 }

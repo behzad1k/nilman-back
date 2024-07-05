@@ -38,13 +38,13 @@ export class Address {
   @Column(dataTypes.integer)
   district?: number;
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.string)
   postalCode?: string;
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.string)
   pelak?: string;
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.string)
   vahed?: string;
 
   @Column(dataTypes.datetime)

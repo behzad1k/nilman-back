@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import jwtDecode from 'jwt-decode';
 import { getRepository, getTreeRepository } from 'typeorm';
 import { Feedback } from '../entity/Feedback';
+import { FeedbackFactor } from '../entity/FeedbackFactor';
 import {Service} from "../entity/Service";
 import { getUniqueSlug } from '../utils/funs';
 import sms from '../utils/smsLookup';
@@ -9,6 +10,13 @@ import sms from '../utils/smsLookup';
 class FeedbackController {
   static feedbacks = () => getRepository(Feedback)
 
+  static factors = async (req: Request, res: Response): Promise<Response> => {
+    const feedbackFactors = await getRepository(FeedbackFactor).find();
+    return res.status(200).send({
+      code: 200,
+      data: feedbackFactors
+    })
+  }
   static submit = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const id: number = token.userId;

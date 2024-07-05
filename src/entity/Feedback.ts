@@ -4,9 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation, OneToOne
+  ManyToOne, JoinColumn, OneToMany, Relation, OneToOne, ManyToMany, JoinTable
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
+import { FeedbackFactor } from './FeedbackFactor';
 import { Order } from "./Order";
 import { User } from "./User";
 
@@ -43,4 +44,9 @@ export class Feedback {
   @JoinColumn({ name:"orderId", referencedColumnName: "id"})
   order: Relation<Order>
 
+  @ManyToMany(() => FeedbackFactor, feedbackFactors => feedbackFactors.feedbacks)
+  @JoinTable({
+    name: 'feedback_factor_feedbacks'
+  })
+  feedbackFactors: FeedbackFactor[];
 }

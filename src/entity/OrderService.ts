@@ -27,7 +27,13 @@ export class OrderService {
   price: number;
 
   @Column(dataTypes.integer, { nullable: true, default: null })
-  colorId: number;
+  color1Id: number;
+
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  color2Id: number;
+
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  color3Id: number;
 
   @Column(dataTypes.datetime)
   @CreateDateColumn()
