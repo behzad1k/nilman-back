@@ -29,9 +29,6 @@ export class Payment {
   @Column(dataTypes.integer, { nullable: true })
   refId: number;
 
-  @Column(dataTypes.integer)
-  orderId: number;
-
   @Column(dataTypes.boolean, { default: false })
   isPaid: boolean;
 
@@ -43,7 +40,6 @@ export class Payment {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => Order, (order) => order.payments, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'orderId', referencedColumnName: 'id'})
-  order: Relation<Order>
+  @OneToMany(() => Order, (order) => order.payment, { onDelete: 'CASCADE' })
+  orders: Relation<Order[]>
 }

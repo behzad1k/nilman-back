@@ -2,7 +2,7 @@ import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import jwtDecode from 'jwt-decode';
-import { getRepository } from 'typeorm';
+import { getRepository, In } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
@@ -506,10 +506,10 @@ class OrderController {
       return;
     }
 
-    let order: Order = undefined;
+    let orders: Order[]
 
     try {
-      order = await this.orders().findOneOrFail({
+      orders = await this.orders().find({
         where: {
           inCart: true,
           userId: user.id
@@ -523,9 +523,11 @@ class OrderController {
         data: 'Invalid Order'
       });
     }
+
+    const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.price - (curr.discountAmount || 0)), 0)
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
-      Amount: order.price, // In Tomans
+      Amount: finalPrice, // In Tomans
       CallbackURL: 'https://app.nilman.co/payment/verify',
       Description: 'A Payment from Node.JS',
       Email: 'info@nilman.co',
@@ -545,15 +547,19 @@ class OrderController {
     }
 
     try {
-      let payment = await getRepository(Payment).findOneBy({ orderId: order.id });
+      let payment = await getRepository(Payment).findOneBy({ orders: {
+          id: In(orders.map(e => e.id))
+        } });
       if (!payment) {
         payment = new Payment();
-        payment.orderId = order.id;
       }
-      payment.price = order.price;
+      payment.price = finalPrice;
       payment.authority = zarinpalResult.authority;
       await getRepository(Payment).save(payment);
 
+      for (const order of orders) {
+        await getRepository(Order).update({ id: order.id}, {paymentId: payment.id})
+      }
     } catch (e) {
       console.log(e);
       return res.status(400).send({
@@ -589,17 +595,23 @@ class OrderController {
       return;
     }
 
-    let order: Order = undefined;
-
+    let orders: Order[];
+    let payment: Payment;
     try {
-      order = await this.orders().findOneOrFail({
+      orders = await this.orders().find({
         where: {
-          payments: { authority: authority }
+          payment: { authority: authority }
         }
       });
+
+      payment = await getRepository(Payment).findOne({
+        where: {
+          orders: { id: In(orders.map(e => e.id)) }
+        }
+      })
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalRes = await zarinpal.PaymentVerification({
-        Amount: order.price,
+        Amount: payment.price,
         Authority: authority,
       }).then(function (response) {
         console.log(response);
@@ -612,11 +624,14 @@ class OrderController {
         console.log(err);
       });
       if (zarinpalRes) {
-        order.inCart = false;
-        order.status = orderStatus.Paid;
+        for (const order of orders) {
+          order.inCart = false;
+          order.status = orderStatus.Paid;
 
-        await getRepository(Order).save(order);
-        await getRepository(Payment).update({ orderId: order.id }, {
+          await getRepository(Order).save(order);
+          smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+        }
+        await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,
           refId: zarinpalRes
         });
@@ -629,7 +644,6 @@ class OrderController {
       });
     }
 
-    smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
 
     return res.status(200).send({
       code: 200,

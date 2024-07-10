@@ -51,6 +51,9 @@ export class Order {
   @Column(dataTypes.integer)
   serviceId?: number
 
+  @Column(dataTypes.integer, { nullable: true })
+  paymentId?: number
+
   @Column(dataTypes.text)
   status: string
 
@@ -115,8 +118,9 @@ export class Order {
   @OneToOne(() => Feedback, (feedback) => feedback.order, { onDelete: 'CASCADE'})
   feedback: Feedback;
 
-  @OneToMany(() => Payment, payment => payment.order, { onDelete: 'CASCADE'})
-  payments: Payment[];
+  @ManyToOne(() => Payment, payment => payment.orders, { onDelete: 'CASCADE'})
+  @JoinColumn({ name: 'paymentId', referencedColumnName: 'id'})
+  payment: Payment;
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
