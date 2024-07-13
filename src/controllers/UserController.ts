@@ -292,22 +292,22 @@ class UserController {
           data: 'کد ملی با شماره تلفن تطابق ندارد'
         });
       }
-      const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
-        nationalCode: nationalCode,
-        birthday: birthday
-      }, {
-        headers: {
-          Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-          'Content-type': 'application/json'
-        }
-      });
-      console.log(res3.data);
-      if (!res3.data?.matched) {
-        return res.status(400).send({
-          code: 1006,
-          data: res3.data
-        });
-      }
+      // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
+      //   nationalCode: nationalCode,
+      //   birthday: birthday
+      // }, {
+      //   headers: {
+      //     Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+      //     'Content-type': 'application/json'
+      //   }
+      // });
+      // console.log(res3.data);
+      // if (!res3.data?.matched) {
+      //   return res.status(400).send({
+      //     code: 1006,
+      //     data: res3.data
+      //   });
+      // }
     }
     if (!user.name) {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
