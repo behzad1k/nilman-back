@@ -84,6 +84,11 @@ export class Order {
   })
   inCart: boolean
 
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isUrgent: boolean
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;

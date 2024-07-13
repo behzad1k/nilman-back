@@ -55,6 +55,11 @@ export class User {
   })
   nationalCode: string;
 
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isVerified: boolean;
+
   @Column(dataTypes.text, {nullable: false})
   password: string;
 

@@ -101,9 +101,14 @@ class UserController {
       });
     }
     let user: User;
-    try{
-      user = await this.users().findOne({ where: { username: username, role: 'SUPER_ADMIN'} });
-    }catch (e){
+    try {
+      user = await this.users().findOne({
+        where: {
+          username: username,
+          role: 'SUPER_ADMIN'
+        }
+      });
+    } catch (e) {
       return res.status(401).send({
         code: 400,
         data: 'Invalid Credentials'
@@ -148,8 +153,7 @@ class UserController {
         'message': 'Code does not match'
       });
     }
-
-    const newToken = await UserController.signJWT(user);
+    const newToken = user.isVerified ? await this.signJWT(user) : await this.signTmpJWT(user)
 
     try {
       await getRepository(User).update({ id: userId }, { lastEntrance: new Date() });
@@ -322,11 +326,12 @@ class UserController {
       }
     }
 
-      user.name = name;
-      user.lastName = lastName;
-      user.nationalCode = nationalCode;
-      user.phoneNumber = phoneNumber;
-      user.birthday = birthday
+    user.name = name;
+    user.lastName = lastName;
+    user.nationalCode = nationalCode;
+    user.phoneNumber = phoneNumber;
+    user.birthday = birthday;
+    user.isVerified = true;
     try {
       await this.users().save(user);
 
@@ -334,9 +339,12 @@ class UserController {
       return res.status(409).send({ 'code': 409 });
 
     }
+
+
     return res.status(200).send({
       code: 200,
-      user
+      user: user,
+      token: await this.signJWT(user)
     });
   };
   static getAddresses = async (req: Request, res: Response): Promise<Response> => {

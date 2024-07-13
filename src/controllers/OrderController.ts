@@ -221,7 +221,8 @@ class OrderController {
       time,
       addressId,
       workerId,
-      discount
+      discount,
+      isUrgent
     } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj: Discount;
     try {
@@ -346,7 +347,7 @@ class OrderController {
     let totalPrice = 0, sections = 0;
     const order = new Order();
     attributeObjs.map((attr) => {
-      totalPrice += attr.price;
+      totalPrice += (attr.price * (isUrgent ? 2 : 1));
       sections += attr.section;
     });
     if (discountObj && (discountObj.amount || discountObj.percent)) {
@@ -359,6 +360,7 @@ class OrderController {
     order.transportation = transportation;
     order.price = totalPrice;
     order.service = serviceObj;
+    order.isUrgent = isUrgent;
     order.user = user;
     order.code = 'NIL-' + (10000 + await getRepository(Order).count());
     order.status = 'CREATED';
@@ -379,7 +381,7 @@ class OrderController {
         const orderService = new OrderService();
         orderService.orderId = order.id;
         orderService.serviceId = attr.id;
-        orderService.price = attr.price;
+        orderService.price = attr.price * (isUrgent ? 2 : 1);
         // orderService.colorId = attr.id;
         await getRepository(OrderService).save(orderService)
       })
