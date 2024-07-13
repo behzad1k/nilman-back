@@ -232,12 +232,13 @@ class UserController {
     }
     // Hash the new password and save
     // user.hashPassword();
-    userRepository.save(user);
+    await userRepository.save(user);
 
     return res.status(204).send();
   };
 
   static update = async (req: Request, res: Response): Promise<Response> => {
+    console.log(req.headers.authorization);
     const token: any = jwtDecode(req.headers.authorization);
     const id: number = token.userId;
 
@@ -274,7 +275,7 @@ class UserController {
         data: 'Invalid National Code'
       });
     }
-    if (!user.nationalCode) {
+    if (!user.isVerified) {
       const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
         nationalCode: nationalCode,
         mobileNumber: user.phoneNumber
@@ -291,25 +292,23 @@ class UserController {
           data: 'کد ملی با شماره تلفن تطابق ندارد'
         });
       }
+      const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
+        nationalCode: nationalCode,
+        birthday: birthday
+      }, {
+        headers: {
+          Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+          'Content-type': 'application/json'
+        }
+      });
+      console.log(res3.data);
+      if (!res3.data?.matched) {
+        return res.status(400).send({
+          code: 1006,
+          data: res3.data
+        });
+      }
     }
-    // if (!user.birthday) {
-    //   const res2 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
-    //     nationalCode: nationalCode,
-    //     birthday: birthday
-    //   }, {
-    //     headers: {
-    //       Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-    //       'Content-type': 'application/json'
-    //     }
-    //   });
-    //   console.log(res2.data);
-    //   if (!res2.data?.matched) {
-    //     return res.status(400).send({
-    //       code: 1005,
-    //       data: 'تاریخ تولد'
-    //     });
-    //   }
-    // }
     if (!user.name) {
       sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
       try {
