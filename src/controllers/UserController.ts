@@ -314,7 +314,7 @@ class UserController {
       //   });
       // }
     }
-    // sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
+    sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
     try {
       await getRepository(Discount).insert({
         userId: user.id,
