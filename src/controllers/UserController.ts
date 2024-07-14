@@ -292,9 +292,14 @@ class UserController {
           data: 'کد ملی با شماره تلفن تطابق ندارد'
         });
       }
-      // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-info', {
+      console.log(birthday);
+      // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-similarity', {
       //   nationalCode: nationalCode,
-      //   birthday: birthday
+      //   birthDate: '1378/02/02',
+      //   firstName: name,
+      //   lastName: lastName,
+      //   fatherName: 'بابک',
+      //   fullName: name + ' ' + lastName
       // }, {
       //   headers: {
       //     Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
@@ -309,20 +314,19 @@ class UserController {
       //   });
       // }
     }
-    if (!user.name) {
-      sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
-      try {
-        await getRepository(Discount).insert({
-          userId: Number(id),
-          title: user.name + ' ' + user.lastName,
-          percent: 10,
-          code: user.code,
-          active: true,
-          maxCount: 10,
-        });
-      } catch (e) {
-        return res.status(409).send({ 'code': 409 });
-      }
+    // sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
+    try {
+      await getRepository(Discount).insert({
+        userId: user.id,
+        title: 'welcome',
+        percent: 10,
+        code: user.code,
+        active: true,
+        maxCount: 10,
+      });
+    } catch (e) {
+      console.log(e);
+      return res.status(409).send({ 'code': 409 });
     }
 
     user.name = name;
@@ -331,6 +335,7 @@ class UserController {
     user.phoneNumber = phoneNumber;
     user.birthday = birthday;
     user.isVerified = true;
+
     try {
       await this.users().save(user);
 

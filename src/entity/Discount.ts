@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   ManyToOne, JoinColumn, OneToMany, Relation
 } from 'typeorm';
+import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
 import { User } from "./User";
 
@@ -15,7 +16,7 @@ export class Discount {
   @PrimaryGeneratedColumn()
   public readonly id: number;
 
-  @Column("text", {})
+  @Column(dataTypes.text, {})
   title: string;
 
   @Column("int", {nullable: true})
