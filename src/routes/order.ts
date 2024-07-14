@@ -1,7 +1,8 @@
 import { Router } from "express";
+import multer from 'multer';
 import AuthController from "../controllers/AuthController";
 import OrderController from "../controllers/OrderController";
-import ServiceController from "../controllers/ServiceController";
+import multerConfig from '../middlewares/multer';
 
 export class OrderRoutes {
   public router: Router;
@@ -16,6 +17,7 @@ export class OrderRoutes {
   routes() {
     this.router.get("", this.authController.authenticateJWT, OrderController.index);
     this.router.get("/single/:code", this.authController.authenticateJWT ,OrderController.single);
+    this.router.post("/media/:id", multer(multerConfig('uploads/order')).any(), OrderController.medias)
     this.router.post("", this.authController.authenticateJWT,OrderController.create);
     this.router.put("", this.authController.authorizeJWTWorker, OrderController.update);
     this.router.delete("", this.authController.authenticateJWT ,OrderController.delete);

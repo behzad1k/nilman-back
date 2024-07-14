@@ -27,6 +27,9 @@ export class Order {
   @Column(dataTypes.integer)
   price: number
 
+  @Column(dataTypes.integer)
+  finalPrice: number
+
   @Column(dataTypes.integer, { nullable: true })
   discountAmount: number
 

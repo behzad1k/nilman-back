@@ -5,6 +5,7 @@ import jwtDecode from 'jwt-decode';
 import { getRepository, In } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
+import { Color } from '../entity/Color';
 import { Discount } from '../entity/Discount';
 import { Order } from '../entity/Order';
 import { OrderService } from '../entity/OrderService';
@@ -14,6 +15,7 @@ import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
 import { omit } from '../utils/funs';
+import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
 
 class OrderController {
@@ -251,15 +253,11 @@ class OrderController {
       return;
     }
     try {
-      for (const value in attributes) {
-        attributeObjs.push(
-          await this.services().findOneOrFail({
-            where: {
-              slug: attributes[value],
-            }
-          })
-        );
-      }
+      attributeObjs = await this.services().find({
+        where: {
+          id: In(Object.keys(attributes)),
+        }
+      });
     } catch (error) {
       console.log(error);
       res.status(400).send({
@@ -356,9 +354,10 @@ class OrderController {
       order.discountAmount = discountAmount;
       totalPrice -= discountAmount;
     }
-    totalPrice += transportation;
     order.transportation = transportation;
     order.price = totalPrice;
+    totalPrice += transportation;
+    order.finalPrice = totalPrice;
     order.service = serviceObj;
     order.isUrgent = isUrgent;
     order.user = user;
@@ -377,15 +376,16 @@ class OrderController {
     try {
       await this.orders().save(order);
 
-      attributeObjs.map(async (attr) => {
+      await Promise.all(attributeObjs.map(async (attr) => {
         const orderService = new OrderService();
         orderService.orderId = order.id;
         orderService.serviceId = attr.id;
         orderService.price = attr.price * (isUrgent ? 2 : 1);
-        // orderService.colorId = attr.id;
-        await getRepository(OrderService).save(orderService)
-      })
-        // const workerOff = new WorkerOffs();
+        orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
+        orderService.pinterest = attributes[attr.id]?.pinterest;
+        return await getRepository(OrderService).save(orderService);
+      }));
+      // const workerOff = new WorkerOffs();
       // workerOff.orderId = order.id;
       // workerOff.workerId = worker.id;
       // workerOff.date = order.date;
@@ -404,6 +404,28 @@ class OrderController {
     });
   };
 
+  static medias = async (req: Request, res: Response): Promise<Response> => {
+    const token: any = jwtDecode(req.headers.authorization);
+    const userId: number = token.userId;
+    const { id } = req.params;
+    for (const media of (req as any).files) {
+      const orderService = await getRepository(OrderService).findOne({ where: { service: { id: media.fieldname.substring(6, media.fieldname.length - 1) },order: { id: Number(id), user: { id: Number(userId) } } }, relations: { order: { user: true }, service: true } });
+      if (orderService){
+        orderService.mediaId = await Media.create(req, media, orderService.service.title + '-' + orderService.order.user.phoneNumber, '/public/uploads/order/')
+        try {
+          await getRepository(OrderService).save(orderService);
+        }catch (e){
+            console.log(e);
+            res.status(409).send({ 'code': 409 });
+            return;
+        }
+      }
+    }
+    return res.status(200).send({
+      code: 200,
+      data: ''
+    });
+  };
   static update = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const userId: number = token.userId;
@@ -483,7 +505,7 @@ class OrderController {
         userId: user.id,
         inCart: true
       },
-      relations: [ 'service', 'address', 'orderServices']
+      relations: ['service', 'address', 'orderServices']
     });
     return res.status(200).send({
       code: 200,
@@ -508,7 +530,7 @@ class OrderController {
       return;
     }
 
-    let orders: Order[]
+    let orders: Order[];
 
     try {
       orders = await this.orders().find({
@@ -526,7 +548,7 @@ class OrderController {
       });
     }
 
-    const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.price - (curr.discountAmount || 0)), 0)
+    const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
       Amount: finalPrice, // In Tomans
@@ -549,9 +571,11 @@ class OrderController {
     }
 
     try {
-      let payment = await getRepository(Payment).findOneBy({ orders: {
+      let payment = await getRepository(Payment).findOneBy({
+        orders: {
           id: In(orders.map(e => e.id))
-        } });
+        }
+      });
       if (!payment) {
         payment = new Payment();
       }
@@ -560,7 +584,7 @@ class OrderController {
       await getRepository(Payment).save(payment);
 
       for (const order of orders) {
-        await getRepository(Order).update({ id: order.id}, {paymentId: payment.id})
+        await getRepository(Order).update({ id: order.id }, { paymentId: payment.id });
       }
     } catch (e) {
       console.log(e);
@@ -610,7 +634,7 @@ class OrderController {
         where: {
           orders: { id: In(orders.map(e => e.id)) }
         }
-      })
+      });
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalRes = await zarinpal.PaymentVerification({
         Amount: payment.price,
@@ -645,7 +669,6 @@ class OrderController {
         data: 'Invalid Order'
       });
     }
-
 
     return res.status(200).send({
       code: 200,

@@ -37,6 +37,9 @@ export class Service {
   @Column(dataTypes.integer)
   price: number;
 
+  @Column(dataTypes.integer, { nullable: true })
+  pricePlus: number;
+
   @Column(dataTypes.integer, { nullable: true, default: null })
   sort: number;
 

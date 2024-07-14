@@ -4,10 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation
+  ManyToOne, JoinColumn, OneToMany, Relation, JoinTable, ManyToMany
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Color } from './Color';
+import Media from './Media';
 import { Order } from "./Order";
 import { Service } from './Service';
 import { User } from "./User";
@@ -23,17 +24,14 @@ export class OrderService {
   @Column(dataTypes.integer)
   orderId: number;
 
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  mediaId: number;
+
   @Column(dataTypes.integer)
   price: number;
 
-  @Column(dataTypes.integer, { nullable: true, default: null })
-  color1Id: number;
-
-  @Column(dataTypes.integer, { nullable: true, default: null })
-  color2Id: number;
-
-  @Column(dataTypes.integer, { nullable: true, default: null })
-  color3Id: number;
+  @Column(dataTypes.text)
+  pinterest: string;
 
   @Column(dataTypes.datetime)
   @CreateDateColumn()
@@ -50,12 +48,14 @@ export class OrderService {
   })
   order: Relation<Order>
 
-  @ManyToOne(() => Color, (order) => order.orderServices, { onDelete: 'CASCADE' })
-  @JoinColumn({
-    name: 'colorId',
-    referencedColumnName: 'id'
+  @ManyToMany(() => Color, (order) => order.orderServices, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'order_service_color',
   })
-  color: Relation<Color>
+  colors: Relation<Color[]>
+
+  @ManyToOne(() => Media, media => media.orderServices, { onDelete: 'CASCADE', nullable: true })
+  media: Relation<Media>
 
   @ManyToOne(() => Service, (order) => order.orderServices, { onDelete: 'CASCADE', eager: true })
   @JoinColumn({

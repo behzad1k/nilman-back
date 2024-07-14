@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation
+  ManyToOne, JoinColumn, OneToMany, Relation, ManyToMany, JoinTable
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
@@ -36,7 +36,10 @@ export class Color {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
+  @ManyToMany(() => OrderService, orderService => orderService.colors, { onDelete: 'CASCADE'})
+  @JoinTable({
+    name: 'order_service_color',
+  })
   orderServices: OrderService[];
   // @OneToMany(() => Order, (order) => order.color, { onDelete: 'CASCADE' })
   // orders: Relation<Order>[]
