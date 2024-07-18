@@ -2,15 +2,15 @@ import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
+import jwtD from 'jwt-decode';
 import * as jwt from 'jsonwebtoken';
-import jwtDecode from 'jwt-decode';
 import { getRepository } from 'typeorm';
 import config from '../config/config';
 import { Discount } from '../entity/Discount';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
-import { generateCode } from '../utils/funs';
+import { generateCode, jwtDecode } from '../utils/funs';
 import sms from '../utils/smsLookup';
 
 class UserController {
@@ -133,7 +133,7 @@ class UserController {
       token,
       code
     } = req.body;
-    const tokens: any = jwtDecode(token);
+    const tokens: any = jwtD(token);
     const userId = tokens.userId;
     const sysCode = tokens.code;
     const userRepository = getRepository(User);
@@ -174,8 +174,7 @@ class UserController {
   };
 
   static getUser = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const id = jwtDecode(req.headers.authorization);
     let user;
     try {
       user = await this.users().findOneOrFail({
@@ -195,8 +194,7 @@ class UserController {
   };
   static changePassword = async (req: Request, res: Response): Promise<Response> => {
     // Get ID from JWT
-    const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const id = jwtDecode(req.headers.authorization);
     // Get parameters from the body
     const {
       oldPassword,
@@ -238,9 +236,7 @@ class UserController {
   };
 
   static update = async (req: Request, res: Response): Promise<Response> => {
-    console.log(req.headers.authorization);
-    const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const id = jwtDecode(req.headers.authorization)
 
     let user;
     try {
@@ -352,8 +348,7 @@ class UserController {
     });
   };
   static getAddresses = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const id = jwtDecode(req.headers.authorization);
     const userRepository = getRepository(User);
     let user;
     try {

@@ -1,7 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import jwtDecode from 'jwt-decode';
 import { getRepository, In } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
@@ -14,7 +13,7 @@ import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { orderStatus } from '../utils/enums';
-import { omit } from '../utils/funs';
+import { jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
 
@@ -27,8 +26,7 @@ class OrderController {
   static workerOffs = () => getRepository(WorkerOffs);
   static discounts = () => getRepository(Discount);
   static index = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const users = await this.users().find();
     let user;
     try {
@@ -74,8 +72,7 @@ class OrderController {
   };
 
   static single = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const { code } = req.params;
 
     let order: Order = await getRepository(Order).findOne({
@@ -104,8 +101,7 @@ class OrderController {
   };
 
   static workers = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const {
       serviceId,
       addressId,
@@ -214,8 +210,7 @@ class OrderController {
   };
 
   static create = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const {
       service,
       attributes,
@@ -405,8 +400,7 @@ class OrderController {
   };
 
   static medias = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const { id } = req.params;
     for (const media of (req as any).files) {
       const orderService = await getRepository(OrderService).findOne({ where: { service: { id: media.fieldname.substring(6, media.fieldname.length - 1) },order: { id: Number(id), user: { id: Number(userId) } } }, relations: { order: { user: true }, service: true } });
@@ -427,8 +421,7 @@ class OrderController {
     });
   };
   static update = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
@@ -485,8 +478,7 @@ class OrderController {
   };
 
   static cart = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const id: number = token.userId;
+    const id = jwtDecode(req.headers.authorization);
     let user;
     try {
       user = await this.users().findOneOrFail({
@@ -505,7 +497,7 @@ class OrderController {
         userId: user.id,
         inCart: true
       },
-      relations: ['service', 'address', 'orderServices']
+      relations: { service: true, orderServices: true, address: true }
     });
     return res.status(200).send({
       code: 200,
@@ -514,8 +506,7 @@ class OrderController {
   };
 
   static pay = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
@@ -600,8 +591,7 @@ class OrderController {
 
   };
   static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const {
       authority,
       status
@@ -677,8 +667,7 @@ class OrderController {
 
   };
   static delete = async (req: Request, res: Response): Promise<Response> => {
-    const token: any = jwtDecode(req.headers.authorization);
-    const userId: number = token.userId;
+    const userId = jwtDecode(req.headers.authorization);
     const { orderId } = req.body;
     let user, orderObj;
     try {

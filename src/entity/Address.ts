@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation
+  ManyToOne, JoinColumn, OneToMany, Relation, DeleteDateColumn
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from "./Order";
@@ -50,6 +50,10 @@ export class Address {
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column(dataTypes.datetime, { nullable: true })
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @Column(dataTypes.datetime)
   @UpdateDateColumn()

@@ -1,9 +1,9 @@
-import jwtDecode from "jwt-decode";
+import jwt from "jwt-decode";
 import { Repository } from "typeorm";
 import { dataTypes } from './enums';
 
 export const getUserId = (token:string):number =>{
-    const tokens: any = jwtDecode(token);
+    const tokens: any = jwt(token);
     return tokens.userId
 }
 
@@ -63,6 +63,20 @@ export const getObjectValue = (object: any, value: any) => {
         return
     }
 }
+
+export const jwtDecode  = (token) => {
+    let userId;
+    try {
+        const decoded: any = jwt(token);
+        if (decoded) {
+            userId = decoded?.userId;
+        }
+    }catch (e){
+        console.log(e, token);
+    }
+    return userId;
+}
+
 
 export const removeSpace = (value: string, replaceValue = '-') => value.replaceAll(' ', replaceValue);
 

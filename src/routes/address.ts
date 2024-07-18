@@ -15,6 +15,6 @@ export class AddressRoutes {
     this.router.get("", this.authController.authenticateJWT, AddressController.index);
     this.router.post("/:id?", this.authController.authenticateJWT, AddressController.basic);
     this.router.put("", this.authController.authenticateJWT, AddressController.update);
-    this.router.delete("", this.authController.authenticateJWT, AddressController.delete);
+    this.router.delete("/:id", this.authController.authenticateJWT, AddressController.delete);
   }
 }
