@@ -33,6 +33,9 @@ export class Order {
   @Column(dataTypes.integer, { nullable: true })
   discountAmount: number
 
+  @Column(dataTypes.integer, { nullable: true })
+  workerPercent: number
+
   @Column(dataTypes.string)
   code: string
 

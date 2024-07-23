@@ -86,6 +86,7 @@ class AdminOrderController {
     }
     order.worker = user;
     order.status = orderStatus.Assigned;
+    order.workerPercent = user.percent;
 
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -93,7 +94,6 @@ class AdminOrderController {
     }
     try {
       await this.orders().save(order);
-      console.log(order.date);
       smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
       smsLookup.orderAssignWorker(order.orderServices?.map(e => e.service.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
     } catch (e) {

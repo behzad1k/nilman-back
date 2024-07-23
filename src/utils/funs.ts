@@ -1,6 +1,8 @@
 import jwt from "jwt-decode";
 import { Repository } from "typeorm";
+import config from '../config/config';
 import { dataTypes } from './enums';
+import * as jasonWebToken from 'jsonwebtoken';
 
 export const getUserId = (token:string):number =>{
     const tokens: any = jwt(token);
@@ -63,6 +65,47 @@ export const getObjectValue = (object: any, value: any) => {
         return
     }
 }
+
+export const signJWT = async (user: {
+    id: any;
+    role: any
+}, exp?): Promise<string> => {
+    const token = jasonWebToken.sign(
+      {
+          userId: user.id,
+          role: user.role,
+      },
+      config.jwtSecret,
+      {
+          expiresIn: exp || config.expiration,
+          issuer: config.issuer,
+          audience: config.audience,
+      },
+    );
+
+    return token;
+};
+
+export const signTmpJWT = async (user: {
+    id: any;
+    code: any
+}, exp?): Promise<string> => {
+    const token = jasonWebToken.sign(
+      {
+          userId: user.id,
+          code: user.code,
+      },
+      config.jwtSecret,
+      {
+          expiresIn: exp || config.expiration,
+          issuer: config.issuer,
+          audience: config.audience,
+      },
+    );
+
+    return token;
+};
+
 
 export const jwtDecode  = (token) => {
     let userId;

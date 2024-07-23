@@ -55,12 +55,22 @@ export class User {
   })
   nationalCode: string;
 
+  @Column(dataTypes.integer, {
+    nullable: true
+  })
+  percent: number;
+
   @Column(dataTypes.boolean, {
     default: false
   })
   isVerified: boolean;
 
-  @Column(dataTypes.text, {nullable: false})
+  @Column(dataTypes.integer, {
+    default: 1
+  })
+  status: number;
+
+  @Column(dataTypes.text, {nullable: true})
   password: string;
 
   @Column(dataTypes.text, {nullable: false})

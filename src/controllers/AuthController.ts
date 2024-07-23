@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
+import * as jwt from 'jsonwebtoken';
 import passport from "passport";
 import "../middlewares/passport";
+import config from '../config/config';
 import { roles } from '../utils/enums';
 
 export default class AuthController {
@@ -8,6 +10,14 @@ export default class AuthController {
     passport.authenticate("jwt", (err, user) => {
       if (err) {
         return res.status(401).json({ status: "error", code: "401" });
+      }
+      try{
+        jwt.verify(req.headers?.authorization?.split(' ')[1], config.jwtSecret)
+      }catch (e){
+        return res.status(401).send({
+          code: 1000,
+          'message': 'Token Expired'
+        });
       }
       if (!user.userId) {
         return res.status(401).json({ status: "error", code: "401" });

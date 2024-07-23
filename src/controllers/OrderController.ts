@@ -47,7 +47,7 @@ class OrderController {
           where: {
             workerId: user.id
           },
-          relations: ['orderServices', 'service', 'address', 'worker']
+          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker']
         });
       } else {
         orders = await this.orders().find({

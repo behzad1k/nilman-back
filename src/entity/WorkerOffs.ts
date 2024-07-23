@@ -17,7 +17,7 @@ export class WorkerOffs {
   @Column(dataTypes.text)
   date: string
 
-  @Column(dataTypes.integer, )
+  @Column(dataTypes.integer, { nullable: true })
   orderId: number
 
   @Column(dataTypes.integer)

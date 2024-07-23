@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Router } from "express";
-import UserController from "../controllers/UserController";
+import LoginController from "../controllers/LoginController";
 import AuthController from "../controllers/AuthController";
 
 export class AuthRoutes {
@@ -14,12 +12,14 @@ export class AuthRoutes {
   }
 
   routes() {
-    // Login route
-    this.router.post("/login", UserController.login);
-
-    this.router.post("/admin/login", UserController.loginAdmin);
-    // Auth check
-    this.router.post("/check", UserController.authCheck);
+    // Admin
+    this.router.post("/admin/login", LoginController.loginAdmin);
+    // User
+    this.router.post("/login", LoginController.login);
+    this.router.post("/check", LoginController.authCheck);
+    // Worker
+    this.router.post("/login/worker", LoginController.loginWorker);
+    this.router.post("/check/worker", LoginController.authCheckWorker);
 
   }
 }

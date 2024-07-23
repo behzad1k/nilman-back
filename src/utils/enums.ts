@@ -8,6 +8,7 @@ export enum orderStatus  {
   Created = 'Created',
   Paid = 'Paid',
   Assigned = 'Assigned',
+  InProgress = 'InProgress',
   Canceled = 'Canceled',
   Done = 'Done'
 };

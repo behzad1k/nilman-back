@@ -5,7 +5,8 @@ import { validate } from "class-validator";
 import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
 import { User } from "../../entity/User";
-import { getUniqueSlug } from "../../utils/funs";
+import { WorkerOffs } from '../../entity/WorkerOffs';
+import { getUniqueSlug, jwtDecode } from '../../utils/funs';
 
 class WorkerDashboardController {
   static users = () => getRepository(User)
@@ -77,40 +78,36 @@ class WorkerDashboardController {
     return res.status(201).send({ code: 201, data: service});
   };
 
-  static update = async (req: Request, res: Response): Promise<Response> => {
-    const { service, title, description, price, section, hasColor } = req.body;
-    let serviceObj: Service;
-    try {
-      serviceObj = await this.services().findOneOrFail({
-        where: {
-          slug: service
-        }
-      });
-    } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Id"});
-      return;
+  static create2 = async (req: Request, res: Response): Promise<Response> => {
+    const {
+    workerOffs
+  } = req.body;
+    const userId = jwtDecode(req.headers.authorization);
+
+    for (const [key, value] of Object.entries(workerOffs)) {
+      for (const time of (value as any)) {
+        await getRepository(WorkerOffs).insert({
+          workerId: userId,
+          date: key,
+          fromTime: time,
+          toTime: time + 2,
+        })
+      }
     }
-    if (title)
-      serviceObj.title = title;
-    if (description)
-      serviceObj.description = description;
-    if (price)
-      serviceObj.price = parseFloat(price);
-    if (section)
-      serviceObj.section = section
-    if (hasColor)
-      serviceObj.hasColor = hasColor
-    const errors = await validate(serviceObj);
-    if (errors.length > 0) {
-      return res.status(400).send(errors);
-    }
-    try {
-      await this.services().save(serviceObj);
-    } catch (e) {
-      res.status(409).send("error try again later");
-      return;
-    }
-    return res.status(200).send({code: 200, data: serviceObj});
+    Object.entries(workerOffs).map(([key, value]) => {
+
+    })
+    // const errors = await validate(serviceObj);
+    // if (errors.length > 0) {
+    //   return res.status(400).send(errors);
+    // }
+    // try {
+    //   await this.services().save(serviceObj);
+    // } catch (e) {
+    //   res.status(409).send("error try again later");
+    //   return;
+    // }
+    return res.status(200).send({code: 200, data: ''});
   };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {
