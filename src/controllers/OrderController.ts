@@ -548,7 +548,7 @@ class OrderController {
       CallbackURL: 'https://app.nilman.co/payment/verify',
       Description: 'A Payment from Node.JS',
       Email: 'info@nilman.co',
-      Mobile: '09126000061'
+      Mobile: '09379455353'
     }).then(response => {
       if (response.status === 100) {
         return response;
