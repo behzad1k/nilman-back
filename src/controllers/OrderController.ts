@@ -598,7 +598,6 @@ class OrderController {
       authority,
       status
     } = req.body;
-    console.log('start');
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
@@ -627,15 +626,12 @@ class OrderController {
           orders: { id: In(orders.map(e => e.id)) }
         }
       });
-      console.log('before');
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       console.log(zarinpal);
       const zarinpalRes = await zarinpal.PaymentVerification({
         Amount: payment.price,
         Authority: authority,
       }).then(function (response) {
-        console.log('here');
-        console.log(response);
         if (response.status == 101) {
           return response.RefID;
         } else {
