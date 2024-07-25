@@ -598,7 +598,7 @@ class OrderController {
       authority,
       status
     } = req.body;
-
+    console.log('start');
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
