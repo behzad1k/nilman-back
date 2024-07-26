@@ -629,7 +629,7 @@ class OrderController {
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       console.log(zarinpal);
       const zarinpalRes = await zarinpal.PaymentVerification({
-        Amount: payment.price,
+        Amount: 1000,
         Authority: authority,
       }).then(function (response) {
         console.log(response);
