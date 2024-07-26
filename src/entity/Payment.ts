@@ -26,8 +26,8 @@ export class Payment {
   @Column(dataTypes.text)
   authority: string;
 
-  @Column(dataTypes.integer, { nullable: true })
-  refId: number;
+  @Column(dataTypes.text, { nullable: true })
+  refId: string;
 
   @Column(dataTypes.boolean, { default: false })
   isPaid: boolean;
