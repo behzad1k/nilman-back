@@ -633,10 +633,14 @@ class OrderController {
         Authority: authority,
       }).then(function (response) {
         console.log(response);
-        if (response.status == 101) {
+        if (response.status == 101 || response.status == 100) {
           return response.RefID;
         } else {
           console.log(response);
+          return res.status(400).send({
+            code: 400,
+            data: 'Invalid Payment'
+          });
         }
       }).catch(function (err) {
         console.log(err);
