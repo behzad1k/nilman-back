@@ -651,7 +651,7 @@ class OrderController {
         }
         await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,
-          refId: zarinpalRes
+          refId: zarinpalRes.toString()
         });
       }else{
         return res.status(400).send({
