@@ -637,10 +637,6 @@ class OrderController {
           return response.RefID;
         } else {
           console.log(response);
-          return res.status(400).send({
-            code: 400,
-            data: 'Invalid Payment'
-          });
         }
       }).catch(function (err) {
         console.log(err);
@@ -656,6 +652,11 @@ class OrderController {
         await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,
           refId: zarinpalRes
+        });
+      }else{
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Payment'
         });
       }
     } catch (e) {
