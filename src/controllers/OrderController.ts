@@ -598,7 +598,7 @@ class OrderController {
       authority,
       status
     } = req.body;
-    let user, orderObj;
+    let user;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -632,6 +632,7 @@ class OrderController {
         Amount: payment.price,
         Authority: authority,
       }).then(function (response) {
+        console.log(response);
         if (response.status == 101) {
           return response.RefID;
         } else {
