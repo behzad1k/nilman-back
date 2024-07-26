@@ -51,6 +51,11 @@ export class Service {
   @Column(dataTypes.boolean, {
     default: false
   })
+  openDrawer: boolean;
+
+  @Column(dataTypes.boolean, {
+    default: false
+  })
   hasMedia: boolean;
 
   @Column(dataTypes.boolean, {

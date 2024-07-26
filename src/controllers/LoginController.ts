@@ -105,7 +105,7 @@ class LoginController {
         data: 'Invalid Credentials'
       });
     }
-    if (!bcrypt.compareSync(password, user.password)) {
+    if (!bcrypt.compareSync(password, user?.password)) {
       return res.status(401).send({
         code: 400,
         data: 'Invalid Credentials'

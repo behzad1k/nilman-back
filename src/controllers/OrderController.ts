@@ -357,7 +357,7 @@ class OrderController {
     order.isUrgent = isUrgent;
     order.user = user;
     order.code = 'NIL-' + (10000 + await getRepository(Order).count());
-    order.status = 'CREATED';
+    order.status = orderStatus.Created;
     order.address = addressObj;
     order.date = date;
     order.fromTime = time;
@@ -540,11 +540,9 @@ class OrderController {
     }
 
     const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
-    // const finalPrice: any = 1000;
-    console.log('order', orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0));
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
-      Amount: 1000, // In Tomans
+      Amount: finalPrice, // In Tomans
       CallbackURL: 'https://app.nilman.co/payment/verify',
       Description: 'A Payment from Node.JS',
       Email: 'info@nilman.co',
@@ -626,10 +624,15 @@ class OrderController {
           orders: { id: In(orders.map(e => e.id)) }
         }
       });
+      if (!payment){
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Payment'
+        });
+      }
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
-      console.log('payment', payment.price);
       const zarinpalRes = await zarinpal.PaymentVerification({
-        Amount: 1000,
+        Amount: payment.price,
         Authority: authority,
       }).then(function (response) {
         console.log(response);
@@ -656,7 +659,7 @@ class OrderController {
       }else{
         return res.status(400).send({
           code: 400,
-          data: 'Invalid Payment'
+          data: 'Invalid Portal'
         });
       }
     } catch (e) {
