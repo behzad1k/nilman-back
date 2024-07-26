@@ -541,7 +541,7 @@ class OrderController {
 
     // const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
     const finalPrice: any = 1000;
-    console.log(orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0));
+    console.log('order', orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0));
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
       Amount: finalPrice, // In Tomans
@@ -627,7 +627,7 @@ class OrderController {
         }
       });
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
-      console.log(zarinpal);
+      console.log('payment', payment.price);
       const zarinpalRes = await zarinpal.PaymentVerification({
         Amount: 1000,
         Authority: authority,
