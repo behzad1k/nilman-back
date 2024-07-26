@@ -24,5 +24,6 @@ export class OrderRoutes {
     this.router.get("/workers", OrderController.workers);
     this.router.get("/cart", OrderController.cart);
     this.router.post("/pay", OrderController.pay);
+    this.router.post("/pay/verify", OrderController.paymentVerify);
   }
 }
