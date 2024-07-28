@@ -96,6 +96,18 @@ class WorkerOrderController {
         data: 'Invalid Order'
       })
     }
+    if (moment().format('jYYYY/jMM/jDD') != order.date){
+      if (Number(moment().format('HH')) - order.fromTime > 1){
+        return res.status(400).send({
+          code: 2001,
+          data: 'Invalid Time'
+        })
+      }
+      return res.status(400).send({
+        code: 2000,
+        data: 'Invalid Date'
+      })
+    }
 
     order.status = orderStatus.InProgress;
 
@@ -124,6 +136,18 @@ class WorkerOrderController {
       })
     }
 
+    if (moment().format('jYYYY/jMM/jDD') != order.date){
+      if (Number(order.toTime - Number(moment().format('HH'))) > 1){
+        return res.status(400).send({
+          code: 2001,
+          data: 'Invalid Time'
+        })
+      }
+      return res.status(400).send({
+        code: 2000,
+        data: 'Invalid Date'
+      })
+    }
     order.status = orderStatus.Done;
 
     try {

@@ -225,7 +225,7 @@ class UserController {
       try {
         workerOff = await this.workerOffs().find({
           where: {
-            workerId: Number(workerId),
+            userId: Number(workerId),
             date: date as string
           }
         });

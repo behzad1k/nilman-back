@@ -147,7 +147,7 @@ class OrderController {
 
     const workers = await this.users().find({
       where: {
-        serviceId: service.id,
+        // serviceId: service.id,
         district: address.district
       },
       relations: ['workerOffs']

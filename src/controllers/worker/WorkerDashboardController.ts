@@ -87,7 +87,7 @@ class WorkerDashboardController {
     for (const [key, value] of Object.entries(workerOffs)) {
       for (const time of (value as any)) {
         await getRepository(WorkerOffs).insert({
-          workerId: userId,
+          userId: userId,
           date: key,
           fromTime: time,
           toTime: time + 2,

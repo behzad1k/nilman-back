@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
-  ManyToOne, Relation
+  ManyToOne, Relation, ManyToMany, JoinTable
 } from 'typeorm';
 import * as bcrypt from "bcryptjs";
 import { dataTypes } from '../utils/enums';
@@ -55,6 +55,26 @@ export class User {
   })
   nationalCode: string;
 
+  @Column(dataTypes.text, {
+    nullable: true
+  })
+  shebaNumber: string;
+
+  @Column(dataTypes.text, {
+    nullable: true
+  })
+  cardNumber: string;
+
+  @Column(dataTypes.text, {
+    nullable: true
+  })
+  hesabNumber: string;
+
+  @Column(dataTypes.text, {
+    nullable: true
+  })
+  bankName: string;
+
   @Column(dataTypes.integer, {
     nullable: true
   })
@@ -75,12 +95,6 @@ export class User {
 
   @Column(dataTypes.text, {nullable: false})
   role: string;
-
-  @Column(dataTypes.integer, {
-    nullable: true,
-    default: null
-  })
-  serviceId: number
 
   @Column(dataTypes.string, {
     nullable: true,
@@ -131,12 +145,11 @@ export class User {
   @OneToMany(() => Feedback, feedbacks => feedbacks.user, { nullable: true, onDelete: 'CASCADE' })
   feedbacks: Relation<Feedback[]>
 
-  @ManyToOne(() => Service, service => service.users, { onDelete: 'CASCADE' })
-  @JoinColumn({
-    name: 'serviceId',
-    referencedColumnName: 'id'
+  @ManyToMany(() => Service, service => service.users, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'worker_services'
   })
-  service: Relation<Service>
+  services: Relation<Service[]>
 
   @ManyToOne(() => Media, media => media.users, { onDelete: 'CASCADE' })
   @JoinColumn({

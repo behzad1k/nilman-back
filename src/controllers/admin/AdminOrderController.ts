@@ -1,12 +1,14 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { getRepository } from 'typeorm';
+import { Any, ArrayContains, getRepository, In, Raw } from 'typeorm';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
+import { WorkerOffs } from '../../entity/WorkerOffs';
 
-import { orderStatus } from '../../utils/enums';
+import { orderStatus, roles } from '../../utils/enums';
+import { getOrderTime } from '../../utils/funs';
 import smsLookup from '../../utils/smsLookup';
 
 class AdminOrderController {
@@ -74,7 +76,6 @@ class AdminOrderController {
       user = await this.users().findOneOrFail({
         where: {
           id: workerId,
-          serviceId: order.service.id,
         }
       });
     } catch (error) {
@@ -94,8 +95,15 @@ class AdminOrderController {
     }
     try {
       await this.orders().save(order);
-      smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
-      smsLookup.orderAssignWorker(order.orderServices?.map(e => e.service.title).toString(), order.address.description, user.phoneNumber, moment(Number(order.date) * 1000).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+      smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+      smsLookup.orderAssignWorker(order.orderServices?.map(e => e.service.title).toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
+      await getRepository(WorkerOffs).insert({
+        fromTime: order.fromTime,
+        toTime: order.toTime,
+        orderId: order.id,
+        userId: workerId,
+        date: order.date
+      })
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
@@ -107,6 +115,48 @@ class AdminOrderController {
     });
   };
 
+  static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+
+    let order: Order, users: User[];
+    try {
+      order = await this.orders().findOneOrFail({
+        where: { id: Number(id) },
+        relations: ['service', 'user', 'orderServices', 'address']
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
+    }
+
+    try {
+      users = await this.users().find({
+        where: {
+          role: roles.WORKER,
+        },
+        relations: { services: true, workerOffs: true }
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Worker'
+      });
+      return;
+    }
+
+    const workers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
+
+
+    return res.status(200).send({
+      code: 200,
+      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && e.fromTime >= order.fromTime && e.toTime <= order.toTime))
+
+    });
+  }
 }
 
 export default AdminOrderController;

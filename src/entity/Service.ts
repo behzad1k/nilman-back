@@ -83,7 +83,10 @@ export class Service {
   @TreeParent({ onDelete: 'CASCADE'})
   parent: Service
 
-  @OneToMany(() => User, user => user.service, { onDelete: 'CASCADE' })
+  @ManyToMany(() => User, user => user.services, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'worker_services'
+  })
   users: Relation<User[]>
 
   @ManyToOne(() => Media, media => media.services, { onDelete: 'CASCADE', nullable: true })
@@ -91,21 +94,4 @@ export class Service {
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
-  // @ManyToMany(() => User,(user) => user.likedTweaks)
-  // @JoinTable({
-  //   name: "like",
-  // })
-  // likes : User[];
-
-  // @ManyToOne((type) => Service,(tweak) => tweak.children  )
-  // @JoinColumn({ name:"parentId", referencedColumnName: "id"})
-  // parent: Service;
-  //
-  // @OneToMany((type) => Service,(tweak) => tweak.parent  )
-  // @JoinColumn({ name:"parentId", referencedColumnName: "id"})
-  // children: Service;
-  //
-  // @ManyToOne(type => User,user => user.tweaks)
-  // @JoinColumn({name:'userId', referencedColumnName: "id" })
-  // user: User;
 }

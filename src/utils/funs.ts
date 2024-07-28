@@ -1,6 +1,7 @@
 import jwt from "jwt-decode";
 import { Repository } from "typeorm";
 import config from '../config/config';
+import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
 import * as jasonWebToken from 'jsonwebtoken';
 
@@ -118,6 +119,10 @@ export const jwtDecode  = (token) => {
         console.log(e, token);
     }
     return userId;
+}
+
+export const getOrderTime = (order: Order) => {
+    return order.orderServices.reduce((acc, cur) => acc + cur.service.section, 0)
 }
 
 

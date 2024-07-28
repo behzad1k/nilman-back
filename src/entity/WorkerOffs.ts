@@ -21,10 +21,10 @@ export class WorkerOffs {
   orderId: number
 
   @Column(dataTypes.integer)
-  workerId: number
+  userId: number
 
   @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'workerId', referencedColumnName: 'id'})
+  @JoinColumn({ name: 'userId', referencedColumnName: 'id'})
   worker: Relation<User>
 
   @ManyToOne(() => Order, order => order.worker, { onDelete: 'CASCADE' })

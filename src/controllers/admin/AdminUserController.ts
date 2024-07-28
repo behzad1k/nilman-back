@@ -1,6 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { getRepository, In, Like } from 'typeorm';
+import { getRepository, getTreeRepository, In, Like } from 'typeorm';
 import { Address } from '../../entity/Address';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
@@ -28,7 +28,7 @@ class AdminUserController {
     const where = {};
 
     if (role) {
-      where['role'] = { slug: role };
+      where['role'] = role
     }
     if (Array.isArray(relations)) {
       await Promise.all(relations.map(async e => {
@@ -41,7 +41,7 @@ class AdminUserController {
     if (phoneNumber) {
       where['phoneNumber'] = Like(`%${phoneNumber}%`);
     }
-
+    relationsObj['services'] = true
     users = await this.users().find({
       where: where,
       relations: relationsObj
@@ -59,7 +59,7 @@ class AdminUserController {
       nationalCode,
       phoneNumber,
       percent,
-      serviceId,
+      services,
       password,
       role,
       status,
@@ -89,10 +89,15 @@ class AdminUserController {
     user.nationalCode = nationalCode;
     user.phoneNumber = phoneNumber;
     user.percent = percent;
-    if (role == roles.WORKER && serviceId) {
-      user.serviceId = serviceId;
+    if (role == roles.WORKER && services) {
+      let allServices = []
+      for (const serviceId of services) {
+        const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId}), {depth: 5})
+        allServices = [...allServices, ...serviceChildren.map(e => e.id)]
+      }
+      user.services = await getRepository(Service).findBy({ id: In(allServices) });
     }
-      user.status = status;
+    user.status = status;
 
     if (role == roles.SUPER_ADMIN || role == roles.OPERATOR && password && username) {
       user.username = username;
@@ -237,6 +242,7 @@ class AdminUserController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: Number(id) },
+        relations: { services: true }
       });
     } catch (error) {
       res.status(400).send({
@@ -250,7 +256,6 @@ class AdminUserController {
       data: user
     });
   };
-
 }
 
 export default AdminUserController;

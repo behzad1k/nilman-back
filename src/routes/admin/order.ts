@@ -12,6 +12,7 @@ export class AdminOrderRoutes {
 
   routes() {
     this.router.get("/", AdminOrderController.index);
+    this.router.get("/relatedWorkers/:id", AdminOrderController.getRelatedWorkers);
     this.router.get("/single/:id", AdminOrderController.single);
     this.router.post("/assign/:id", AdminOrderController.assign);
   }
