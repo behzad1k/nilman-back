@@ -15,8 +15,7 @@ export class AdminAddressRoutes {
 
     // Get own user
     this.router.get("/", AdminAddressController.index);
-    this.router.post("/create", AdminAddressController.create);
-    this.router.put("/update", AdminAddressController.update);
+    this.router.post("/basic/:id?", AdminAddressController.basic);
     this.router.delete("/delete", AdminAddressController.delete);
   }
 }

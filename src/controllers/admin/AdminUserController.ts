@@ -5,6 +5,7 @@ import { Address } from '../../entity/Address';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
+import { WorkerOffs } from '../../entity/WorkerOffs';
 import { dataTypes, roles } from '../../utils/enums';
 import { generateCode } from '../../utils/funs';
 import media from '../../utils/media';
@@ -28,7 +29,7 @@ class AdminUserController {
     const where = {};
 
     if (role) {
-      where['role'] = role
+      where['role'] = role;
     }
     if (Array.isArray(relations)) {
       await Promise.all(relations.map(async e => {
@@ -41,7 +42,7 @@ class AdminUserController {
     if (phoneNumber) {
       where['phoneNumber'] = Like(`%${phoneNumber}%`);
     }
-    relationsObj['services'] = true
+    relationsObj['services'] = true;
     users = await this.users().find({
       where: where,
       relations: relationsObj
@@ -90,10 +91,10 @@ class AdminUserController {
     user.phoneNumber = phoneNumber;
     user.percent = percent;
     if (role == roles.WORKER && services) {
-      let allServices = []
+      let allServices = [];
       for (const serviceId of services) {
-        const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId}), {depth: 5})
-        allServices = [...allServices, ...serviceChildren.map(e => e.id)]
+        const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
+        allServices = [...allServices, ...serviceChildren.map(e => e.id)];
       }
       user.services = await getRepository(Service).findBy({ id: In(allServices) });
     }
@@ -242,12 +243,65 @@ class AdminUserController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: Number(id) },
-        relations: { services: true }
+        relations: {
+          services: true,
+          workerOffs: { order: true }
+        }
       });
     } catch (error) {
       res.status(400).send({
         code: 1002,
         data: 'Invalid Id'
+      });
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: user
+    });
+  };
+  static active = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const { status } = req.body;
+    let user = null;
+    try {
+      user = await this.users().update(
+        { id: Number(id) },
+        { status: status }
+      );
+    } catch (error) {
+      res.status(409).send({
+        code: 409,
+        data: 'Something went wrong'
+      });
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: user
+    });
+  };
+  static workerOff = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const {
+      date,
+      fromTime,
+      toTime
+    } = req.body;
+    let user = null;
+    try {
+      user = await getRepository(WorkerOffs).insert(
+        {
+          userId: Number(id),
+          date: date,
+          fromTime: Number(fromTime),
+          toTime: Number(toTime)
+        }
+      );
+    } catch (error) {
+      res.status(409).send({
+        code: 409,
+        data: 'Something went wrong'
       });
       return;
     }

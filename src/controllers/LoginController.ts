@@ -31,6 +31,12 @@ class LoginController {
           data: "Invalid Login"
         })
       }
+      if (user.status != 1){
+        return res.status(401).send({
+          code: 1005,
+          data: "Inactive Login"
+        })
+      }
     }else{
       user = new User();
       user.phoneNumber = phoneNumber;
@@ -66,6 +72,12 @@ class LoginController {
       return res.status(401).send({
         code: 401,
         data: "Invalid Login"
+      })
+    }
+    if (user.status != 1){
+      return res.status(401).send({
+        code: 1005,
+        data: "Inactive Login"
       })
     }
     user.tmpCode = code;
@@ -104,6 +116,12 @@ class LoginController {
         code: 400,
         data: 'Invalid Credentials'
       });
+    }
+    if (user.status != 1){
+      return res.status(401).send({
+        code: 1005,
+        data: "Inactive Login"
+      })
     }
     if (!bcrypt.compareSync(password, user?.password)) {
       return res.status(401).send({
