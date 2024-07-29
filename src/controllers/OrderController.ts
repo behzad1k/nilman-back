@@ -650,7 +650,7 @@ class OrderController {
           order.status = orderStatus.Paid;
 
           await getRepository(Order).save(order);
-          smsLookup.afterPaid(user.name, user.phoneNumber, moment.unix(Number(order.date)).format('jYYYY/jMM/jDD'), order.fromTime.toString());
+          smsLookup.afterPaid(user.name, user.phoneNumber, order.date, order.fromTime.toString());
         }
         await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,
