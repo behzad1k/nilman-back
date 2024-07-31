@@ -9,6 +9,7 @@ import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { orderStatus } from '../../utils/enums';
+import media from '../../utils/media';
 import smsLookup from '../../utils/smsLookup';
 import { jwtDecode, omit } from '../../utils/funs';
 
@@ -149,6 +150,9 @@ class WorkerOrderController {
       })
     }
     order.status = orderStatus.Done;
+    console.log((req as any).files);
+    console.log((req as any).file);
+    order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder');
 
     try {
       await this.orders().save(order);

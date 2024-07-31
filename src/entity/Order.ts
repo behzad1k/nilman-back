@@ -12,6 +12,7 @@ import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
 import { Feedback } from './Feedback';
+import Media from './Media';
 import { OrderService } from './OrderService';
 import { Payment } from './Payment';
 import { Service } from "./Service";
@@ -95,6 +96,9 @@ export class Order {
   })
   isUrgent: boolean
 
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  finalImageId: number;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
@@ -132,6 +136,10 @@ export class Order {
   @ManyToOne(() => Payment, payment => payment.orders, { onDelete: 'CASCADE'})
   @JoinColumn({ name: 'paymentId', referencedColumnName: 'id'})
   payment: Payment;
+
+  @ManyToOne(() => Media, media => media.finalOrder, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'finalImageId', referencedColumnName: 'id'})
+  finalImage: Relation<Media>
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];

@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn, } from 'typeorm';
 import { dataTypes } from '../utils/enums';
+import { Order } from './Order';
 import { OrderService } from './OrderService';
 import { Service } from './Service';
 import { User } from './User';
@@ -41,6 +42,9 @@ export default class Media {
 
   @OneToMany(() => Service, service => service.media, { onDelete:'CASCADE', nullable: true })
   services: Service[];
+
+  @OneToMany(() => Order, order => order.finalImage, { onDelete:'CASCADE', nullable: true })
+  finalOrder: Order[];
 
   @OneToMany(() => OrderService, orderService => orderService.media, { onDelete:'CASCADE', nullable: true })
   orderServices: OrderService[];
