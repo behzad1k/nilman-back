@@ -25,7 +25,7 @@ class WorkerDashboardController {
     });
 
     let total = 0;
-    orders.map(e => total += e.finalPrice);
+    orders.map(e => total += ((e.price * e.workerPercent / 100) + e.transportation));
 
     return res.status(200).send({
       code: 200,
