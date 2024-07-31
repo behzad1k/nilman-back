@@ -96,7 +96,8 @@ class AdminOrderController {
     try {
       await this.orders().save(order);
       smsLookup.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
-      smsLookup.orderAssignWorker(order.orderServices?.map(e => e.service.title).toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
+      console.log(order.orderServices?.reduce((acc, cur) => acc + '-' + cur, '').toString());
+      smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
       await getRepository(WorkerOffs).insert({
         fromTime: order.fromTime,
         toTime: order.toTime,

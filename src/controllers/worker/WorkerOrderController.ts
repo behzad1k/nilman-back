@@ -152,6 +152,7 @@ class WorkerOrderController {
     order.status = orderStatus.Done;
     console.log((req as any).files);
     console.log((req as any).file);
+    order.doneDate = new Date();
     order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder');
 
     try {
