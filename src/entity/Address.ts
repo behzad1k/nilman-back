@@ -7,6 +7,8 @@ import {
   ManyToOne, JoinColumn, OneToMany, Relation, DeleteDateColumn
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
+import { Discount } from './Discount';
+import { District } from './District';
 import { Order } from "./Order";
 import { User } from "./User";
 
@@ -36,7 +38,7 @@ export class Address {
   latitude: string;
 
   @Column(dataTypes.integer)
-  district?: number;
+  districtId?: number;
 
   @Column(dataTypes.string)
   postalCode?: string;
@@ -63,24 +65,10 @@ export class Address {
   @JoinColumn({ name:"userId", referencedColumnName: "id"})
   user: Relation<User>
 
+  @ManyToOne(() => District, (district) => district.addresses, { onDelete: 'CASCADE' })
+  @JoinColumn({ name:"districtId", referencedColumnName: "id"})
+  district: Relation<District>
+
   @OneToMany(() => Order, (order) => order.address, { onDelete: 'CASCADE' })
   order: Relation<Order>
-
-  // @ManyToMany(() => User,(user) => user.likedTweaks)
-  // @JoinTable({
-  //   name: "like",
-  // })
-  // likes : User[];
-
-  // @ManyToOne((type) => Service,(tweak) => tweak.children  )
-  // @JoinColumn({ name:"parentId", referencedColumnName: "id"})
-  // parent: Service;
-  //
-  // @OneToMany((type) => Service,(tweak) => tweak.parent  )
-  // @JoinColumn({ name:"parentId", referencedColumnName: "id"})
-  // children: Service;
-  //
-  // @ManyToOne(type => User,user => user.tweaks)
-  // @JoinColumn({name:'userId', referencedColumnName: "id" })
-  // user: User;
 }

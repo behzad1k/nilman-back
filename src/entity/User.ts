@@ -12,6 +12,7 @@ import * as bcrypt from "bcryptjs";
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
 import { Discount } from './Discount';
+import { District } from './District';
 import { Feedback } from './Feedback';
 import Media from './Media';
 import { Order } from "./Order";
@@ -106,7 +107,7 @@ export class User {
     nullable: true,
     default: null
   })
-  mediaId: number
+  profileId: number
 
   @Column(dataTypes.integer, {
     nullable: true,
@@ -151,12 +152,18 @@ export class User {
   })
   services: Relation<Service[]>
 
-  @ManyToOne(() => Media, media => media.users, { onDelete: 'CASCADE' })
+  @ManyToMany(() => District, district => district.users, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'district_user'
+  })
+  districts: Relation<District[]>
+
+  @ManyToOne(() => Media, media => media.userProfiles, { onDelete: 'CASCADE' })
   @JoinColumn({
-    name: 'mediaId',
+    name: 'profileId',
     referencedColumnName: 'id'
   })
-  media: Relation<Media>
+  profilePic: Relation<Media>
   // eslint-disable-next-line @typescript-eslint/require-await
   hashPassword = async (): Promise<void> => {
     this.password = bcrypt.hashSync(this.password, 10);

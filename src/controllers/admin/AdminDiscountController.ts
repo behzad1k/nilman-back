@@ -8,12 +8,35 @@ class AdminDiscountController {
   static discounts = () => getRepository(Discount)
   
   static index = async (req: Request, res: Response): Promise<Response> => {
-    const discounts = this.discounts().find();
+    const discounts = await this.discounts().find({ relations: { forUser: true }});
     return res.status(200).send({
       code: 200,
       data: discounts
     })
   }
+
+  static single = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    let discount = null;
+    try {
+      discount = await this.discounts().findOneOrFail({
+        where: { id: Number(id) },
+        relations: {
+          forUser: true
+        }
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 1002,
+        data: 'Invalid Id'
+      });
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: discount
+    });
+  };
 
   static create = async (req: Request, res: Response): Promise<Response> => {
     const { title, percent, amount, code, userId } = req.body;
@@ -39,23 +62,31 @@ class AdminDiscountController {
     return res.status(201).send({ code: 201, data: discount});
   };
 
-  static update = async (req: Request, res: Response): Promise<Response> => {
-    const { id, title, percent, amount, code } = req.body;
+  static basic = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const { title, percent, amount, code, maxCount, forUserId } = req.body;
     
     let discount: Discount;
-    try {
-      discount = await this.discounts().findOneOrFail(id);
-    } catch (error) {
-      return res.status(400).send({code: 400, data: "Invalid Id"});
+    if (id) {
+      try {
+        discount = await this.discounts().findOneOrFail({ where: { id: Number(id) }});
+      } catch (error) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Id'
+        });
+      }
+    }else{
+      discount = new Discount();
     }
-    if (title)
-      discount.title = title;
-    if (percent)
-      discount.percent = percent;
-    if (amount)
-      discount.amount = amount;
-    if (code)
-      discount.code = code;
+
+    discount.title = title;
+    discount.percent = percent;
+    discount.amount = amount;
+    discount.code = code;
+    discount.forUserId = forUserId;
+    discount.maxCount = maxCount;
+
     const errors = await validate(discount);
     if (errors.length > 0) {
       return res.status(400).send(errors);
@@ -65,27 +96,18 @@ class AdminDiscountController {
     } catch (e) {
       return res.status(409).send("error try again later");
     }
-    return res.status(200).send({code: 400, data: discount});
+    return res.status(200).send({code: 200, data: discount});
   };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {
-    const id: number = req.body.id
+    const { id } = req.params
     
-    try {
-      await this.discounts().findOneOrFail({
-        where: { id: id },
-      });
-    } catch (error) {
-      res.status(400).send({code: 400, data:"Invalid Id"});
-      return;
-    }
     try{
-      await this.discounts().delete(id);
-
+      await this.discounts().delete({ id: Number(id) });
     }catch (e){
-      res.status(409).send({code: 409, data: "error try again later"});
+      return res.status(409).send({code: 409, data: "error try again later"});
     }
-    return res.status(204).send();
+    return res.status(200).send({ code: 200, data: 'Successful'});
   };
 
 }

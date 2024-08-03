@@ -2,6 +2,7 @@ import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import { getRepository, getTreeRepository, In, Like } from 'typeorm';
 import { Address } from '../../entity/Address';
+import { District } from '../../entity/District';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
@@ -64,7 +65,12 @@ class AdminUserController {
       password,
       role,
       status,
-      username
+      username,
+      cardNumber,
+      shebaNumber,
+      hesabNumber,
+      bankName,
+      districts
     } = req.body;
 
     const { id } = req.params;
@@ -90,15 +96,8 @@ class AdminUserController {
     user.nationalCode = nationalCode;
     user.phoneNumber = phoneNumber;
     user.percent = percent;
-    if (role == roles.WORKER && services) {
-      let allServices = [];
-      for (const serviceId of services) {
-        const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
-        allServices = [...allServices, ...serviceChildren.map(e => e.id)];
-      }
-      user.services = await getRepository(Service).findBy({ id: In(allServices) });
-    }
     user.status = status;
+    user.role = role;
 
     if (role == roles.SUPER_ADMIN || role == roles.OPERATOR && password && username) {
       user.username = username;
@@ -106,7 +105,24 @@ class AdminUserController {
       await user.hashPassword();
     }
 
-    user.role = role;
+
+    if (role == roles.WORKER){
+      if (services){
+        let allServices = [];
+        for (const serviceId of services) {
+          const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
+          allServices = [...allServices, ...serviceChildren.map(e => e.id)];
+        }
+        user.services = await getRepository(Service).findBy({ id: In(allServices) });
+      }
+      if (districts){
+        user.districts = await getRepository(District).findBy({ id: In(districts)})
+      }
+      user.shebaNumber = shebaNumber;
+      user.bankName = bankName;
+      user.hesabNumber = hesabNumber;
+      user.cardNumber = cardNumber;
+    }
 
     const errors = await validate(user);
     if (errors.length > 0) {
@@ -129,55 +145,6 @@ class AdminUserController {
       data: user
     });
   };
-
-  // static address = async (req: Request, res: Response): Promise<Response> => {
-  //   const { id } = req.params
-  //   const {
-  //     title,
-  //     userId,
-  //     cityId,
-  //     provinceId,
-  //     postalCode,
-  //     pelak,
-  //     phoneNumber,
-  //     description
-  //   } = req.body;
-  //   let user: User;
-  //   try {
-  //     user = await this.users().findOneOrFail({ where: { id: Number(id) } });
-  //   } catch (e) {
-  //     return res.status(400).send({
-  //       'code': 400,
-  //       'data': 'Invalid UserId'
-  //     });
-  //   }
-  //   let address: Address;
-  //   try {
-  //     address = await this.addresses().findOneOrFail(id);
-  //   } catch (error) {
-  //     return res.status(400).send({code: 400, data:"Invalid Id"});
-  //   }
-  //   if (title)
-  //     address.title = title;
-  //   if (description)
-  //       // address.description = description;
-  //     if (longitude)
-  //       address.longitude = longitude;
-  //   if (latitude)
-  //     address.latitude = latitude;
-  //   if (phoneNumber)
-  //     address.phoneNumber = phoneNumber;
-  //   const errors = await validate(address);
-  //   if (errors.length > 0) {
-  //     return res.status(400).send(errors);
-  //   }
-  //   try {
-  //     await addressRepository.save(address);
-  //   } catch (e) {
-  //     return res.status(409).send("error try again later");
-  //   }
-  //   return res.status(200).send({code: 400, data: address});
-  // };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
@@ -218,7 +185,7 @@ class AdminUserController {
     }
 
     if ((req as any).files[0]) {
-      user.mediaId = await media.create(req, (req as any).files[0], user.title, '/public/uploads/brands/');
+      user.profileId = await media.create(req, (req as any).files[0], user.name + '-' + user.lastName, '/public/uploads/profilePic/');
     }
 
     try {
@@ -245,7 +212,9 @@ class AdminUserController {
         where: { id: Number(id) },
         relations: {
           services: true,
-          workerOffs: { order: true }
+          workerOffs: { order: true },
+          profilePic: true,
+          districts: true
         }
       });
     } catch (error) {

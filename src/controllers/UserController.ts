@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
+import moment from 'jalali-moment';
 import jwtD from 'jwt-decode';
 import { getRepository } from 'typeorm';
 import config from '../config/config';
@@ -22,7 +23,7 @@ class UserController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: id },
-        relations: { media: true }
+        relations: { profilePic: true }
       });
     } catch (e) {
       return res.status(400).send({
@@ -213,21 +214,17 @@ class UserController {
   };
 
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
-    const {
-      workerId,
-      date
-    } = req.query;
-    let workerOff;
-    if (!date) {
-      return res;
-    }
+    const { id } = req.params;
+    const { workerId } = req.query
+    let result: any = {};
     if (workerId) {
+      let worker: User;
       try {
-        workerOff = await this.workerOffs().find({
+        worker = await this.users().findOneOrFail({
           where: {
-            userId: Number(workerId),
-            date: date as string
-          }
+            id: Number(workerId),
+            // services: { id: Number(id)}
+          }, relations: { workerOffs: true }
         });
       } catch (e) {
         return res.status(400).send({
@@ -235,11 +232,21 @@ class UserController {
           data: 'Invalid WorkerId'
         });
       }
+      for (const workerOff of worker.workerOffs) {
+        if (!result[workerOff.date]){
+          result[workerOff.date] = []
+        }
+        for (let i = 8; i < 20; i = i + 2) {
+          if ((workerOff.fromTime >= i && workerOff.fromTime <= i + 2) || (workerOff.fromTime >= i && workerOff.toTime <= i + 2) || (workerOff.fromTime <= i && workerOff.toTime >= i + 2)){
+            result[workerOff.date].push(i)
+          }
+        }
+      }
+
     } else {
       try {
-        workerOff = await this.workerOffs().find({
+        const workerOff = await this.workerOffs().find({
           where: {
-            date: date as string
           }
         });
 
@@ -253,7 +260,7 @@ class UserController {
     }
     return res.status(200).send({
       code: 200,
-      data: workerOff
+      data: result
     });
   };
 

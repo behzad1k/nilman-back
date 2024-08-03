@@ -19,7 +19,7 @@ export class AdminUserRoutes {
     this.router.post("/basic/:id?", AdminUserController.basic);
     this.router.post("/status/:id", AdminUserController.active);
     this.router.post("/workerOff/:id", AdminUserController.workerOff);
-    this.router.post("/media/:id", multer(multerConfig('uploads/workers')).any(), AdminUserController.medias);
+    this.router.post("/medias/:id", multer(multerConfig('uploads/profilePic')).any(), AdminUserController.medias);
     this.router.delete("/:id", AdminUserController.delete);
   }
 }

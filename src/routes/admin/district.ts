@@ -1,9 +1,9 @@
 import { Router } from "express";
 import AdminAddressController from "../../controllers/admin/AdminAddressController";
-import AdminDiscountController from '../../controllers/admin/AdminDiscountController';
+import AdminDistrictController from '../../controllers/admin/AdminDistrictController';
 import AuthController from "../../controllers/AuthController";
 
-export class AdminDiscountRoutes {
+export class AdminDistrictRoutes {
   public router: Router;
   public authController: AuthController = new AuthController();
 
@@ -15,9 +15,9 @@ export class AdminDiscountRoutes {
   routes() {
 
     // Get own user
-    this.router.get("", AdminDiscountController.index);
-    this.router.get("/single/:id", AdminDiscountController.single);
-    this.router.post("/basic/:id?", AdminDiscountController.basic);
-    this.router.delete("/:id", AdminDiscountController.delete);
+    this.router.get("", AdminDistrictController.index);
+    this.router.get("/single/:id", AdminDistrictController.single);
+    this.router.post("/basic/:id?", AdminDistrictController.basic);
+    this.router.delete("/:id", AdminDistrictController.delete);
   }
 }

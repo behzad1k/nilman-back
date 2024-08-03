@@ -67,7 +67,7 @@ class AddressController {
     address.postalCode = postalCode;
     address.longitude = longitude;
     address.latitude = latitude;
-    address.district = 1;
+    address.districtId = 1;
     address.phoneNumber = phoneNumber;
 
     const errors = await validate(address);
@@ -116,7 +116,7 @@ class AddressController {
     if (phoneNumber)
       address.phoneNumber = phoneNumber;
     if (district)
-      address.district = district
+      address.districtId = district
     const errors = await validate(address);
     if (errors.length > 0) {
       return res.status(400).send(errors);

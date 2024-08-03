@@ -4,6 +4,7 @@ import { AdminAddressRoutes } from "./admin/address";
 import { AdminColorRoutes } from './admin/color';
 import { AdminDashboardRoutes } from './admin/dashboard';
 import { AdminDiscountRoutes } from './admin/discount';
+import { AdminDistrictRoutes } from './admin/district';
 import { AdminFeedbackRoutes } from './admin/feedback';
 import { AdminFeedbackFactorRoutes } from './admin/feedbackFactors';
 import { AdminOrderRoutes } from "./admin/order";
@@ -29,6 +30,7 @@ export class AdminRoutes {
     this.router.use("/order",this.authController.authorizeJWTAdmin,new AdminOrderRoutes().router)
     this.router.use("/user",this.authController.authorizeJWTAdmin,new AdminUserRoutes().router)
     this.router.use("/color",this.authController.authorizeJWTAdmin,new AdminColorRoutes().router)
+    this.router.use("/district",this.authController.authorizeJWTAdmin,new AdminDistrictRoutes().router)
 
   }
 }

@@ -37,8 +37,8 @@ export default class Media {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => User, user => user.media, { nullable: true })
-  users: User[];
+  @OneToMany(() => User, user => user.profilePic, { nullable: true })
+  userProfiles: User[];
 
   @OneToMany(() => Service, service => service.media, { onDelete:'CASCADE', nullable: true })
   services: Service[];
