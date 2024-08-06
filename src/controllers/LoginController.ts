@@ -87,7 +87,7 @@ class LoginController {
       code: code
     }, '2m');
     console.log(code);
-    await sms.welcome(code, phoneNumber);
+    // await sms.welcome(code, phoneNumber);
     return res.status(200).send({
       token: token
     });

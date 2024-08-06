@@ -214,9 +214,8 @@ class UserController {
   };
 
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
-    const { id } = req.params;
-    const { workerId } = req.query
-    let result: any = {};
+    const { attributes, workerId } = req.body;
+    let result = {}
     if (workerId) {
       let worker: User;
       try {
@@ -232,24 +231,19 @@ class UserController {
           data: 'Invalid WorkerId'
         });
       }
-      for (const workerOff of worker.workerOffs) {
-        if (!result[workerOff.date]){
-          result[workerOff.date] = []
-        }
-        for (let i = 8; i < 20; i = i + 2) {
-          if ((workerOff.fromTime >= i && workerOff.fromTime <= i + 2) || (workerOff.fromTime >= i && workerOff.toTime <= i + 2) || (workerOff.fromTime <= i && workerOff.toTime >= i + 2)){
-            result[workerOff.date].push(i)
-          }
-        }
-      }
-
+      result = this.workerSchedule(worker.workerOffs);
     } else {
       try {
-        const workerOff = await this.workerOffs().find({
+        const users = await this.users().find({
           where: {
+            role: roles.WORKER
+          },
+          relations: {
+            services: true
           }
         });
-
+        const workers = users.filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k)))
+        console.log(workers);
       } catch (e) {
         console.log(e);
         return res.status(400).send({
@@ -263,6 +257,23 @@ class UserController {
       data: result
     });
   };
+
+  private static workerSchedule = (workerOffs) => {
+    let result: any = {};
+    for (const workerOff of workerOffs) {
+      if (!result[workerOff.date]){
+        result[workerOff.date] = []
+      }
+      for (let i = 8; i < 20; i = i + 2) {
+        if ((workerOff.fromTime >= i && workerOff.fromTime <= (i + 2)) || (workerOff.fromTime <= i && workerOff.toTime >= (i))){
+          result[workerOff.date].push(i)
+        }else if((workerOff.fromTime >= i && workerOff.toTime <= (i + 2))){
+          result[workerOff.date].push((i + 2))
+        }
+      }
+    }
+    return result;
+  }
 
 }
 

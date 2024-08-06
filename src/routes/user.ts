@@ -17,7 +17,7 @@ export class UserRoutes {
     this.router.get("", this.authController.authenticateJWT, UserController.getUser);
     this.router.put("", this.authController.authenticateJWT, UserController.update);
     this.router.get("/address", this.authController.authenticateJWT, UserController.getAddresses);
-    this.router.get("/workerOffs/:id?", UserController.getWorkerOffs);
+    this.router.post("/workerOffs", UserController.getWorkerOffs);
     this.router.put("/changePassword", this.authController.authenticateJWT, UserController.changePassword);
   }
 }
