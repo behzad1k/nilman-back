@@ -55,7 +55,7 @@ class OrderController {
             userId: user.id,
             inCart: false
           },
-          relations: ['orderServices', 'service', 'address', 'worker']
+          relations: ['orderServices', 'service', 'address', 'worker', 'worker.profilePic']
         });
       }
     } catch (e) {
@@ -165,6 +165,34 @@ class OrderController {
       }
     });
   };
+
+  static deleteCartService = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const userId = jwtDecode(req.headers.authorization);
+    try {
+      const order = await getRepository(Order).findOneOrFail({ where: { userId: userId, inCart: true, orderServices: { id: Number(id) }}, relations: { orderServices: true}})
+      if (order.orderServices?.length == 1){
+        await getRepository(Order).delete({ id: order.id })
+      } else {
+        await getRepository(OrderService).delete({
+          id: Number(id),
+          order: {
+            inCart: true
+          }
+        })
+      }
+    }catch (e){
+      console.log(e);
+      return res.status(400).send({
+        code: 409,
+        data: 'Something went wrong'
+      })
+    }
+    return res.status(200).send({
+      code: 200,
+      data: 'Successful'
+    });
+  }
   static findFreeWorker = async (workers: User[], section: number) => {
 
     const allWorkerOffs = [];

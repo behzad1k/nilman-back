@@ -1,12 +1,14 @@
-import { Request, Response } from "express";
+import { validate } from 'class-validator';
+import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { Between, getRepository } from 'typeorm';
-import { validate } from "class-validator";
-import { Order } from "../../entity/Order";
-import { Service } from "../../entity/Service";
-import { User } from "../../entity/User";
+import { Between, getRepository, In } from 'typeorm';
+import { Order } from '../../entity/Order';
+import { Service } from '../../entity/Service';
+import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
+import { orderStatus } from '../../utils/enums';
 import { getUniqueSlug, jwtDecode } from '../../utils/funs';
+import smsLookup from '../../utils/smsLookup';
 
 class WorkerDashboardController {
   static users = () => getRepository(User)
@@ -129,8 +131,9 @@ class WorkerDashboardController {
     }catch (e){
       res.status(409).send("error try again later");
     }
-    return res.status(204).send({});
+    return res.status(200).send({code: 204, data: 'Successful'});
   };
+
 
 }
 

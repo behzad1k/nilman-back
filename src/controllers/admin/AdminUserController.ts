@@ -8,8 +8,9 @@ import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { dataTypes, roles } from '../../utils/enums';
-import { generateCode } from '../../utils/funs';
+import { generateCode, jwtDecode } from '../../utils/funs';
 import media from '../../utils/media';
+import smsLookup from '../../utils/smsLookup';
 
 class AdminUserController {
   static users = () => getRepository(User);
@@ -118,6 +119,7 @@ class AdminUserController {
       if (districts){
         user.districts = await getRepository(District).findBy({ id: In(districts)})
       }
+      user.isVerified = true
       user.shebaNumber = shebaNumber;
       user.bankName = bankName;
       user.hesabNumber = hesabNumber;
@@ -279,6 +281,7 @@ class AdminUserController {
       data: user
     });
   };
+
 }
 
 export default AdminUserController;

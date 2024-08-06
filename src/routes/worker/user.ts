@@ -15,5 +15,6 @@ export class WorkerUserRoutes {
 
   routes() {
     this.router.post("/bank", this.authController.authorizeJWTWorker ,WorkerUserController.bankInfo);
+    this.router.post("/emergency", this.authController.authorizeJWTWorker ,WorkerUserController.emergency);
   }
 }

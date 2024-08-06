@@ -9,6 +9,7 @@ import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { jwtDecode, signJWT } from '../../utils/funs';
 import sms from '../../utils/sms';
+import smsLookup from '../../utils/smsLookup';
 
 class WorkerUserController {
   static users = () => getRepository(User);
@@ -52,6 +53,23 @@ class WorkerUserController {
       user: user,
     });
   };
+
+  static emergency = async (req: Request, res: Response): Promise<Response> => {
+    const userId = jwtDecode(req.headers.authorization);
+    const { code, phoneNumber } = req.body;
+    // let workerPhoneNumber = phoneNumber, orderCode = code;
+    try {
+      // if (!orderCode){
+      //   const order = await getRepository(Order).find({ where: { workerId: Number(userId), status: In([orderStatus.InProgress, orderStatus.Assigned])}, order: })
+      // }
+      const user = await getRepository(User).findOneBy({ id: Number(userId) })
+      smsLookup.emergency((code || 'نامشخص'), (user.phoneNumber || phoneNumber || 'نامشخص'),)
+
+    }catch (e){
+
+    }
+    return res.status(200).send({code: 204, data: 'Successful'});
+  }
 
 }
 
