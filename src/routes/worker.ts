@@ -1,6 +1,7 @@
 import { Router } from "express";
 import AuthController from "../controllers/AuthController";
 import WorkerDashboardController from '../controllers/worker/WorkerDashboardController';
+import { WorkerDashboardRoutes } from './worker/dashboard';
 import { WorkerOrderRoutes } from './worker/order';
 import { WorkerUserRoutes } from './worker/user';
 
@@ -14,7 +15,7 @@ export class WorkerRoutes {
   }
 
   routes() {
-    this.router.get("/salary/:id",this.authController.authorizeJWTWorker, WorkerDashboardController.salary);
+    this.router.use("/dashboard",this.authController.authorizeJWTWorker, new WorkerDashboardRoutes().router);
     this.router.use("/order",this.authController.authorizeJWTWorker, new WorkerOrderRoutes().router);
     this.router.use("/user",this.authController.authorizeJWTWorker, new WorkerUserRoutes().router);
   }

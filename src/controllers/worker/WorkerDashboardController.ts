@@ -16,7 +16,7 @@ class WorkerDashboardController {
   static services = () => getRepository(Service)
 
   static salary = async (req: Request, res: Response): Promise<Response> => {
-    const { id } = req.params;
+    const id = jwtDecode(req.headers.authorization);
     const { from, to } = req.query;
     const orders = await this.orders().find({
       where: {
@@ -78,38 +78,6 @@ class WorkerDashboardController {
       return;
     }
     return res.status(201).send({ code: 201, data: service});
-  };
-
-  static create2 = async (req: Request, res: Response): Promise<Response> => {
-    const {
-    workerOffs
-  } = req.body;
-    const userId = jwtDecode(req.headers.authorization);
-
-    for (const [key, value] of Object.entries(workerOffs)) {
-      for (const time of (value as any)) {
-        await getRepository(WorkerOffs).insert({
-          userId: userId,
-          date: key,
-          fromTime: time,
-          toTime: time + 2,
-        })
-      }
-    }
-    Object.entries(workerOffs).map(([key, value]) => {
-
-    })
-    // const errors = await validate(serviceObj);
-    // if (errors.length > 0) {
-    //   return res.status(400).send(errors);
-    // }
-    // try {
-    //   await this.services().save(serviceObj);
-    // } catch (e) {
-    //   res.status(409).send("error try again later");
-    //   return;
-    // }
-    return res.status(200).send({code: 200, data: ''});
   };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {

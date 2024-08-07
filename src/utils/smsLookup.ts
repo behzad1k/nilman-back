@@ -26,8 +26,8 @@ const afterPaid = (name: string, phoneNumber: string, date: string, time: string
   send('pay', phoneNumber, removeSpace(name), removeSpace(`${date} ساعت ${time}`));
 };
 
-const emergency = (orderCode: string, phoneNumber: string, ) => {
-  send('emergency', '09122966372', phoneNumber, removeSpace(orderCode));
+const emergency = (orderCode: string, name: string, lastName: string) => {
+  send('emergency', '09122966372', removeSpace(name), removeSpace(lastName), removeSpace(orderCode));
 };
 
 const feedback = (name: string, phoneNumber: string, code: string) => {
