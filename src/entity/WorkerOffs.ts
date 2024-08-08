@@ -23,6 +23,9 @@ export class WorkerOffs {
   @Column(dataTypes.integer)
   userId: number
 
+  @Column(dataTypes.boolean, { default: true })
+  isStrict: boolean
+
   @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId', referencedColumnName: 'id'})
   worker: Relation<User>

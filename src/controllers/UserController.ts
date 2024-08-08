@@ -239,11 +239,18 @@ class UserController {
             role: roles.WORKER
           },
           relations: {
-            services: true
+            services: true,
+            workerOffs: true
           }
         });
         const workers = users.filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k)))
-        console.log(workers);
+        for (let i = 0; i <= 14; i++) {
+          const day = moment().add(i, 'day').format('jYYYY/jMM/jDD')
+          const schedule = this.workersScheduleDay(workers, day)
+          if (schedule.length > 0) {
+            result[day] = schedule
+          }
+        }
       } catch (e) {
         console.log(e);
         return res.status(400).send({
@@ -258,17 +265,36 @@ class UserController {
     });
   };
 
-  private static workerSchedule = (workerOffs) => {
+  private static workersScheduleDay = (workers: User[], day: string) => {
+    const allWorkerOffs: any = {};
+    for (const worker of workers) {
+      const workerOffs = worker.workerOffs.filter(e => e.date == day);
+      if (workerOffs.length > 0) {
+        allWorkerOffs[worker.id] = Object.values(this.workerSchedule(workerOffs))[0];
+      }
+    }
+    const result = [];
+    for (let i = 8; i < 20; i = i + 2) {
+      if (Object.values(allWorkerOffs).filter((e: any) => e.includes(i)).length == workers.length){
+        result.push(i);
+      }
+    }
+    return result;
+  }
+
+  private static workerSchedule = (workerOffs: WorkerOffs[]) => {
     let result: any = {};
     for (const workerOff of workerOffs) {
       if (!result[workerOff.date]){
         result[workerOff.date] = []
       }
       for (let i = 8; i < 20; i = i + 2) {
-        if ((workerOff.fromTime >= i && workerOff.fromTime <= (i + 2)) || (workerOff.fromTime <= i && workerOff.toTime >= (i))){
-          result[workerOff.date].push(i)
+        if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 2)) || (workerOff.fromTime <= i && workerOff.toTime >= (i))){
+          result[workerOff.date].push(i);
+          break;
         }else if((workerOff.fromTime >= i && workerOff.toTime <= (i + 2))){
-          result[workerOff.date].push((i + 2))
+          result[workerOff.date].push((i + 2));
+          break;
         }
       }
     }

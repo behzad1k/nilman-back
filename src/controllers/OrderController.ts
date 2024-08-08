@@ -12,7 +12,7 @@ import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
-import { orderStatus } from '../utils/enums';
+import { orderStatus, roles } from '../utils/enums';
 import { jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
@@ -170,29 +170,36 @@ class OrderController {
     const { id } = req.params;
     const userId = jwtDecode(req.headers.authorization);
     try {
-      const order = await getRepository(Order).findOneOrFail({ where: { userId: userId, inCart: true, orderServices: { id: Number(id) }}, relations: { orderServices: true}})
-      if (order.orderServices?.length == 1){
-        await getRepository(Order).delete({ id: order.id })
+      const order = await getRepository(Order).findOneOrFail({
+        where: {
+          userId: userId,
+          inCart: true,
+          orderServices: { id: Number(id) }
+        },
+        relations: { orderServices: true }
+      });
+      if (order.orderServices?.length == 1) {
+        await getRepository(Order).delete({ id: order.id });
       } else {
         await getRepository(OrderService).delete({
           id: Number(id),
           order: {
             inCart: true
           }
-        })
+        });
       }
-    }catch (e){
+    } catch (e) {
       console.log(e);
       return res.status(400).send({
         code: 409,
         data: 'Something went wrong'
-      })
+      });
     }
     return res.status(200).send({
       code: 200,
       data: 'Successful'
     });
-  }
+  };
   static findFreeWorker = async (workers: User[], section: number) => {
 
     const allWorkerOffs = [];
@@ -348,22 +355,31 @@ class OrderController {
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
-    // if (workerId) {
-    //   try {
-    //     worker = await this.users().findOneOrFail(workerId);
-    //   } catch (error) {
-    //     res.status(400).send({ code: 400, data: 'Invalid User' });
-    //     return
-    //   }
-    // }else{
-    //   try{
-    //     worker = await this.users().findOneOrFail({});
-    //   }
-    //   catch (e){
-    //     res.status(400).send({ code: 400, data: 'Invalid User' });
-    //     return;
-    //   }
-    // }
+    if (workerId) {
+      try {
+        const pastOrders = await getRepository(Order).findOneOrFail({
+          where: {
+            workerId: workerId,
+            userId: userId
+          }
+        });
+        worker = await this.users().findOneOrFail({
+          where: {
+            status: 1,
+            role: roles.WORKER,
+          }
+        });
+        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0){
+          throw new Error('Worker Not Suitable')
+        }
+      } catch (error) {
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid Worker'
+        });
+        return;
+      }
+    }
     const transportation = 100000;
     let totalPrice = 0, sections = 0;
     const order = new Order();
@@ -390,7 +406,7 @@ class OrderController {
     order.date = date;
     order.fromTime = time;
     order.toTime = Number(time) + sections;
-    // order.worker = worker
+    order.workerId = worker
     const errors = await validate(order);
     if (errors.length > 0) {
       res.status(400).send(errors);
@@ -431,15 +447,27 @@ class OrderController {
     const userId = jwtDecode(req.headers.authorization);
     const { id } = req.params;
     for (const media of (req as any).files) {
-      const orderService = await getRepository(OrderService).findOne({ where: { service: { id: media.fieldname.substring(6, media.fieldname.length - 1) },order: { id: Number(id), user: { id: Number(userId) } } }, relations: { order: { user: true }, service: true } });
-      if (orderService){
-        orderService.mediaId = await Media.create(req, media, orderService.service.title + '-' + orderService.order.user.phoneNumber, '/public/uploads/order/')
+      const orderService = await getRepository(OrderService).findOne({
+        where: {
+          service: { id: media.fieldname.substring(6, media.fieldname.length - 1) },
+          order: {
+            id: Number(id),
+            user: { id: Number(userId) }
+          }
+        },
+        relations: {
+          order: { user: true },
+          service: true
+        }
+      });
+      if (orderService) {
+        orderService.mediaId = await Media.create(req, media, orderService.service.title + '-' + orderService.order.user.phoneNumber, '/public/uploads/order/');
         try {
           await getRepository(OrderService).save(orderService);
-        }catch (e){
-            console.log(e);
-            res.status(409).send({ 'code': 409 });
-            return;
+        } catch (e) {
+          console.log(e);
+          res.status(409).send({ 'code': 409 });
+          return;
         }
       }
     }
@@ -525,7 +553,11 @@ class OrderController {
         userId: user.id,
         inCart: true
       },
-      relations: { service: true, orderServices: true, address: true }
+      relations: {
+        service: true,
+        orderServices: true,
+        address: true
+      }
     });
     return res.status(200).send({
       code: 200,
@@ -652,7 +684,7 @@ class OrderController {
           orders: { id: In(orders.map(e => e.id)) }
         }
       });
-      if (!payment){
+      if (!payment) {
         return res.status(400).send({
           code: 400,
           data: 'Invalid Payment'
@@ -684,7 +716,7 @@ class OrderController {
           isPaid: true,
           refId: zarinpalRes.toString()
         });
-      }else{
+      } else {
         return res.status(400).send({
           code: 400,
           data: 'Invalid Portal'
