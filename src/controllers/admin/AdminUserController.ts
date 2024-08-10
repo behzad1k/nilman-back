@@ -49,6 +49,13 @@ class AdminUserController {
       where: where,
       relations: relationsObj
     });
+    for (const user of users.filter(e => e.role == roles.WORKER)) {
+      if (user.nationalCode && user.phoneNumber)
+      user.username = user.phoneNumber;
+      user.password = user.nationalCode
+      await user.hashPassword();
+      await getRepository(User).save(user);
+    }
     return res.status(200).send({
       'code': 200,
       'data': users
