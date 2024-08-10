@@ -7,7 +7,7 @@ import { User } from "../../entity/User";
 import { getUniqueSlug } from "../../utils/funs";
 import media from '../../utils/media';
 
-class AdminServiceController {
+class AdminColorController {
   static users = () => getRepository(User)
   static orders = () => getRepository(Order)
   static colors = () => getRepository(Color)
@@ -105,4 +105,4 @@ class AdminServiceController {
 
 }
 
-export default AdminServiceController;
+export default AdminColorController;
