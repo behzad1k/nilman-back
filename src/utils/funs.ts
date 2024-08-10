@@ -128,6 +128,8 @@ export const getOrderTime = (order: Order) => {
 
 export const removeSpace = (value: string, replaceValue = '-') => value.replaceAll(' ', replaceValue);
 
+export const isEmpty = (value: any) => Object.values(value).length == 0;
+
 export const isNumeric = (str: string) => {
     if (typeof str != "string") return false // we only process strings!
     return !isNaN(Number(str)) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...

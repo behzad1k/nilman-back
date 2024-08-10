@@ -14,6 +14,7 @@ import { Address } from "./Address";
 import { Discount } from './Discount';
 import { District } from './District';
 import { Feedback } from './Feedback';
+import { Log } from './Log';
 import Media from './Media';
 import { Order } from "./Order";
 import { Service } from "./Service";
@@ -145,6 +146,9 @@ export class User {
 
   @OneToMany(() => Feedback, feedbacks => feedbacks.user, { nullable: true, onDelete: 'CASCADE' })
   feedbacks: Relation<Feedback[]>
+
+  @OneToMany(() => Log, log => log.user, { nullable: true, onDelete: 'CASCADE' })
+  activities: Relation<Log[]>
 
   @ManyToMany(() => Service, service => service.users, { onDelete: 'CASCADE' })
   @JoinTable({
