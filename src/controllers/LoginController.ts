@@ -60,14 +60,12 @@ class LoginController {
     });
   };
   static loginWorker = async (req: Request, res: Response): Promise<Response> => {
-    const { phoneNumber } = req.body;
-    if (!(phoneNumber)) {
+    const { username, password } = req.body;
+    if (!(username && password)) {
       return res.status(400).send({ 'message': 'Phone number not set' });
     }
-    const code = generateCode();
-    let token = '';
     let user: User;
-    user = await this.users().findOne({ where: { phoneNumber } });
+    user = await this.users().findOne({ where: { username: username } });
     if (!user || user.role != roles.WORKER) {
       return res.status(401).send({
         code: 401,
@@ -80,16 +78,23 @@ class LoginController {
         data: "Inactive Login"
       })
     }
-    user.tmpCode = code;
+    if (!bcrypt.compareSync(password, user?.password)) {
+      return res.status(401).send({
+        code: 400,
+        data: 'Invalid Credentials'
+      });
+    }
+    user.lastEntrance = new Date();
     user = await this.users().save(user);
-    token = await signTmpJWT({
-      id: user.id,
-      code: code
-    }, '2m');
-    console.log(code);
-    await sms.welcome(code, phoneNumber);
+
+    const token = await signJWT(user);
+
     return res.status(200).send({
-      token: token
+      code: 200,
+      data: {
+        token: token,
+        user: user
+      }
     });
   };
   static loginAdmin = async (req: Request, res: Response): Promise<Response> => {
