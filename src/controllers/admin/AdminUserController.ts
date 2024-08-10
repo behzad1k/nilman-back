@@ -100,7 +100,7 @@ class AdminUserController {
     user.status = status;
     user.role = role;
 
-    if (role == roles.SUPER_ADMIN || role == roles.OPERATOR && password && username) {
+    if (role == roles.SUPER_ADMIN || role == roles.OPERATOR || role == roles.WORKER && password && username) {
       user.username = username;
       user.password = password;
       await user.hashPassword();
