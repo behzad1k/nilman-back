@@ -13,10 +13,9 @@ class AdminLogController {
 
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { path } = req.query;
-    const where = {};
-    where['pathname'] = path.toString().replaceAll('%2', '/');
-
-    const logs = await getRepository(Log).find({ where: where });
+    const where: any = {};
+    where.pathname = path.toString().replaceAll('%2', '/');
+    const logs = await getRepository(Log).query(`SELECT DISTINCT ipAddress, userId from log where pathname = ?`,[where.pathname]);
     return res.status(200).send({
       code: 200,
       data: logs
