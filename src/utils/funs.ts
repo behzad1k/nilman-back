@@ -117,6 +117,7 @@ export const jwtDecode  = (token) => {
         }
     }catch (e){
         console.log(e, token);
+        return -1;
     }
     return userId;
 }

@@ -41,9 +41,11 @@ export class Log {
   @Column(dataTypes.text)
   pathname: string;
 
-  @Column(dataTypes.datetime)
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column(dataTypes.text)
+  date: string;
+
+  @Column(dataTypes.text)
+  time: string;
 
   @ManyToOne(() => User, (user) => user.activities, { onDelete: 'CASCADE' })
   @JoinColumn({ name:"userId", referencedColumnName: "id"})

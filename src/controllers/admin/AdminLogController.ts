@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
+import moment from 'jalali-moment';
 import path from 'path';
-import { getRepository } from "typeorm";
+import { getRepository, Like } from 'typeorm';
 import { validate } from "class-validator";
 import { Log } from '../../entity/Log';
 import { Order } from "../../entity/Order";
@@ -14,8 +15,9 @@ class AdminLogController {
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { path } = req.query;
     const where: any = {};
+    where.date = moment().format('jYYYY/jMM/jDD')
     where.pathname = path.toString().replaceAll('%2', '/');
-    const logs = await getRepository(Log).query(`SELECT DISTINCT ipAddress, userId from log where pathname = ?`,[where.pathname]);
+    const logs = await getRepository(Log).query(`SELECT * FROM log WHERE pathname = ? AND date = ? GROUP BY ipAddress`,[where.pathname, where.date]);
     return res.status(200).send({
       code: 200,
       data: logs

@@ -53,6 +53,61 @@ class AdminOrderController {
     });
   };
 
+  static update = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const {
+      status,
+      date,
+      time
+    } = req.body;
+    let order: Order, user: User;
+    try {
+      order = await this.orders().findOneOrFail({
+        where: { id: Number(id) },
+        relations: { orderServices: { service: true } }
+      });
+
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
+    }
+
+    // await Promise.all(
+    //   products?.map(async (productId, index) => {
+    //     await getRepository(OrderProduct).update({
+    //       orderId: Number(id),
+    //       productId: Number(productId)
+    //     }, {
+    //       count: counts[index],
+    //       price: prices[index]
+    //     })
+    //   })
+    // )
+    order.status = status;
+    order.date = date;
+    order.fromTime = time;
+    order.toTime = time + Number(order.orderServices.reduce((acc, curr) => acc + curr.service.section, 0))
+
+    const errors = await validate(order);
+    if (errors.length > 0) {
+      return res.status(400).send(errors);
+    }
+    try {
+      await this.orders().save(order);
+    } catch (e) {
+      res.status(409).send('error try again later');
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: order
+    });
+  };
+
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {
