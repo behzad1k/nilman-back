@@ -17,7 +17,7 @@ export class Address {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column(dataTypes.text, {})
+  @Column(dataTypes.text)
   title: string;
 
   @Column(dataTypes.number)
@@ -37,16 +37,16 @@ export class Address {
   @Column(dataTypes.text)
   latitude: string;
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.integer, { default: 1 })
   districtId?: number;
 
-  @Column(dataTypes.string)
+  @Column(dataTypes.string, { nullable: true })
   postalCode?: string;
 
-  @Column(dataTypes.string)
+  @Column(dataTypes.string, { nullable: true })
   pelak?: string;
 
-  @Column(dataTypes.string)
+  @Column(dataTypes.string, { nullable: true })
   vahed?: string;
 
   @Column(dataTypes.datetime)
