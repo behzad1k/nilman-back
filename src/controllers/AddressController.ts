@@ -64,7 +64,7 @@ class AddressController {
     address.pelak = pelak;
     address.vahed = vahed;
     address.description = description;
-    address.postalCode = postalCode;
+    // address.postalCode = postalCode;
     address.longitude = longitude;
     address.latitude = latitude;
     address.districtId = 1;
