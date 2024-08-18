@@ -369,8 +369,8 @@ class OrderController {
             role: roles.WORKER,
           }
         });
-        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0){
-          throw new Error('Worker Not Suitable')
+        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0) {
+          throw new Error('Worker Not Suitable');
         }
       } catch (error) {
         res.status(400).send({
@@ -406,7 +406,7 @@ class OrderController {
     order.date = date;
     order.fromTime = time;
     order.toTime = Number(time) + sections;
-    order.workerId = worker
+    order.workerId = worker;
     const errors = await validate(order);
     if (errors.length > 0) {
       res.status(400).send(errors);
@@ -651,24 +651,24 @@ class OrderController {
 
   };
   static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
-    const userId = jwtDecode(req.headers.authorization);
+    // const userId = jwtDecode(req.headers.authorization);
     const {
       authority,
       status
     } = req.body;
-    let user;
-    try {
-      user = await this.users().findOneOrFail({
-        where: { id: userId },
-        relations: ['orders']
-      });
-    } catch (error) {
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid User'
-      });
-      return;
-    }
+    // let user;
+    // try {
+    //   user = await this.users().findOneOrFail({
+    //     where: { id: userId },
+    //     relations: ['orders']
+    //   });
+    // } catch (error) {
+    //   res.status(400).send({
+    //     code: 400,
+    //     data: 'Invalid User'
+    //   });
+    //   return;
+    // }
 
     let orders: Order[];
     let payment: Payment;
@@ -676,7 +676,8 @@ class OrderController {
       orders = await this.orders().find({
         where: {
           payment: { authority: authority }
-        }
+        },
+        relations: { user: true }
       });
 
       payment = await getRepository(Payment).findOne({
@@ -685,6 +686,7 @@ class OrderController {
         }
       });
       if (!payment) {
+        console.log('no payment');
         return res.status(400).send({
           code: 400,
           data: 'Invalid Payment'
@@ -704,19 +706,20 @@ class OrderController {
       }).catch(function (err) {
         console.log(err);
       });
-      if (zarinpalRes) {
+      if (zarinpalRes || status == 'OK') {
         for (const order of orders) {
           order.inCart = false;
           order.status = orderStatus.Paid;
 
           await getRepository(Order).save(order);
-          smsLookup.afterPaid(user.name, user.phoneNumber, order.date, order.fromTime.toString());
+          smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
         await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,
-          refId: zarinpalRes.toString()
+          refId: zarinpalRes ? zarinpalRes.toString() : null
         });
       } else {
+        console.log('Invalid Portal');
         return res.status(400).send({
           code: 400,
           data: 'Invalid Portal'
