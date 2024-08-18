@@ -50,7 +50,7 @@ const referral = (name: string, code: string, phoneNumber: string) => {
   send('referral', phoneNumber, code);
 };
 
-const notify = (price: string, code: string, order: string) => {
+const notify = (code: string, price: string, order: string) => {
   send('notify', '09122251784', code, order, price);
 };
 
