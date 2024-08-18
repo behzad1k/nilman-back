@@ -713,6 +713,7 @@ class OrderController {
 
           await getRepository(Order).save(order);
           smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
+          smsLookup.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString());
         }
         await getRepository(Payment).update({ id: payment.id }, {
           isPaid: true,

@@ -50,6 +50,10 @@ const referral = (name: string, code: string, phoneNumber: string) => {
   send('referral', phoneNumber, code);
 };
 
+const notify = (price: string, code: string, order: string) => {
+  send('notify', '09122251784', code, order, price);
+};
+
 export default {
   emergency,
   referral,
@@ -58,5 +62,6 @@ export default {
   afterPaid,
   feedback,
   orderAssignUser,
-  orderAssignWorker
+  orderAssignWorker,
+  notify
 };
