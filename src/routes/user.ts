@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Router } from "express";
+import multer from 'multer';
 import UserController from "../controllers/UserController";
 import AuthController from "../controllers/AuthController";
+import multerConfig from '../middlewares/multer';
 
 export class UserRoutes {
   public router: Router;
@@ -18,6 +20,7 @@ export class UserRoutes {
     this.router.put("", this.authController.authenticateJWT, UserController.update);
     this.router.get("/address", this.authController.authenticateJWT, UserController.getAddresses);
     this.router.post("/workerOffs", UserController.getWorkerOffs);
+    this.router.post("/medias", [this.authController.authenticateJWT, multer(multerConfig('uploads/profilePic')).any()], UserController.medias);
     this.router.put("/changePassword", this.authController.authenticateJWT, UserController.changePassword);
   }
 }

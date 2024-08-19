@@ -7,10 +7,12 @@ import jwtD from 'jwt-decode';
 import { getRepository } from 'typeorm';
 import config from '../config/config';
 import { Discount } from '../entity/Discount';
+import Media from '../entity/Media';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
 import { generateCode, jwtDecode, signJWT } from '../utils/funs';
+import media from '../utils/media';
 import sms from '../utils/smsLookup';
 
 class UserController {
@@ -191,6 +193,37 @@ class UserController {
       token: await signJWT(user)
     });
   };
+  static medias = async (req: Request, res: Response): Promise<Response> => {
+    const userId = jwtDecode(req.headers.authorization);
+    let user;
+    try {
+      user = await getRepository(User).findOneOrFail({
+        where: { id: userId },
+        relations: { profilePic: true }
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid UserId'
+      });
+      return;
+    }
+    if ((req as any).files) {
+      const profileId = await media.create(req, (req as any).files[0], user.name, '/public/uploads/profilePic/');
+      user.profileId = profileId;
+      user.profilePic = await getRepository(Media).findOneBy({ id: profileId })
+    }
+    try {
+      await this.users().save(user);
+    } catch (e) {
+      return res.status(409).send({ 'code': 409 , data: 'Unsuccessful'});
+    }
+
+    return res.status(200).send({
+      code: '200',
+      data: user
+    });
+  }
   static getAddresses = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
     const userRepository = getRepository(User);
