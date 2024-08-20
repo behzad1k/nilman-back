@@ -37,7 +37,7 @@ export class Order {
   @Column(dataTypes.integer, { nullable: true })
   workerPercent: number
 
-  @Column(dataTypes.string)
+  @Column(dataTypes.string, { nullable: true })
   code: string
 
   @Column(dataTypes.integer, {

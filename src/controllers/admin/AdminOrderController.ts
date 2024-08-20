@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import { Any, ArrayContains, getRepository, In, Raw } from 'typeorm';
 import { Order } from '../../entity/Order';
+import { OrderService } from '../../entity/OrderService';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
@@ -14,7 +15,6 @@ import smsLookup from '../../utils/smsLookup';
 class AdminOrderController {
   static users = () => getRepository(User);
   static orders = () => getRepository(Order);
-  static services = () => getRepository(Service);
   static index = async (req: Request, res: Response): Promise<Response> => {
     let orders;
     try {
@@ -53,7 +53,7 @@ class AdminOrderController {
     });
   };
 
-  static update = async (req: Request, res: Response): Promise<Response> => {
+  static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {
       status,
@@ -61,32 +61,26 @@ class AdminOrderController {
       time
     } = req.body;
     let order: Order, user: User;
-    try {
-      order = await this.orders().findOneOrFail({
-        where: { id: Number(id) },
-        relations: { orderServices: { service: true } }
-      });
+    if(id) {
+      try {
+        order = await this.orders().findOneOrFail({
+          where: { id: Number(id) },
+          relations: { orderServices: { service: true } }
+        });
 
-    } catch (error) {
-      console.log(error);
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid Order'
-      });
-      return;
+      } catch (error) {
+        console.log(error);
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid Order'
+        });
+        return;
+      }
+    } else {
+      order = new Order();
+      order.code = 'NIL-' + (10000 + await getRepository(Order).count());
     }
 
-    // await Promise.all(
-    //   products?.map(async (productId, index) => {
-    //     await getRepository(OrderProduct).update({
-    //       orderId: Number(id),
-    //       productId: Number(productId)
-    //     }, {
-    //       count: counts[index],
-    //       price: prices[index]
-    //     })
-    //   })
-    // )
     order.status = status;
     order.date = date;
     order.fromTime = time;
@@ -108,6 +102,49 @@ class AdminOrderController {
     });
   };
 
+  static services = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const { services } = req.body;
+    let order: Order;
+    try {
+      order = await this.orders().findOneOrFail({
+        where: { id: Number(id) },
+        relations: { orderServices: { service: true } }
+      });
+
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
+    }
+
+    for (const orderService of order.orderServices) {
+      if (!services.find(e => e.serviceId == orderService.serviceId)){
+        await getRepository(OrderService).delete({ id: orderService.id })
+      }
+    }
+
+    for (const service of services) {
+      const serviceObj = await getRepository(Service).findOneBy({ id: service.id })
+      let orderService = order.orderServices.find(e => e.serviceId == service.serviceId)
+      if (orderService){
+        continue;
+      }
+      await getRepository(OrderService).insert({
+        orderId: order.id,
+        serviceId: service.serviceId,
+        price: serviceObj.price,
+      })
+    }
+
+    return res.status(200).send({
+      code: 200,
+      data: order
+    });
+  }
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {

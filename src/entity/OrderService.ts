@@ -30,7 +30,7 @@ export class OrderService {
   @Column(dataTypes.integer)
   price: number;
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.text, { nullable: true })
   pinterest: string;
 
   @Column(dataTypes.datetime)

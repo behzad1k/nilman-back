@@ -400,7 +400,6 @@ class OrderController {
     order.service = serviceObj;
     order.isUrgent = isUrgent;
     order.user = user;
-    order.code = 'NIL-' + (10000 + await getRepository(Order).count());
     order.status = orderStatus.Created;
     order.address = addressObj;
     order.date = date;
@@ -710,6 +709,7 @@ class OrderController {
         for (const order of orders) {
           order.inCart = false;
           order.status = orderStatus.Paid;
+          order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
 
           await getRepository(Order).save(order);
           smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
