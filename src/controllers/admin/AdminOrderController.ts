@@ -58,7 +58,10 @@ class AdminOrderController {
     const {
       status,
       date,
-      time
+      time,
+      finalPrice,
+      price,
+      transportation
     } = req.body;
     let order: Order, user: User;
     if(id) {
@@ -83,6 +86,9 @@ class AdminOrderController {
 
     order.status = status;
     order.date = date;
+    order.price = price;
+    order.finalPrice = finalPrice;
+    order.transportation = transportation;
     order.fromTime = time;
     order.toTime = time + Number(order.orderServices.reduce((acc, curr) => acc + curr.service.section, 0))
 
@@ -126,18 +132,21 @@ class AdminOrderController {
         await getRepository(OrderService).delete({ id: orderService.id })
       }
     }
-
+    const newOrderServices = []
     for (const service of services) {
       const serviceObj = await getRepository(Service).findOneBy({ id: service.id })
       let orderService = order.orderServices.find(e => e.serviceId == service.serviceId)
       if (orderService){
         continue;
       }
-      await getRepository(OrderService).insert({
-        orderId: order.id,
-        serviceId: service.serviceId,
-        price: serviceObj.price,
-      })
+      orderService = new OrderService();
+
+      orderService.orderId = order.id;
+      orderService.serviceId = service.serviceId;
+      orderService.price = serviceObj.price;
+
+      await getRepository(OrderService).save(orderService)
+      newOrderServices.push(orderService)
     }
 
     return res.status(200).send({
