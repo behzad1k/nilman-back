@@ -39,7 +39,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOne({
         where: { id: Number(id) },
-        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user']
+        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses']
       });
     } catch (e) {
       return res.status(400).send({
@@ -61,6 +61,7 @@ class AdminOrderController {
       time,
       finalPrice,
       price,
+      discountAmount,
       transportation
     } = req.body;
     let order: Order, user: User;
@@ -86,6 +87,7 @@ class AdminOrderController {
 
     order.status = status;
     order.date = date;
+    order.discountAmount = discountAmount;
     order.price = price;
     order.finalPrice = finalPrice;
     order.transportation = transportation;
