@@ -72,7 +72,8 @@ class AdminUserController {
       shebaNumber,
       hesabNumber,
       bankName,
-      districts
+      districts,
+      isVerified
     } = req.body;
 
     const { id } = req.params;
@@ -104,6 +105,9 @@ class AdminUserController {
     user.phoneNumber = phoneNumber;
     user.percent = percent;
     user.status = status;
+    if (isVerified) {
+      user.isVerified = isVerified;
+    }
     user.role = role || roles.USER;
 
     if (role == roles.SUPER_ADMIN || role == roles.OPERATOR || role == roles.WORKER && password && username) {
