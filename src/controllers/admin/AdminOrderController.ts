@@ -62,7 +62,10 @@ class AdminOrderController {
       finalPrice,
       price,
       discountAmount,
-      transportation
+      transportation,
+      serviceId,
+      addressId,
+      userId
     } = req.body;
     let order: Order, user: User;
     if(id) {
@@ -85,14 +88,18 @@ class AdminOrderController {
       order.code = 'NIL-' + (10000 + await getRepository(Order).count());
     }
 
+    order.inCart = status == orderStatus.Created
     order.status = status;
     order.date = date;
     order.discountAmount = discountAmount;
+    order.addressId = addressId;
+    order.userId = userId;
     order.price = price;
     order.finalPrice = finalPrice;
     order.transportation = transportation;
+    order.serviceId = serviceId;
     order.fromTime = time;
-    order.toTime = time + Number(order.orderServices.reduce((acc, curr) => acc + curr.service.section, 0))
+    order.toTime = Number(time) + 1 ;
 
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -101,6 +108,7 @@ class AdminOrderController {
     try {
       await this.orders().save(order);
     } catch (e) {
+      console.log(e);
       res.status(409).send('error try again later');
       return;
     }
@@ -148,9 +156,16 @@ class AdminOrderController {
       orderService.price = serviceObj.price;
 
       await getRepository(OrderService).save(orderService)
-      newOrderServices.push(orderService)
+      newOrderServices.push({ ...orderService, service: { section: serviceObj.section } })
     }
 
+    try {
+      await this.orders().update({ id: order.id }, { toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0)) });
+    } catch (e) {
+      console.log(e);
+      res.status(409).send('error try again later');
+      return;
+    }
     return res.status(200).send({
       code: 200,
       data: order

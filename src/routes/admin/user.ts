@@ -17,6 +17,8 @@ export class AdminUserRoutes {
     this.router.get("", AdminUserController.index);
     this.router.get("/single/:id", AdminUserController.single);
     this.router.post("/basic/:id?", AdminUserController.basic);
+    this.router.get("/findBy", AdminUserController.findBy);
+    this.router.post("/verifyNC/", AdminUserController.verifyUser);
     this.router.post("/status/:id", AdminUserController.active);
     this.router.post("/workerOff/:id", AdminUserController.workerOff);
     this.router.post("/medias/:id", multer(multerConfig('uploads/profilePic')).any(), AdminUserController.medias);

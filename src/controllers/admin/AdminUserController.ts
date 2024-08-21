@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import { getRepository, getTreeRepository, In, Like } from 'typeorm';
@@ -103,7 +104,7 @@ class AdminUserController {
     user.phoneNumber = phoneNumber;
     user.percent = percent;
     user.status = status;
-    user.role = role;
+    user.role = role || roles.USER;
 
     if (role == roles.SUPER_ADMIN || role == roles.OPERATOR || role == roles.WORKER && password && username) {
       user.username = username;
@@ -257,6 +258,51 @@ class AdminUserController {
       data: user
     });
   };
+  static verifyUser = async (req: Request, res: Response): Promise<Response> => {
+    const { nationalCode, phoneNumber} = req.body;
+    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+      nationalCode: nationalCode,
+      mobileNumber: phoneNumber
+    }, {
+      headers: {
+        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+        'Content-type': 'application/json'
+      }
+    });
+
+    if (!res2.data?.matched) {
+      return res.status(400).send({
+        code: 1005,
+        data: 'کد ملی با شماره تلفن تطابق ندارد'
+      });
+    }
+    return res.status(200).send({
+      code: 200,
+      data: 'Successful'
+    });
+  }
+  static findBy = async (req: Request, res: Response): Promise<Response> => {
+    let user: User;
+    try {
+      user = await this.users().findOneOrFail({
+        where: req.query,
+        relations: {
+          addresses: true
+        }
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 1002,
+        data: 'Invalid Id'
+      });
+      return;
+    }
+
+    return res.status(200).send({
+      code: 200,
+      data: user
+    });
+  }
   static workerOff = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {

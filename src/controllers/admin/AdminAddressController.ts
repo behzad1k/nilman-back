@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { use } from 'passport';
 import { getRepository } from "typeorm";
 import { validate } from "class-validator";
 import * as jwt from "jsonwebtoken";
@@ -18,7 +19,7 @@ class AdminAddressController {
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { title, description, longitude, latitude, phoneNumber, postalCode, pelak, vahed } = req.body;
+    const { userId, title, description, longitude, latitude, phoneNumber, postalCode, pelak, vahed } = req.body;
     const addressRepository = getRepository(Address);
     let address: Address;
     if (id) {
@@ -32,6 +33,7 @@ class AdminAddressController {
       }
     }else{
       address = new Address();
+      address.userId = userId;
     }
 
     address.title = title;
@@ -41,10 +43,9 @@ class AdminAddressController {
     address.vahed = vahed;
     address.pelak = pelak;
 
-    if (longitude)
-      address.longitude = longitude;
-    if (latitude)
-      address.latitude = latitude;
+
+      address.longitude = longitude || '51.4319429449887';
+      address.latitude = latitude || '35.80761631591913';
 
     const errors = await validate(address);
     if (errors.length > 0) {
@@ -54,6 +55,7 @@ class AdminAddressController {
     try {
       await addressRepository.save(address);
     } catch (e) {
+      console.log(e);
       return res.status(409).send("error try again later");
     }
     return res.status(200).send({code: 200, data: address});
