@@ -110,7 +110,7 @@ class LoginController {
     }
     let user: User;
     try {
-      user = await this.users().findOne({
+      user = await this.users().findOneOrFail({
         where: {
           username: username,
           role: 'SUPER_ADMIN'

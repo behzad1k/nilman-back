@@ -65,7 +65,8 @@ class AdminOrderController {
       transportation,
       serviceId,
       addressId,
-      userId
+      userId,
+      isUrgent
     } = req.body;
     let order: Order, user: User;
     if(id) {
@@ -100,6 +101,7 @@ class AdminOrderController {
     order.serviceId = serviceId;
     order.fromTime = time;
     order.toTime = Number(time) + 1 ;
+    order.isUrgent = isUrgent;
 
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -153,7 +155,7 @@ class AdminOrderController {
 
       orderService.orderId = order.id;
       orderService.serviceId = service.serviceId;
-      orderService.price = serviceObj.price;
+      orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1);
 
       await getRepository(OrderService).save(orderService)
       newOrderServices.push({ ...orderService, service: { section: serviceObj.section } })
@@ -233,6 +235,21 @@ class AdminOrderController {
     });
   };
 
+  static delete = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+
+    try {
+      await getRepository(Order).delete({ id: Number(id) });
+    } catch (e){
+      console.log(e);
+      res.status(409).send({ code: 409, data: 'error try again later' });
+      return;
+    }
+    return res.status(200).send({
+      code: 204,
+      data: 'Successful'
+    });
+  }
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
 
