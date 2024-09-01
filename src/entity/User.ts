@@ -116,6 +116,11 @@ export class User {
   })
   district: number
 
+  @Column(dataTypes.integer, {
+    default: 0
+  })
+  walletBalance: number
+
   @Column(dataTypes.datetime, {
     nullable: true
   })

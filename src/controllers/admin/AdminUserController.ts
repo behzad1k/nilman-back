@@ -72,6 +72,7 @@ class AdminUserController {
       shebaNumber,
       hesabNumber,
       bankName,
+      walletBalance,
       districts,
       isVerified
     } = req.body;
@@ -105,6 +106,8 @@ class AdminUserController {
     user.phoneNumber = phoneNumber;
     user.percent = percent;
     user.status = status;
+    user.walletBalance = walletBalance;
+
     if (isVerified) {
       user.isVerified = isVerified;
     }

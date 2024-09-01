@@ -39,7 +39,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOne({
         where: { id: Number(id) },
-        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses']
+        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage']
       });
     } catch (e) {
       return res.status(400).send({

@@ -126,7 +126,7 @@ class WorkerOrderController {
   static statusDone = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const userId = jwtDecode(req.headers.authorization);
-    let order: Order;
+    let order: Order, worker: User;
 
     try {
       order = await getRepository(Order).findOneBy({ id: Number(id), workerId: userId, status: orderStatus.InProgress })
@@ -134,6 +134,15 @@ class WorkerOrderController {
       return res.status(400).send({
         code: 400,
         data: 'Invalid Order'
+      })
+    }
+
+    try {
+      worker = await getRepository(User).findOneBy({ id: Number(userId)})
+    }catch (e){
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Worker'
       })
     }
 
@@ -150,13 +159,13 @@ class WorkerOrderController {
       })
     }
     order.status = orderStatus.Done;
-    console.log((req as any).files);
-    console.log((req as any).file);
     order.doneDate = new Date();
     order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder');
 
+    worker.walletBalance = worker.walletBalance + ((order.price * order.workerPercent / 100) + 100000) ;
     try {
       await this.orders().save(order);
+      await this.users().save(worker);
     } catch (e) {
       res.status(409).send('error try again later');
       return;
