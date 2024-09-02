@@ -17,11 +17,6 @@ class AdminOrderController {
   static orders = () => getRepository(Order);
   static index = async (req: Request, res: Response): Promise<Response> => {
     let orders;
-    const users = await getRepository(User).findBy({ role: 'WORKER'});
-    for (const user of users) {
-      const userOrders = await getRepository(Order).findBy({ workerId: user.id, status: orderStatus.Done });
-      await getRepository(User).update({ id: user.id }, { walletBalance: userOrders.reduce((acc, curr) => acc + ((curr.workerPercent || user.percent) * curr.price / 100) + 100000 ,0)})
-    }
     try {
       orders = await this.orders().find({
         relations: ['worker', 'service', 'address', 'orderServices', 'user']
