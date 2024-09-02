@@ -16,6 +16,7 @@ import Media from './Media';
 import { OrderService } from './OrderService';
 import { Payment } from './Payment';
 import { Service } from "./Service";
+import { Transaction } from './Transaction';
 import { User } from "./User";
 import "reflect-metadata";
 @Entity()
@@ -73,6 +74,12 @@ export class Order {
     nullable: true
   })
   attributeId: number
+
+  @Column(dataTypes.integer, {
+    nullable: true,
+    default: null
+  })
+  transactionId: number
 
   @Column(dataTypes.integer)
   addressId: number
@@ -136,6 +143,10 @@ export class Order {
   @ManyToOne(() => Payment, payment => payment.orders, { onDelete: 'CASCADE'})
   @JoinColumn({ name: 'paymentId', referencedColumnName: 'id'})
   payment: Payment;
+
+  @ManyToOne(() => Transaction, transaction => transaction.orders, { nullable: true, onDelete: 'CASCADE'})
+  @JoinColumn({ name: 'transactionId', referencedColumnName: 'id'})
+  transaction: Transaction;
 
   @ManyToOne(() => Media, media => media.finalOrder, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'finalImageId', referencedColumnName: 'id'})

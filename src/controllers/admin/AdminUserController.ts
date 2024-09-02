@@ -229,7 +229,9 @@ class AdminUserController {
           services: true,
           workerOffs: { order: true },
           profilePic: true,
-          districts: true
+          districts: true,
+          transactions: { media: true },
+          jobs: true
         }
       });
     } catch (error) {

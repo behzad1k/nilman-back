@@ -4,6 +4,7 @@ import { dataTypes } from '../utils/enums';
 import { Order } from './Order';
 import { OrderService } from './OrderService';
 import { Service } from './Service';
+import { Transaction } from './Transaction';
 import { User } from './User';
 
 @Entity()
@@ -42,6 +43,9 @@ export default class Media {
 
   @OneToMany(() => Service, service => service.media, { onDelete:'CASCADE', nullable: true })
   services: Service[];
+
+  @OneToMany(() => Transaction, transaction => transaction.media, { onDelete:'CASCADE', nullable: true })
+  transactions: Transaction[];
 
   @OneToMany(() => Order, order => order.finalImage, { onDelete:'CASCADE', nullable: true })
   finalOrder: Order[];

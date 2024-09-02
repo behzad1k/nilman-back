@@ -1,7 +1,7 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { Between, getRepository, In } from 'typeorm';
+import { Between, getRepository, In, MoreThan } from 'typeorm';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
@@ -20,6 +20,7 @@ class WorkerDashboardController {
     const { from, to } = req.query;
     const orders = await this.orders().find({
       where: {
+        transactionId: MoreThan(0),
         workerId: Number(id),
         // @ts-ignore
         doneDate: Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss')),

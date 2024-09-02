@@ -18,6 +18,7 @@ import { Log } from './Log';
 import Media from './Media';
 import { Order } from "./Order";
 import { Service } from "./Service";
+import { Transaction } from './Transaction';
 import { WorkerOffs } from './WorkerOffs';
 import "reflect-metadata";
 
@@ -154,6 +155,9 @@ export class User {
 
   @OneToMany(() => Log, log => log.user, { nullable: true, onDelete: 'CASCADE' })
   activities: Relation<Log[]>
+
+  @OneToMany(() => Transaction, transactions => transactions.worker, { nullable: true, onDelete: 'CASCADE' })
+  transactions: Relation<Transaction[]>
 
   @ManyToMany(() => Service, service => service.users, { onDelete: 'CASCADE' })
   @JoinTable({

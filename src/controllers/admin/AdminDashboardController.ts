@@ -43,7 +43,7 @@ class AdminDashboardController {
     });
 
     let total = 0;
-    orders.map(e => total += e.price);
+    orders.map(e => total += e.finalPrice);
 
     return res.status(200).send({
       code: 200,

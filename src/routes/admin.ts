@@ -10,6 +10,7 @@ import { AdminFeedbackFactorRoutes } from './admin/feedbackFactors';
 import { AdminLogRoutes } from './admin/log';
 import { AdminOrderRoutes } from "./admin/order";
 import { AdminServiceRoutes } from "./admin/service";
+import { AdminTransactionRoutes } from './admin/transaction';
 import { AdminUserRoutes } from "./admin/user";
 
 export class AdminRoutes {
@@ -33,6 +34,7 @@ export class AdminRoutes {
     this.router.use("/color",this.authController.authorizeJWTAdmin,new AdminColorRoutes().router)
     this.router.use("/district",this.authController.authorizeJWTAdmin,new AdminDistrictRoutes().router)
     this.router.use("/log",this.authController.authorizeJWTAdmin,new AdminLogRoutes().router)
+    this.router.use("/transaction",this.authController.authorizeJWTAdmin,new AdminTransactionRoutes().router)
 
   }
 }
