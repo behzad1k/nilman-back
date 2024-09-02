@@ -1,7 +1,7 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { Any, ArrayContains, getRepository, In, Raw } from 'typeorm';
+import { Any, ArrayContains, getRepository, In, MoreThan, Raw } from 'typeorm';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
 import { Service } from '../../entity/Service';
@@ -19,7 +19,7 @@ class AdminOrderController {
     let orders;
     const users = await getRepository(User).findBy({ role: 'WORKER'});
     for (const user of users) {
-      const userOrders = await getRepository(Order).findBy({ workerId: user.id, status: orderStatus.Done, isTransacted: false });
+      const userOrders = await getRepository(Order).findBy({ workerId: user.id, status: orderStatus.Done, transactionId: MoreThan(0) });
       await getRepository(User).update({ id: user.id }, { walletBalance: userOrders.reduce((acc, curr) => acc + ((curr.workerPercent || user.percent) * curr.price / 100) + 100000 ,0)})
     }
     try {
