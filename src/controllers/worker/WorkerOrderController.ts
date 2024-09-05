@@ -129,7 +129,7 @@ class WorkerOrderController {
     let order: Order, worker: User;
 
     try {
-      order = await getRepository(Order).findOneBy({ id: Number(id), workerId: userId, status: orderStatus.InProgress })
+      order = await getRepository(Order).findOne({ where: { id: Number(id), workerId: userId, status: orderStatus.InProgress }, relations: { user: true }})
     }catch (e){
       return res.status(400).send({
         code: 400,
@@ -160,9 +160,11 @@ class WorkerOrderController {
     }
     order.status = orderStatus.Done;
     order.doneDate = new Date();
-    order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder');
+    order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
 
     worker.walletBalance = worker.walletBalance + ((order.price * order.workerPercent / 100) + 100000) ;
+    smsLookup.feedback(order.user.name, order.user.phoneNumber, order.code);
+
     try {
       await this.orders().save(order);
       await this.users().save(worker);

@@ -225,6 +225,7 @@ class AdminUserController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: Number(id) },
+        relationLoadStrategy: 'query',
         relations: {
           services: true,
           workerOffs: { order: true },
