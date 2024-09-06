@@ -41,7 +41,7 @@ class AdminTransactionController {
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const { date, amount, userId, description, code, orders } = req.body;
-    let transactionObj: Transaction;
+    let transactionObj: Transaction, worker: User;
     if (id) {
       try{
         transactionObj = await this.transactions().findOne({
@@ -59,6 +59,19 @@ class AdminTransactionController {
       transactionObj = new Transaction();
     }
 
+    try{
+      worker = await this.users().findOne({
+        where: {
+          id: Number(userId)
+        }
+      });
+    }catch (e){
+      return res.status(400).send({
+        code: 1002,
+        data: 'Invalid User'
+      });
+    }
+
     transactionObj.date = date;
     transactionObj.userId = userId;
     transactionObj.amount = amount;
@@ -71,7 +84,14 @@ class AdminTransactionController {
     }
     try {
       await this.transactions().save(transactionObj);
+
       await this.orders().update({ id: In(orders)}, { transactionId: transactionObj.id })
+
+      const newBalance = worker.walletBalance - transactionObj.amount;
+      worker.walletBalance = newBalance < 0 ? 0 : newBalance;
+
+      await this.users().save(worker)
+
     } catch (e) {
       console.log(e);
       res.status(409).send("error try again later");
