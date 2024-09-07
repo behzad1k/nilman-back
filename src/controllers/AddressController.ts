@@ -61,6 +61,9 @@ class AddressController {
     }
 
     address.title = title;
+    if (!title){
+      address.title = `آدرس ${++user.addresses.length}`
+    }
     address.pelak = pelak;
     address.vahed = vahed;
     address.description = description;

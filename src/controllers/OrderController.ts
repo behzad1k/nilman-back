@@ -566,6 +566,7 @@ class OrderController {
 
   static pay = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
+    const { isCredit } = req.body
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({
@@ -598,7 +599,10 @@ class OrderController {
       });
     }
 
-    const finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
+    let finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
+    if (isCredit){
+      finalPrice = finalPrice - user.walletBalance
+    }
     const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
     const zarinpalResult = await zarinpal.PaymentRequest({
       Amount: finalPrice, // In Tomans
