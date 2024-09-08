@@ -271,6 +271,7 @@ class AdminOrderController {
       users = await this.users().find({
         where: {
           role: roles.WORKER,
+          status: 1
         },
         relations: { services: true, workerOffs: true }
       });
@@ -288,7 +289,7 @@ class AdminOrderController {
 
     return res.status(200).send({
       code: 200,
-      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && e.fromTime >= order.fromTime && e.toTime <= order.toTime))
+      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime >= order.fromTime && e.toTime <= order.toTime) || (e.fromTime <= order.fromTime && e.toTime >= order.toTime))))
 
     });
   }
