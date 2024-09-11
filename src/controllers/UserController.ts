@@ -269,7 +269,8 @@ class UserController {
       try {
         const users = await this.users().find({
           where: {
-            role: roles.WORKER
+            role: roles.WORKER,
+            status: 1
           },
           relations: {
             services: true,
@@ -277,7 +278,7 @@ class UserController {
           }
         });
         const workers = users.filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k)))
-        for (let i = 0; i <= 14; i++) {
+        for (let i = 0; i <= 30; i++) {
           const day = moment().add(i, 'day').format('jYYYY/jMM/jDD')
           const schedule = this.workersScheduleDay(workers, day)
           if (schedule.length > 0) {
