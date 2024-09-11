@@ -278,6 +278,7 @@ class UserController {
           }
         });
         const workers = users.filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k)))
+        console.log(workers.map(e => e.name + ' ' + e.lastName));
         for (let i = 0; i <= 30; i++) {
           const day = moment().add(i, 'day').format('jYYYY/jMM/jDD')
           const schedule = this.workersScheduleDay(workers, day)
