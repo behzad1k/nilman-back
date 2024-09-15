@@ -160,7 +160,7 @@ class WorkerOrderController {
     }
     order.status = orderStatus.Done;
     order.doneDate = new Date();
-    order.finalImageId = await media.create(res, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
+    order.finalImageId = await media.create(req, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
 
     worker.walletBalance = worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation) ;
     smsLookup.feedback(order.user.name, order.user.phoneNumber, order.code);
