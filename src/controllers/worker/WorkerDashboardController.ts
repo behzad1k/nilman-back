@@ -20,7 +20,7 @@ class WorkerDashboardController {
     const { from, to } = req.query;
     const orders = await this.orders().find({
       where: {
-        transactionId: MoreThan(0),
+        transactionId: null,
         workerId: Number(id),
         // @ts-ignore
         doneDate: Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss')),
