@@ -8,7 +8,7 @@ import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
-import { dataTypes, roles } from '../../utils/enums';
+import { dataTypes, orderStatus, roles } from '../../utils/enums';
 import { generateCode, jwtDecode } from '../../utils/funs';
 import media from '../../utils/media';
 import smsLookup from '../../utils/smsLookup';
@@ -55,7 +55,7 @@ class AdminUserController {
 
     for (const user of users) {
       if (user.role == roles.WORKER){
-        user.walletBalance = user.jobs.filter(e => e.transactionId == null).reduce((acc, curr) => acc + (curr.price * curr.workerPercent / 100) + curr.transportation, 0)
+        user.walletBalance = user.jobs.filter(e => e.transactionId == null && e.status == orderStatus.Done).reduce((acc, curr) => acc + (curr.price * curr.workerPercent / 100) + curr.transportation, 0)
         console.log(user.lastName, user.walletBalance);
         await getRepository(User).save(user)
       }
