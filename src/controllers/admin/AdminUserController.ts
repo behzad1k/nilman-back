@@ -55,7 +55,8 @@ class AdminUserController {
 
     for (const user of users) {
       if (user.role == roles.WORKER){
-        user.walletBalance = user.jobs.filter(e => e.transactionId == null).reduce((acc, curr) => acc + (curr.price * curr.workerPercent / 100) + 100000, 0)
+        user.walletBalance = user.jobs.filter(e => e.transactionId == null).reduce((acc, curr) => acc + (curr.price * curr.workerPercent / 100) + curr.transportation, 0)
+        console.log(user.lastName, user.walletBalance);
         await getRepository(User).save(user)
       }
     }
