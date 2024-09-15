@@ -5,6 +5,7 @@ import { validate } from "class-validator";
 import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
 import { User } from "../../entity/User";
+import { orderStatus } from '../../utils/enums';
 import { getUniqueSlug } from "../../utils/funs";
 
 class AdminDashboardController {
@@ -31,7 +32,7 @@ class AdminDashboardController {
   }
   static sales = async (req: Request, res: Response): Promise<Response> => {
     const { from, to, worker } = req.query;
-    const where = { status: 'Done'}
+    const where = { status: orderStatus.Done}
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }

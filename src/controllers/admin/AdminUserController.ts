@@ -28,7 +28,9 @@ class AdminUserController {
     } = req.query;
     let users, productObj;
 
-    const relationsObj = {};
+    const relationsObj = {
+      jobs: true
+    };
     const where = {};
 
     if (role) {
@@ -50,6 +52,13 @@ class AdminUserController {
       where: where,
       relations: relationsObj
     });
+
+    for (const user of users) {
+      if (user.role == roles.WORKER){
+        user.walletBalance = user.jobs.filter(e => e.transactionId == null).reduce((acc, curr) => acc + (curr.price * curr.workerPercent / 100) + 100000, 0)
+        await getRepository(User).save(user)
+      }
+    }
     return res.status(200).send({
       'code': 200,
       'data': users
