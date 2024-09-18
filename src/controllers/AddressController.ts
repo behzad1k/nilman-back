@@ -116,7 +116,7 @@ class AddressController {
     address.latitude = latitude;
     address.districtId = 1;
     address.phoneNumber = phoneNumber;
-    address.district = district;
+    address.districtId = district;
 
     const errors = await validate(address);
     if (errors.length > 0) {
