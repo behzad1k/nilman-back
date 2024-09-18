@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { validate } from "class-validator";
@@ -27,6 +28,49 @@ class AddressController {
     return res.status(200).send({
       code: 200,
       data: addresses
+    })
+  }
+
+  static geoCode = async (req: Request, res: Response): Promise<Response> => {
+    const { lat, lng } = req.query;
+    const result = await axios.get('https://api.neshan.org/v5/reverse', {
+      params: {
+        lat: lat,
+        lng: lng
+      },
+      headers: {
+        'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+      }
+    });
+
+    return res.status(200).send({
+      code: 200,
+      data: result.data
+    })
+  }
+  static search = async (req: Request, res: Response): Promise<Response> => {
+    const { term, lat, lng } = req.query;
+    let result;
+    try {
+      result = await axios.get('https://api.neshan.org/v1/search', {
+        params: {
+          term: term,
+          lat: lat,
+          lng: lng
+        },
+        headers: {
+          'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+        }
+      });
+    }catch (e){
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Search Params'
+      })
+    }
+    return res.status(200).send({
+      code: 200,
+      data: result.data?.items
     })
   }
 

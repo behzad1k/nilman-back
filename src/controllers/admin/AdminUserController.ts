@@ -109,7 +109,7 @@ class AdminUserController {
     user.phoneNumber = phoneNumber;
     user.percent = percent;
     user.status = status;
-    user.walletBalance = walletBalance;
+    user.walletBalance = walletBalance != '' ? walletBalance : 0;
 
     if (isVerified) {
       user.isVerified = isVerified;
