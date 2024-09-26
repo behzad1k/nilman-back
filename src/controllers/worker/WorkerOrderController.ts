@@ -41,7 +41,7 @@ class WorkerOrderController {
           where: {
             workerId: user.id
           },
-          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker']
+          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker', 'user']
         });
     } catch (e) {
       console.log(e);
