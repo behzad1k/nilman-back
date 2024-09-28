@@ -42,10 +42,8 @@ class AdminAddressController {
     address.postalCode = postalCode;
     address.vahed = vahed;
     address.pelak = pelak;
-
-
-      address.longitude = longitude || '51.4319429449887';
-      address.latitude = latitude || '35.80761631591913';
+    address.longitude = longitude;
+    address.latitude = latitude;
 
     const errors = await validate(address);
     if (errors.length > 0) {
