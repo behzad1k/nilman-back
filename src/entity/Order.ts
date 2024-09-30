@@ -103,6 +103,11 @@ export class Order {
   })
   isUrgent: boolean
 
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isFeedbacked: boolean
+
   @Column(dataTypes.integer, { nullable: true, default: null })
   finalImageId: number;
 

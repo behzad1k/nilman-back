@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import jwtDecode from 'jwt-decode';
-import { getRepository, getTreeRepository } from 'typeorm';
+import { getRepository, getTreeRepository, In } from 'typeorm';
 import { Feedback } from '../entity/Feedback';
 import { FeedbackFactor } from '../entity/FeedbackFactor';
+import { Order } from '../entity/Order';
 import {Service} from "../entity/Service";
 import { getUniqueSlug } from '../utils/funs';
 import sms from '../utils/smsLookup';
@@ -20,8 +21,7 @@ class FeedbackController {
   static submit = async (req: Request, res: Response): Promise<Response> => {
     const token: any = jwtDecode(req.headers.authorization);
     const id: number = token.userId;
-
-    const { orderId, rate, comment } = req.body;
+    const { orderId, rate, comment, factors } = req.body;
 
     let feedback: Feedback = await getRepository(Feedback).findOneBy({ orderId: orderId });
 
@@ -33,9 +33,11 @@ class FeedbackController {
 
     feedback.rating = rate;
     feedback.description = comment;
+    feedback.feedbackFactors = await getRepository(FeedbackFactor).findBy({ id: In(factors)})
 
     try {
       await getRepository(Feedback).save(feedback);
+      await getRepository(Order).update({ id: orderId }, { isFeedbacked: true })
     } catch (e) {
       console.log(e);
       return res.status(409).send({

@@ -355,31 +355,6 @@ class OrderController {
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
-    if (workerId) {
-      try {
-        const pastOrders = await getRepository(Order).findOneOrFail({
-          where: {
-            workerId: workerId,
-            userId: userId
-          }
-        });
-        worker = await this.users().findOneOrFail({
-          where: {
-            status: 1,
-            role: roles.WORKER,
-          }
-        });
-        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0) {
-          throw new Error('Worker Not Suitable');
-        }
-      } catch (error) {
-        res.status(400).send({
-          code: 400,
-          data: 'Invalid Worker'
-        });
-        return;
-      }
-    }
     const transportation = 100000;
     let totalPrice = 0, sections = 0;
     const order = new Order();
@@ -405,7 +380,36 @@ class OrderController {
     order.date = date;
     order.fromTime = time;
     order.toTime = Number(time) + sections;
-    order.workerId = worker;
+
+    if (workerId) {
+      try {
+        const pastOrders = await getRepository(Order).find({
+          where: {
+            workerId: workerId,
+            userId: userId
+          }
+        });
+        worker = await this.users().findOneOrFail({
+          where: {
+            status: 1,
+            role: roles.WORKER,
+            id: workerId
+          }
+        });
+        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0 || !pastOrders.find(e => e.workerId == workerId)) {
+          throw new Error('Worker Not Suitable');
+        }
+      } catch (error) {
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid Worker'
+        });
+        return;
+      }
+      order.workerId = workerId;
+      smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
+    }
+
     const errors = await validate(order);
     if (errors.length > 0) {
       res.status(400).send(errors);
@@ -712,7 +716,7 @@ class OrderController {
       if (zarinpalRes || status == 'OK') {
         for (const order of orders) {
           order.inCart = false;
-          order.status = orderStatus.Paid;
+          order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
           order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
 
           await getRepository(Order).save(order);
