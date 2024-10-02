@@ -2,6 +2,7 @@ import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import { Any, ArrayContains, getRepository, In, MoreThan, Raw } from 'typeorm';
+import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
 import { Service } from '../../entity/Service';
@@ -19,7 +20,7 @@ class AdminOrderController {
     let orders;
     try {
       orders = await this.orders().find({
-        relations: ['worker', 'service', 'address', 'orderServices', 'user']
+        relations: ['worker', 'service', 'orderServices', 'user']
       });
     } catch (e) {
       return res.status(400).send({
@@ -248,6 +249,26 @@ class AdminOrderController {
     return res.status(200).send({
       code: 204,
       data: 'Successful'
+    });
+  }
+  static feedback = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    let feedback: Feedback
+    try {
+      feedback = await getRepository(Feedback).findOneOrFail({
+        where: { orderId: Number(id) },
+        relations: { feedbackFactors: true }
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: feedback
     });
   }
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
