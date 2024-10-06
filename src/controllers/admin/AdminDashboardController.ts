@@ -31,11 +31,6 @@ class AdminDashboardController {
   }
   static generalInfo = async (req: Request, res: Response): Promise<Response> => {
     const { from, to, worker } = req.query;
-    const orderss = await getRepository(Order).find({ where: { doneDate: IsNull(), status: orderStatus.Done}})
-    for (const order of orderss) {
-      order.doneDate = moment(order.date, 'jYYYY/jMM/jDD').toDate()
-      await getRepository(Order).save(order);
-    }
     const where = { status: orderStatus.Done}
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
