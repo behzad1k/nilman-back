@@ -15,5 +15,6 @@ export class AdminDashboardRoutes {
 
   routes() {
     this.router.get("/sales", AdminDashboardController.sales);
+    this.router.get("/generalInfo", AdminDashboardController.generalInfo);
   }
 }

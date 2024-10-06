@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import moment from 'jalali-moment';
-import { Between, getRepository } from 'typeorm';
+import { Between, getRepository, IsNull } from 'typeorm';
 import { validate } from "class-validator";
 import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
@@ -24,10 +24,41 @@ class AdminDashboardController {
       }
     });
 
-    const all= ''
     return res.status(200).send({
       code: 200,
       data: orders
+    })
+  }
+  static generalInfo = async (req: Request, res: Response): Promise<Response> => {
+    const { from, to, worker } = req.query;
+    const orderss = await getRepository(Order).find({ where: { doneDate: IsNull(), status: orderStatus.Done}})
+    for (const order of orderss) {
+      order.doneDate = moment(order.date, 'jYYYY/jMM/jDD').toDate()
+      await getRepository(Order).save(order);
+    }
+    const where = { status: orderStatus.Done}
+    if (from && to){
+      where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
+    }
+    if (worker && worker != '0'){
+      where['workerId'] = worker;
+    }
+    const orders = await this.orders().find({
+      where: where
+    });
+
+    return res.status(200).send({
+      code: 200,
+      data: {
+        past: {
+          all: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + curr.finalPrice ,0),
+          profit: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0)
+        },
+        future: {
+          all: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + curr.finalPrice ,0),
+          profit: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0)
+        }
+      }
     })
   }
   static sales = async (req: Request, res: Response): Promise<Response> => {
@@ -36,7 +67,7 @@ class AdminDashboardController {
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }
-    if (worker){
+    if (worker && worker != '0'){
       where['workerId'] = worker;
     }
     const orders = await this.orders().find({

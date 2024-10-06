@@ -715,7 +715,7 @@ class OrderController {
       });
       if (zarinpalRes || status == 'OK') {
         for (const order of orders) {
-          order.inCart = false;
+          order.inCart   = false;
           order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
           order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
 

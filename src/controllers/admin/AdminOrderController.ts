@@ -74,7 +74,7 @@ class AdminOrderController {
       try {
         order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
-          relations: { orderServices: { service: true } }
+          relations: { orderServices: { service: true }, worker: true }
         });
 
       } catch (error) {
@@ -104,12 +104,17 @@ class AdminOrderController {
     order.toTime = Number(time) + 1 ;
     order.isUrgent = isUrgent;
 
+    if (id && status == orderStatus.Done){
+      order.doneDate = new Date();
+      // await getRepository(User).update({ id: order.workerId }, { walletBalance: order?.worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation)})
+    }
     const errors = await validate(order);
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
     try {
       await this.orders().save(order);
+
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
