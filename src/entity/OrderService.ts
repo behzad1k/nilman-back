@@ -30,6 +30,12 @@ export class OrderService {
   @Column(dataTypes.integer)
   price: number;
 
+  @Column(dataTypes.integer, { nullable: true })
+  singlePrice: number;
+
+  @Column(dataTypes.integer, { default: 1 })
+  count: number;
+
   @Column(dataTypes.text, { nullable: true })
   pinterest: string;
 

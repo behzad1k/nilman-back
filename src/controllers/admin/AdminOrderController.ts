@@ -154,21 +154,21 @@ class AdminOrderController {
     for (const service of services) {
       const serviceObj = await getRepository(Service).findOneBy({ id: service.id })
       let orderService = order.orderServices.find(e => e.serviceId == service.serviceId)
-      if (orderService){
-        continue;
+      if (!orderService){
+        orderService = new OrderService();
+        orderService.orderId = order.id;
       }
-      orderService = new OrderService();
-
-      orderService.orderId = order.id;
       orderService.serviceId = service.serviceId;
-      orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1);
+      orderService.count = service.count;
+      orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
+      orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1) * service.count;
 
       await getRepository(OrderService).save(orderService)
       newOrderServices.push({ ...orderService, service: { section: serviceObj.section } })
     }
 
     try {
-      await this.orders().update({ id: order.id }, { toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0)) });
+      await this.orders().update({ id: order.id }, { isMulti: services.filter(e => e.count > 1).length > 0,toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0)) });
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');

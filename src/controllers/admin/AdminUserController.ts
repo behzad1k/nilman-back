@@ -235,7 +235,7 @@ class AdminUserController {
           profilePic: true,
           districts: true,
           transactions: { media: true },
-          jobs: true
+          jobs: { feedback: true }
         }
       });
     } catch (error) {
