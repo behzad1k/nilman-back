@@ -315,7 +315,7 @@ class AdminOrderController {
 
     return res.status(200).send({
       code: 200,
-      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime >= order.fromTime && e.toTime <= order.toTime) || (e.fromTime <= order.fromTime && e.toTime >= order.toTime))))
+      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime > order.fromTime && e.toTime <= order.toTime) || (e.fromTime < order.fromTime && e.toTime >= order.toTime))))
 
     });
   }
