@@ -94,4 +94,20 @@ export class Service {
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
+
+  @ManyToMany(() => Service, service => service.addOns, { onDelete: 'CASCADE'})
+  @JoinTable({
+    name: 'addOns',
+    // joinColumns: [
+    //   {
+    //     name: 'serviceId',
+    //     referencedColumnName: 'id'
+    //   },
+    //   {
+    //     name: 'addOn',
+    //     referencedColumnName: 'id'
+    //   }
+    // ],
+  })
+  addOns: Service[];
 }

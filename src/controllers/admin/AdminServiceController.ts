@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
+import { getRepository, In } from 'typeorm';
 import { validate } from 'class-validator';
 import Media from '../../entity/Media';
 import { Order } from '../../entity/Order';
@@ -28,7 +28,7 @@ class AdminServiceController {
     try {
       service = await this.services().findOne({
         where: { id: Number(id)},
-        relations: { media: true, parent: true, attributes: true }
+        relations: { media: true, parent: true, attributes: true, addOns: true  }
       });
     }catch (e){
       return res.status(400).send({
@@ -84,7 +84,7 @@ class AdminServiceController {
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { title, description, price, pricePlus, section, hasColor, parentId, sort, hasMedia, isMulti, openDrawer } = req.body;
+    const { title, description, price, pricePlus, section, hasColor, parentId, sort, hasMedia, isMulti, openDrawer, addOns } = req.body;
     let serviceObj: Service;
     if (id) {
       try{
@@ -115,6 +115,9 @@ class AdminServiceController {
       serviceObj.section = section;
     if (sort) {
       serviceObj.sort = Number(sort);
+    }
+    if (addOns){
+      serviceObj.addOns = await getRepository(Service).findBy({ id: In(addOns)})
     }
     serviceObj.hasMedia = hasMedia;
     serviceObj.pricePlus = pricePlus;

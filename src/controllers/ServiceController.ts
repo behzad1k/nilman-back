@@ -12,7 +12,7 @@ class ServiceController {
     if (type == 'children'){
       services = await getRepository(Service).find({ relations: { parent: true } });
     }else{
-      services = await getTreeRepository(Service).findTrees({ depth: 4, relations: ['media', 'attributes', 'parent'] });
+      services = await getTreeRepository(Service).findTrees({ depth: 4, relations: ['media', 'attributes', 'parent', 'addOns'] });
     }
     return res.status(200).send({
       code: 200,
