@@ -37,6 +37,9 @@ export class Service {
   @Column(dataTypes.integer)
   price: number;
 
+  @Column(dataTypes.integer, { default: 1 })
+  showInList: number;
+
   @Column(dataTypes.integer, { nullable: true })
   pricePlus: number;
 

@@ -84,7 +84,7 @@ class AdminServiceController {
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { title, description, price, pricePlus, section, hasColor, parentId, sort, hasMedia, isMulti, openDrawer, addOns } = req.body;
+    const { title, showInList, description, price, pricePlus, section, hasColor, parentId, sort, hasMedia, isMulti, openDrawer, addOns } = req.body;
     let serviceObj: Service;
     if (id) {
       try{
@@ -122,6 +122,7 @@ class AdminServiceController {
     serviceObj.hasMedia = hasMedia;
     serviceObj.pricePlus = pricePlus;
     serviceObj.isMulti = isMulti;
+    serviceObj.showInList = showInList;
     serviceObj.openDrawer = openDrawer;
     serviceObj.hasColor = hasColor;
     const errors = await validate(serviceObj);
