@@ -312,7 +312,7 @@ class AdminOrderController {
 
     const workers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
 
-
+    console.log(workers);
     return res.status(200).send({
       code: 200,
       data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime > order.fromTime && e.toTime < order.toTime) || (e.fromTime < order.fromTime && e.toTime > order.toTime))))
