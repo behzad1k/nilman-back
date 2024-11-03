@@ -615,13 +615,10 @@ class OrderController {
           TerminalId: "14436606",
           Amount: finalPrice,
           ResNum: generateCode(8, dataTypes.string),
-          RedirectUrl: "https://app.nilman.co/payment/verify",
+          RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
         }})
       authority = sepReq.data.token
-
-      const secondRes = await axios('https://sep.shaparak.ir/OnlinePG/OnlinePG', { method: 'POST', data:{ Token: sepReq.data.token, GetMethod: true }})
-      console.log(secondRes.data);
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
