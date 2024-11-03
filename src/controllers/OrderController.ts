@@ -613,7 +613,7 @@ class OrderController {
       const sepReq = await axios('https://sep.shaparak.ir/onlinepg/onlinepg', { method: 'POST', data: {
           action: 'token',
           TerminalId: 14436606,
-          Amount: finalPrice,
+          Amount: 1000,
           ResNum: generateCode(8, dataTypes.string),
           RedirectUrl: "https://app.nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
