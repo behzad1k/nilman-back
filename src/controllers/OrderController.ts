@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
@@ -12,8 +13,8 @@ import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
-import { orderStatus, roles } from '../utils/enums';
-import { jwtDecode, omit } from '../utils/funs';
+import { dataTypes, orderStatus, roles } from '../utils/enums';
+import { generateCode, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
 
@@ -570,8 +571,8 @@ class OrderController {
 
   static pay = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
-    const { isCredit } = req.body
-    let user, orderObj;
+    const { isCredit, method } = req.body
+    let user, orderObj, url, authority;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -607,25 +608,40 @@ class OrderController {
     if (isCredit){
       finalPrice = finalPrice - user.walletBalance
     }
-    const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
-    const zarinpalResult = await zarinpal.PaymentRequest({
-      Amount: finalPrice, // In Tomans
-      CallbackURL: 'https://app.nilman.co/payment/verify',
-      Description: 'A Payment from Node.JS',
-      Email: 'info@nilman.co',
-      Mobile: '09379455353'
-    }).then(response => {
-      if (response.status === 100) {
-        return response;
-      }
-    }).catch(err => {
-      console.error(err);
-    });
-    if (!zarinpalResult) {
-      return res.status(400).send({
-        code: 400,
-        data: 'Invalid Portal'
+
+    if (method == 'sep'){
+      const sepReq = await axios('https://sep.shaparak.ir/onlinepg/onlinepg', { method: 'POST', data: {
+          action: 'token',
+          TerminalId: "14436606",
+          Amount: finalPrice,
+          ResNum: generateCode(8, dataTypes.string),
+          RedirectUrl: "https://app.nilman.co/payment/verify",
+          CellNumber: "09379455353"
+        }})
+      console.log(sepReq.data);
+    }else{
+      const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+      const zarinpalResult = await zarinpal.PaymentRequest({
+        Amount: finalPrice, // In Tomans
+        CallbackURL: 'https://app.nilman.co/payment/verify',
+        Description: 'A Payment from Node.JS',
+        Email: 'info@nilman.co',
+        Mobile: '09379455353'
+      }).then(response => {
+        if (response.status === 100) {
+          return response;
+        }
+      }).catch(err => {
+        console.error(err);
       });
+      if (!zarinpalResult) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Portal'
+        });
+      }
+      url = zarinpalResult.url;
+      authority = zarinpalResult.authority;
     }
 
     try {
@@ -638,7 +654,7 @@ class OrderController {
         payment = new Payment();
       }
       payment.price = finalPrice;
-      payment.authority = zarinpalResult.authority;
+      payment.authority = authority;
       await getRepository(Payment).save(payment);
 
       for (const order of orders) {
@@ -653,7 +669,7 @@ class OrderController {
     }
     return res.status(200).send({
       code: 200,
-      data: { url: zarinpalResult.url }
+      data: { url: url }
     });
 
   };
