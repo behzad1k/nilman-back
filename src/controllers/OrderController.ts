@@ -616,9 +616,12 @@ class OrderController {
           Amount: finalPrice,
           ResNum: generateCode(8, dataTypes.string),
           RedirectUrl: "https://app.nilman.co/payment/verify",
-          CellNumber: "09379455353"
+          CellNumber: user.phoneNumber
         }})
       authority = sepReq.data.token
+
+      const secondRes = await axios('https://sep.shaparak.ir/OnlinePG/OnlinePG', { method: 'POST', data:{ Token: sepReq.data.token, GetMethod: true }})
+      console.log(secondRes.data);
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
@@ -626,7 +629,7 @@ class OrderController {
         CallbackURL: 'https://app.nilman.co/payment/verify',
         Description: 'A Payment from Node.JS',
         Email: 'info@nilman.co',
-        Mobile: '09379455353'
+        Mobile: user.phoneNumber
       }).then(response => {
         if (response.status === 100) {
           return response;
