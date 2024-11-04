@@ -615,7 +615,7 @@ class OrderController {
           TerminalId: 14436606,
           Amount: 1000,
           ResNum: generateCode(8, dataTypes.string),
-          RedirectUrl: "https://app.nilman.co/app/payment/verify",
+          RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
         }})
       authority = sepReq.data.token
