@@ -715,7 +715,7 @@ class OrderController {
 
       payment = await getRepository(Payment).findOne({
         where: {
-          orders: { id: In(orders.map(e => e.id)) }
+          authority: authority
         }
       });
     }catch(e) {
