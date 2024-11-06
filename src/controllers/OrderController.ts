@@ -635,7 +635,7 @@ class OrderController {
           RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
         })
-      console.log(sepReq.data);
+      console.log(sepReq.request);
       authority = sepReq.data.token
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
