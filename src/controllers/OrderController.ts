@@ -725,7 +725,8 @@ class OrderController {
         data: 'Invalid Payment'
       });
     }
-    try{
+    console.log(payment);
+    try {
       if (payment.method == 'zarinpal') {
         const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
         const zarinpalRes = await zarinpal.PaymentVerification({
@@ -743,7 +744,7 @@ class OrderController {
           console.log(err);
         });
         refId = zarinpalRes ? zarinpalRes.toString() : null
-      } else if (payment.method == 'sep'){
+      } else if (payment.method == 'sep') {
         const sepRes = await axios.post('https://sep.shaparak.ir/verifyTxnRandomSessionkey/ipg/VerifyTransaction', {
           RefNum: payment.refId,
           terminalNumber: terminalId
@@ -752,10 +753,17 @@ class OrderController {
         refId = sepRes.data.TraceNo;
       }
 
-      if (!success){
+      if (!success) {
         throw new Error('Invalid Portal')
       }
-
+    }catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Portal'
+      });
+    }
+    try{
       for (const order of orders) {
         order.inCart   = false;
         order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
