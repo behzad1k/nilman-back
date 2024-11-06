@@ -698,6 +698,7 @@ class OrderController {
     const {
       authority,
       status,
+      refNum
       terminalId
     } = req.body;
 
@@ -745,8 +746,10 @@ class OrderController {
         });
         refId = zarinpalRes ? zarinpalRes.toString() : null
       } else if (payment.method == 'sep') {
+        console.log(refNum);
+        console.log(terminalId);
         const sepRes = await axios.post('https://sep.shaparak.ir/verifyTxnRandomSessionkey/ipg/VerifyTransaction', {
-          RefNum: payment.refId,
+          RefNum: refNum,
           terminalNumber: terminalId
         })
         console.log(sepRes.data);
