@@ -637,8 +637,6 @@ class OrderController {
           lookup: lookup
         })
       });
-      const response = await axiosInstance.get('https://api.ipify.org?format=json');
-      console.log('Current IP making request:', response.data.ip);
 
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
@@ -649,7 +647,7 @@ class OrderController {
           RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
         })
-      console.log(sepReq.request?.agents);
+      console.log(sepReq.data);
       authority = sepReq.data.token
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
