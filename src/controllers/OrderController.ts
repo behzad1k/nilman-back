@@ -698,7 +698,7 @@ class OrderController {
     const {
       authority,
       status,
-      refNum
+      refNum,
       terminalId
     } = req.body;
 
