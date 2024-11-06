@@ -630,7 +630,7 @@ class OrderController {
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
           TerminalId: 14436606,
-          Amount: 30000,
+          Amount: finalPrice * 10,
           // 86.55.191.52
           ResNum: generateCode(8, dataTypes.number),
           RedirectUrl: "https://app.nilman.co/payment/verify",
@@ -746,13 +746,10 @@ class OrderController {
         });
         refId = zarinpalRes ? zarinpalRes.toString() : null
       } else if (payment.method == 'sep') {
-        console.log(refNum);
-        console.log(terminalId);
         const sepRes = await axios.post('https://sep.shaparak.ir/verifyTxnRandomSessionkey/ipg/VerifyTransaction', {
           RefNum: refNum,
           terminalNumber: terminalId
         })
-        console.log(sepRes.data);
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
       }
