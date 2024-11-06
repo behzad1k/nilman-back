@@ -749,6 +749,7 @@ class OrderController {
           RefNum: payment.refId,
           terminalNumber: terminalId
         })
+        console.log(sepRes.data);
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
       }
