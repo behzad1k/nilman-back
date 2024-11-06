@@ -32,7 +32,7 @@ export class Payment {
   @Column(dataTypes.boolean, { default: false })
   isPaid: boolean;
 
-  @Column(dataTypes.text, { default: 'zarinpal' })
+  @Column(dataTypes.string, { default: 'zarinpal' })
   method: string;
 
   @Column(dataTypes.datetime)
