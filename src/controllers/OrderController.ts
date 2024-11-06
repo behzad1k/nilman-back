@@ -17,7 +17,9 @@ import { dataTypes, orderStatus, roles } from '../utils/enums';
 import { generateCode, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
-
+const { networkInterfaces } = require('os');
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 class OrderController {
 
   static users = () => getRepository(User);
@@ -610,14 +612,27 @@ class OrderController {
     }
 
     if (method == 'sep'){
-      const sepReq = await axios('https://sep.shaparak.ir/onlinepg/onlinepg', { method: 'POST', data: {
+      const serverIP = networkInterfaces().eth0?.[0].address; // or your specific interface
+      console.log(serverIP);
+      const axiosInstance = axios.create({
+        proxy: false,
+        httpAgent: new HttpAgent({
+          localAddress: serverIP
+        }),
+        httpsAgent: new HttpsAgent({
+          localAddress: serverIP
+        })
+      });
+      const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
           TerminalId: 14436606,
           Amount: 1000,
+          // 86.55.191.52
           ResNum: generateCode(8, dataTypes.string),
           RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
-        }})
+        })
+      console.log(sepReq.data);
       authority = sepReq.data.token
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
