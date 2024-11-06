@@ -18,6 +18,7 @@ import { generateCode, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
 const { networkInterfaces } = require('os');
+import { lookup } from 'dns';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 class OrderController {
@@ -617,10 +618,12 @@ class OrderController {
       const axiosInstance = axios.create({
         proxy: false,
         httpAgent: new HttpAgent({
-          localAddress: serverIP
+          localAddress: serverIP,
+          lookup: lookup
         }),
         httpsAgent: new HttpsAgent({
-          localAddress: serverIP
+          localAddress: serverIP,
+          lookup: lookup
         })
       });
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
