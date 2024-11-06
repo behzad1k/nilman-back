@@ -623,10 +623,10 @@ class OrderController {
 
       const axiosInstance = axios.create({
         proxy: false,
-        headers: {
-          'X-Forwarded-For': serverIP,
-          'X-Real-IP': serverIP
-        },
+        // headers: {
+        //   'X-Forwarded-For': serverIP,
+        //   'X-Real-IP': serverIP
+        // },
         httpAgent: new HttpAgent({
           localAddress: serverIP,
           lookup: lookup
@@ -637,6 +637,8 @@ class OrderController {
           lookup: lookup
         })
       });
+      const response = await axiosInstance.get('https://api.ipify.org?format=json');
+      console.log('Current IP making request:', response.data.ip);
 
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
