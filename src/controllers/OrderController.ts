@@ -613,20 +613,9 @@ class OrderController {
     }
 
     if (method == 'sep'){
-
-      const interfaces = networkInterfaces();
-      console.log('Available network interfaces:', interfaces);
-
-      // Choose the correct interface (example: 'eth0')
-      const serverIP = interfaces.eth0?.[0].address;
-      console.log('Selected server IP:', serverIP);
-
+      const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
         proxy: false,
-        // headers: {
-        //   'X-Forwarded-For': serverIP,
-        //   'X-Real-IP': serverIP
-        // },
         httpAgent: new HttpAgent({
           localAddress: serverIP,
           lookup: lookup
@@ -637,27 +626,24 @@ class OrderController {
           lookup: lookup
         })
       });
-      const response = await axiosInstance.get('https://api.ipify.org?format=json');
-      console.log('Current IP making request:', response.data.ip);
 
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
           TerminalId: 14436606,
           Amount: 30000,
           // 86.55.191.52
-          ResNum: generateCode(8, dataTypes.string),
+          ResNum: generateCode(8, dataTypes.number),
           RedirectUrl: "https://app.nilman.co/payment/verify",
           CellNumber: user.phoneNumber
         })
-      console.log(sepReq.data);
       authority = sepReq.data.token
+
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
         Amount: finalPrice, // In Tomans
         CallbackURL: 'https://app.nilman.co/payment/verify',
-        Description: 'A Payment from Node.JS',
-        Email: 'info@nilman.co',
+        Description: 'A Payment from Nilman',
         Mobile: user.phoneNumber
       }).then(response => {
         if (response.status === 100) {
@@ -686,7 +672,9 @@ class OrderController {
         payment = new Payment();
       }
       payment.price = finalPrice;
+      payment.method = method
       payment.authority = authority;
+
       await getRepository(Payment).save(payment);
 
       for (const order of orders) {
@@ -709,24 +697,14 @@ class OrderController {
     // const userId = jwtDecode(req.headers.authorization);
     const {
       authority,
-      status
+      status,
+      terminalId
     } = req.body;
-    // let user;
-    // try {
-    //   user = await this.users().findOneOrFail({
-    //     where: { id: userId },
-    //     relations: ['orders']
-    //   });
-    // } catch (error) {
-    //   res.status(400).send({
-    //     code: 400,
-    //     data: 'Invalid User'
-    //   });
-    //   return;
-    // }
 
     let orders: Order[];
     let payment: Payment;
+    let refId = null;
+    let success = false;
     try {
       orders = await this.orders().find({
         where: {
@@ -740,48 +718,57 @@ class OrderController {
           orders: { id: In(orders.map(e => e.id)) }
         }
       });
-      if (!payment) {
-        console.log('no payment');
-        return res.status(400).send({
-          code: 400,
-          data: 'Invalid Payment'
-        });
-      }
-      const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
-      const zarinpalRes = await zarinpal.PaymentVerification({
-        Amount: payment.price,
-        Authority: authority,
-      }).then(function (response) {
-        console.log(response);
-        if (response.status == 101 || response.status == 100) {
-          return response.RefID;
-        } else {
-          console.log(response);
-        }
-      }).catch(function (err) {
-        console.log(err);
+    }catch(e) {
+      console.log('no payment');
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Payment'
       });
-      if (zarinpalRes || status == 'OK') {
-        for (const order of orders) {
-          order.inCart   = false;
-          order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
-          order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
-
-          await getRepository(Order).save(order);
-          smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
-          smsLookup.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString());
-        }
-        await getRepository(Payment).update({ id: payment.id }, {
-          isPaid: true,
-          refId: zarinpalRes ? zarinpalRes.toString() : null
+    }
+    try{
+      if (payment.method == 'zarinpal') {
+        const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+        const zarinpalRes = await zarinpal.PaymentVerification({
+          Amount: payment.price,
+          Authority: authority,
+        }).then(function (response) {
+          console.log(response);
+          if (response.status == 101 || response.status == 100) {
+            success = true
+            return response.RefID;
+          } else {
+            console.log(response);
+          }
+        }).catch(function (err) {
+          console.log(err);
         });
-      } else {
-        console.log('Invalid Portal');
-        return res.status(400).send({
-          code: 400,
-          data: 'Invalid Portal'
-        });
+        refId = zarinpalRes ? zarinpalRes.toString() : null
+      } else if (payment.method == 'sep'){
+        const sepRes = await axios.post('https://sep.shaparak.ir/verifyTxnRandomSessionkey/ipg/VerifyTransaction', {
+          RefNum: payment.refId,
+          terminalNumber: terminalId
+        })
+        success = sepRes.data.Success;
+        refId = sepRes.data.TraceNo;
       }
+
+      if (!success){
+        throw new Error('Invalid Portal')
+      }
+
+      for (const order of orders) {
+        order.inCart   = false;
+        order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
+        order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
+
+        await getRepository(Order).save(order);
+        smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
+        smsLookup.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString());
+      }
+      await getRepository(Payment).update({ id: payment.id }, {
+        isPaid: true,
+        refId: refId
+      });
     } catch (e) {
       console.log(e);
       return res.status(400).send({

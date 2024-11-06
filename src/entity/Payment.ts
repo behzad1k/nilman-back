@@ -32,6 +32,9 @@ export class Payment {
   @Column(dataTypes.boolean, { default: false })
   isPaid: boolean;
 
+  @Column(dataTypes.text, { default: 'zarinpal' })
+  method: string;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
