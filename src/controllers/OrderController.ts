@@ -613,19 +613,33 @@ class OrderController {
     }
 
     if (method == 'sep'){
-      const serverIP = networkInterfaces().eth0?.[0].address; // or your specific interface
-      console.log(serverIP);
+
+      const interfaces = networkInterfaces();
+      console.log('Available network interfaces:', interfaces);
+
+      // Choose the correct interface (example: 'eth0')
+      const serverIP = interfaces.eth0?.[0].address;
+      console.log('Selected server IP:', serverIP);
+
       const axiosInstance = axios.create({
         proxy: false,
+        headers: {
+          'X-Forwarded-For': serverIP,
+          'X-Real-IP': serverIP
+        },
         httpAgent: new HttpAgent({
           localAddress: serverIP,
           lookup: lookup
         }),
         httpsAgent: new HttpsAgent({
+
           localAddress: serverIP,
           lookup: lookup
         })
       });
+      const response = await axiosInstance.get('https://api.ipify.org?format=json');
+      console.log('Current IP making request:', response.data.ip);
+
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
           action: 'token',
           TerminalId: 14436606,
@@ -635,7 +649,7 @@ class OrderController {
           RedirectUrl: "https://nilman.co/app/payment/verify",
           CellNumber: user.phoneNumber
         })
-      console.log(sepReq.request);
+      console.log(sepReq.request?.agents);
       authority = sepReq.data.token
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
