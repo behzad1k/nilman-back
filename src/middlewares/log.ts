@@ -12,7 +12,7 @@ const log = async (req, res, next) =>{
   log.time = moment().format('HH:mm');
   log.method = req.method;
   if (!isEmpty(req.body)){
-    log.data = req.body.toString();
+    log.data = JSON.stringify(req.body)
   }
   if (req.headers.authorization) {
     const userId = jwtDecode(req.headers.authorization);

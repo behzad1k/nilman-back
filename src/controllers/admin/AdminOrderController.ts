@@ -188,7 +188,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
-        relations: ['service', 'user', 'orderServices', 'address']
+        relations: ['service', 'user', 'worker', 'orderServices', 'address']
       });
     } catch (error) {
       res.status(400).send({
@@ -196,6 +196,13 @@ class AdminOrderController {
         data: 'Invalid Order'
       });
       return;
+    }
+
+    if (order.workerId){
+      await getRepository(WorkerOffs).delete({
+        userId: order.workerId,
+        orderId: order.id
+      })
     }
 
     try {
