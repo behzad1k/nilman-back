@@ -9,3 +9,5 @@ ormconfig.json
 package-lock.json
 public/
 yarn.lock
+.env
+.env.development

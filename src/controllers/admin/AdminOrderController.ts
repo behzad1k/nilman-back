@@ -290,7 +290,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
-        relations: ['service', 'user', 'orderServices', 'address']
+        relations: ['service', 'user', 'orderServices']
       });
     } catch (error) {
       res.status(400).send({
@@ -317,12 +317,10 @@ class AdminOrderController {
       return;
     }
 
-    const workers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
-
-    console.log(workers);
+    const workers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)))?.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime > order.fromTime && e.toTime < order.toTime) || (e.fromTime < order.fromTime && e.toTime > order.toTime))));
     return res.status(200).send({
       code: 200,
-      data: workers.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime > order.fromTime && e.toTime < order.toTime) || (e.fromTime < order.fromTime && e.toTime > order.toTime))))
+      data: workers
 
     });
   }

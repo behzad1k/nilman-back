@@ -28,6 +28,7 @@
       "body-parser": "^1.18.1",
       "class-validator": "^0.12.2",
       "cors": "^2.8.5",
+      "dotenv": "^16.4.5",
       "express": "^4.15.4",
       "helmet": "^3.22.0",
       "jalali-moment": "^3.3.11",
@@ -49,9 +50,9 @@
    },
    "scripts": {
       "tsc": "tsc",
-      "start": "ts-node-dev src/index.ts --transpileOnly",
+      "start": "NODE_ENV=development ts-node-dev src/index.ts --transpileOnly",
       "build": "ts-node src/index.ts --transpileOnly",
-      "prod": "node build/index.js",
+      "prod": "NODE_ENV=deployment node build/index.js",
       "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
    }
 }

@@ -7,6 +7,7 @@ import cors from "cors";
 import log from './middlewares/log';
 import routes from "./routes";
 import passport from "passport";
+import 'dotenv/config';
 
 class Server {
   public app: express.Application;
