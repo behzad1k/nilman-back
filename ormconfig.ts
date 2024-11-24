@@ -1,4 +1,3 @@
-import { DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.' + process.env.NODE_ENV })
@@ -13,4 +12,4 @@ export default {
    entities: [`${process.env.DB_ENTITIES_PATH}`],
    synchronize: process.env.DB_SYNC || true,
    logging: false,
-} as DataSourceOptions;
+}
