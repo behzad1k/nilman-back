@@ -111,6 +111,7 @@ class WorkerOrderController {
     }
 
     order.status = orderStatus.InProgress;
+    order.startDate = new Date();
 
     try {
       await this.orders().save(order);

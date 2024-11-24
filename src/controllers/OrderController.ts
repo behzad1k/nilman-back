@@ -400,18 +400,21 @@ class OrderController {
             id: workerId
           }
         });
-        if ([worker].filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k))).length == 0 || !pastOrders.find(e => e.workerId == workerId)) {
-          throw new Error('Worker Not Suitable');
-        }
+        // if ([worker].filter(e => Object.values(attributes)?.every(k => e.services?.map(e => e.id).includes(k))).length == 0 || !pastOrders.find(e => e.workerId == workerId)) {
+        //   throw new Error('Worker Not Suitable');
+        // }
       } catch (error) {
+        console.log(error);
         res.status(400).send({
           code: 400,
           data: 'Invalid Worker'
         });
         return;
       }
+      order.worker = worker;
       order.workerId = workerId;
-      smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
+      order.status = orderStatus.Assigned
+      order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
     }
 
     const errors = await validate(order);
@@ -421,16 +424,27 @@ class OrderController {
     }
     try {
       await this.orders().save(order);
-
+      const newOrderServices: OrderService[] = []
       await Promise.all(attributeObjs.map(async (attr) => {
         const orderService = new OrderService();
         orderService.orderId = order.id;
         orderService.serviceId = attr.id;
+        orderService.service = await getRepository(Service).findOneBy({ id: attr.id });
         orderService.price = attr.price * (isUrgent ? 1.5 : 1);
         orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
         orderService.pinterest = attributes[attr.id]?.pinterest;
-        return await getRepository(OrderService).save(orderService);
+
+        await getRepository(OrderService).save(orderService);
+
+        newOrderServices.push(orderService);
       }));
+      order.orderServices = newOrderServices;
+
+      if (workerId){
+        smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
+        smsLookup.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+
+      }
       // const workerOff = new WorkerOffs();
       // workerOff.orderId = order.id;
       // workerOff.workerId = worker.id;

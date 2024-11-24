@@ -1,7 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import moment from 'jalali-moment';
-import { Any, ArrayContains, getRepository, In, MoreThan, Raw } from 'typeorm';
+import { getRepository } from 'typeorm';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
@@ -10,7 +9,6 @@ import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
 import { orderStatus, roles } from '../../utils/enums';
-import { getOrderTime } from '../../utils/funs';
 import smsLookup from '../../utils/smsLookup';
 
 class AdminOrderController {
@@ -70,11 +68,14 @@ class AdminOrderController {
       isUrgent
     } = req.body;
     let order: Order, user: User;
-    if(id) {
+    if (id) {
       try {
         order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
-          relations: { orderServices: { service: true }, worker: true }
+          relations: {
+            orderServices: { service: true },
+            worker: true
+          }
         });
 
       } catch (error) {
@@ -87,10 +88,10 @@ class AdminOrderController {
       }
     } else {
       order = new Order();
-      order.code = 'NIL-' + (10000 + await getRepository(Order).count());
+      order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
     }
 
-    order.inCart = status == orderStatus.Created
+    order.inCart = status == orderStatus.Created;
     order.status = status;
     order.date = date;
     order.discountAmount = discountAmount;
@@ -101,10 +102,10 @@ class AdminOrderController {
     order.transportation = transportation;
     order.serviceId = serviceId;
     order.fromTime = time;
-    order.toTime = Number(time) + 1 ;
+    order.toTime = Number(time) + 1;
     order.isUrgent = isUrgent;
 
-    if (id && status == orderStatus.Done){
+    if (id && status == orderStatus.Done) {
       order.doneDate = new Date();
       // await getRepository(User).update({ id: order.workerId }, { walletBalance: order?.worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation)})
     }
@@ -146,15 +147,15 @@ class AdminOrderController {
     }
 
     for (const orderService of order.orderServices) {
-      if (!services.find(e => e.serviceId == orderService.serviceId)){
-        await getRepository(OrderService).delete({ id: orderService.id })
+      if (!services.find(e => e.serviceId == orderService.serviceId)) {
+        await getRepository(OrderService).delete({ id: orderService.id });
       }
     }
-    const newOrderServices = []
+    const newOrderServices = [];
     for (const service of services) {
-      const serviceObj = await getRepository(Service).findOneBy({ id: service.id })
-      let orderService = order.orderServices.find(e => e.serviceId == service.serviceId)
-      if (!orderService){
+      const serviceObj = await getRepository(Service).findOneBy({ id: service.id });
+      let orderService = order.orderServices.find(e => e.serviceId == service.serviceId);
+      if (!orderService) {
         orderService = new OrderService();
         orderService.orderId = order.id;
       }
@@ -163,12 +164,18 @@ class AdminOrderController {
       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1) * service.count;
 
-      await getRepository(OrderService).save(orderService)
-      newOrderServices.push({ ...orderService, service: { section: serviceObj.section } })
+      await getRepository(OrderService).save(orderService);
+      newOrderServices.push({
+        ...orderService,
+        service: { section: serviceObj.section }
+      });
     }
 
     try {
-      await this.orders().update({ id: order.id }, { isMulti: services.filter(e => e.count > 1).length > 0,toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0)) });
+      await this.orders().update({ id: order.id }, {
+        isMulti: services.filter(e => e.count > 1).length > 0,
+        toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0))
+      });
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
@@ -178,7 +185,7 @@ class AdminOrderController {
       code: 200,
       data: order
     });
-  }
+  };
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {
@@ -198,11 +205,11 @@ class AdminOrderController {
       return;
     }
 
-    if (order.workerId){
+    if (order.workerId) {
       await getRepository(WorkerOffs).delete({
         userId: order.workerId,
         orderId: order.id
-      })
+      });
     }
 
     try {
@@ -236,7 +243,7 @@ class AdminOrderController {
         orderId: order.id,
         userId: workerId,
         date: order.date
-      })
+      });
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
@@ -253,19 +260,22 @@ class AdminOrderController {
 
     try {
       await getRepository(Order).delete({ id: Number(id) });
-    } catch (e){
+    } catch (e) {
       console.log(e);
-      res.status(409).send({ code: 409, data: 'error try again later' });
+      res.status(409).send({
+        code: 409,
+        data: 'error try again later'
+      });
       return;
     }
     return res.status(200).send({
       code: 204,
       data: 'Successful'
     });
-  }
+  };
   static feedback = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let feedback: Feedback
+    let feedback: Feedback;
     try {
       feedback = await getRepository(Feedback).findOneOrFail({
         where: { orderId: Number(id) },
@@ -282,7 +292,7 @@ class AdminOrderController {
       code: 200,
       data: feedback
     });
-  }
+  };
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
 
@@ -306,7 +316,11 @@ class AdminOrderController {
           role: roles.WORKER,
           status: 1
         },
-        relations: { services: true, workerOffs: true }
+        relations: {
+          services: true,
+          workerOffs: true
+        },
+        relationLoadStrategy: 'query'
       });
     } catch (error) {
       console.log(error);
@@ -316,14 +330,19 @@ class AdminOrderController {
       });
       return;
     }
-
-    const workers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)))?.filter(e => !e.workerOffs.find(e => e.date == order.date && ((e.fromTime > order.fromTime && e.toTime < order.toTime) || (e.fromTime < order.fromTime && e.toTime > order.toTime))));
+    const suitableWorkers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
+    const freeWorkers = suitableWorkers?.filter(j => !j.workerOffs.find(e => {
+      return (e.date == order.date &&
+      ((e.fromTime > order.fromTime && e.toTime < order.toTime) ||
+        (e.fromTime <= order.fromTime && e.toTime > order.toTime))
+      )
+    }));
     return res.status(200).send({
       code: 200,
-      data: workers
+      data: freeWorkers
 
     });
-  }
+  };
 }
 
 export default AdminOrderController;

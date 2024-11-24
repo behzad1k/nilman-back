@@ -256,7 +256,9 @@ class UserController {
           where: {
             id: Number(workerId),
             // services: { id: Number(id)}
-          }, relations: { workerOffs: true }
+          },
+          relations: { workerOffs: true },
+          relationLoadStrategy: 'query'
         });
       } catch (e) {
         return res.status(400).send({

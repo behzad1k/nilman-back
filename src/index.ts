@@ -1,4 +1,6 @@
 import "reflect-metadata";
+import * as dotenv from 'dotenv';
+import process from 'process';
 import { createConnection } from "typeorm";
 import express from "express";
 import bodyParser from "body-parser";
@@ -7,7 +9,6 @@ import cors from "cors";
 import log from './middlewares/log';
 import routes from "./routes";
 import passport from "passport";
-import 'dotenv/config';
 
 class Server {
   public app: express.Application;
