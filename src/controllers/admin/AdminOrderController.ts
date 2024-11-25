@@ -26,12 +26,6 @@ class AdminOrderController {
         data: 'Unexpected Error'
       });
     }
-    for (const order of orders) {
-      if (order.isUrgent){
-        order.price = order.orderServices.reduce((acc, curr) => acc + (curr.service.price * 1.5), 0)
-      }
-      await getRepository(Order).save(order);
-    }
     return res.status(200).send({
       code: 200,
       data: orders
