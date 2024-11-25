@@ -78,6 +78,7 @@ class AdminDiscountController {
       }
     }else{
       discount = new Discount();
+      discount.active = true
     }
 
     discount.title = title;

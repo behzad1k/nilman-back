@@ -18,13 +18,19 @@ class AdminOrderController {
     let orders;
     try {
       orders = await this.orders().find({
-        relations: ['worker', 'service', 'orderServices', 'user']
+        relations: ['worker', 'service', 'orderServices.service', 'user']
       });
     } catch (e) {
       return res.status(400).send({
         code: 400,
         data: 'Unexpected Error'
       });
+    }
+    for (const order of orders) {
+      if (order.isUrgent){
+        order.price = order.orderServices.reduce((acc, curr) => acc + (curr.service.price * 1.5), 0)
+      }
+      await getRepository(Order).save(order);
     }
     return res.status(200).send({
       code: 200,

@@ -621,7 +621,7 @@ class OrderController {
       });
     }
 
-    let finalPrice: any = orders.reduce<number>((acc, curr) => acc + (curr.finalPrice - (curr.discountAmount || 0)), 0);
+    let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
     if (isCredit){
       finalPrice = finalPrice - user.walletBalance
     }
