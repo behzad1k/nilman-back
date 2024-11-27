@@ -147,18 +147,18 @@ class WorkerOrderController {
       })
     }
 
-    if (moment().format('jYYYY/jMM/jDD') != order.date){
-      if (Number(order.toTime - Number(moment().format('HH'))) > 1){
-        return res.status(400).send({
-          code: 2001,
-          data: 'Invalid Time'
-        })
-      }
-      return res.status(400).send({
-        code: 2000,
-        data: 'Invalid Date'
-      })
-    }
+    // if (moment().format('jYYYY/jMM/jDD') != order.date){
+    //   if (Number(order.toTime - Number(moment().format('HH'))) > 1){
+    //     return res.status(400).send({
+    //       code: 2001,
+    //       data: 'Invalid Time'
+    //     })
+    //   }
+    //   return res.status(400).send({
+    //     code: 2000,
+    //     data: 'Invalid Date'
+    //   })
+    // }
     order.status = orderStatus.Done;
     order.doneDate = new Date();
     order.finalImageId = await media.create(req, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
