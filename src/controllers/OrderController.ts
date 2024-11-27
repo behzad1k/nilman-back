@@ -652,6 +652,32 @@ class OrderController {
         })
       authority = sepReq.data.token
 
+    }else if(method == 'ap'){
+      try{
+        const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token',{
+          data:{
+            'serviceTypeId': 1,
+            'merchantConfigurationId': '270219',
+            'localInvoiceId': generateCode(8, dataTypes.number),
+            'amountInRials': 20000,
+            'localDate': new Date(),
+            'callbackURL': 'https://app.nilman.co/payment/verify',
+            'paymentId': 0,
+          },
+          headers: {
+            usr: 'saln 5312721',
+            pwd: 'MtK5786W'
+          },
+          method: 'POST'
+        })
+        console.log(apReq.data);
+
+      }catch (e){
+        console.log('hiiiiiiiiii');
+        console.log(e);
+        console.log(e.response.data);
+      }
+
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({

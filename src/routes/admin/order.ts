@@ -15,7 +15,7 @@ export class AdminOrderRoutes {
     this.router.get("/relatedWorkers/:id", AdminOrderController.getRelatedWorkers);
     this.router.get("/single/:id", AdminOrderController.single);
     this.router.get("/feedback/:id", AdminOrderController.feedback);
-    this.router.get("/:id", AdminOrderController.delete);
+    this.router.delete("/:id", AdminOrderController.delete);
     this.router.post("/basic/:id?", AdminOrderController.basic);
     this.router.put("/products/:id", AdminOrderController.services);
     this.router.post("/assign/:id", AdminOrderController.assign);
