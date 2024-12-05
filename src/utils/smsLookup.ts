@@ -51,7 +51,7 @@ const referral = (name: string, code: string, phoneNumber: string) => {
 };
 
 const notify = (code: string, price: string, order: string) => {
-  send('notify', '09122251784', code, order, price);
+  send('notify', '09125190659', code, order, price);
 };
 
 export default {
