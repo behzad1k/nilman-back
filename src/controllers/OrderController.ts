@@ -261,7 +261,7 @@ class OrderController {
       isUrgent
     } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj: Discount;
-    if((isUrgent ? date == moment().format('jYYYY/jMM/jDD') || (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().add(24, 'h').format('HH')) > time) : false) ||
+    if((!isUrgent ? date == moment().format('jYYYY/jMM/jDD') || (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().add(24, 'h').format('HH')) > time) : false) ||
       (date == moment().format('jYYYY/jMM/jDD') && Number(moment().format('HH')) > (time - 5)) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 16 && Number(moment().format('HH')) < 18 && time < 10) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 18 && time < 12)){
