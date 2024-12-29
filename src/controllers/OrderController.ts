@@ -373,7 +373,7 @@ class OrderController {
     let totalPrice = 0, sections = 0;
     const order = new Order();
     attributeObjs.map((attr) => {
-      totalPrice += (attr.price * (isUrgent ? 1.5 : 1));
+      totalPrice += (attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id].count));
       sections += attr.section;
     });
     if (discountObj && (discountObj.amount || discountObj.percent)) {
@@ -440,8 +440,9 @@ class OrderController {
         const orderService = new OrderService();
         orderService.orderId = order.id;
         orderService.serviceId = attr.id;
+        orderService.count = attributes[attr.id]?.count;
         orderService.service = await getRepository(Service).findOneBy({ id: attr.id });
-        orderService.price = attr.price * (isUrgent ? 1.5 : 1);
+        orderService.price = attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id]?.count);
         orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
         orderService.pinterest = attributes[attr.id]?.pinterest;
 
