@@ -682,14 +682,12 @@ class OrderController {
           },
           method: 'POST'
         })
-        console.log(apReq.data);
-
+        authority = apReq.data
       }catch (e){
         console.log('hiiiiiiiiii');
         console.log(e);
         console.log(e.response.data);
       }
-
     }else{
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
