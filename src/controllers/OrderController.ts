@@ -672,7 +672,7 @@ class OrderController {
             'merchantConfigurationId': '270219',
             'localInvoiceId': generateCode(8, dataTypes.number),
             'amountInRials': 20000,
-            'localDate': new Date(),
+            'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://app.nilman.co/payment/verify',
             'paymentId': 0,
           },
