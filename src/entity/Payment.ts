@@ -23,7 +23,7 @@ export class Payment {
   @Column(dataTypes.integer)
   price: number;
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.text, { default: null })
   authority: string;
 
   @Column(dataTypes.text, { nullable: true })
