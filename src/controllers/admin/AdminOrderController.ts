@@ -1,6 +1,7 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
+import { getRepository, In } from 'typeorm';
+import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
@@ -38,7 +39,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOne({
         where: { id: Number(id) },
-        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage']
+        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors']
       });
     } catch (e) {
       return res.status(400).send({
@@ -163,7 +164,7 @@ class AdminOrderController {
       orderService.count = service.count;
       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1) * service.count;
-
+      orderService.colors = await getRepository(Color).findBy({ id: In(service.colors)})
       await getRepository(OrderService).save(orderService);
       newOrderServices.push({
         ...orderService,
