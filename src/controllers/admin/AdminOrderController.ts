@@ -164,7 +164,9 @@ class AdminOrderController {
       orderService.count = service.count;
       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       orderService.price = serviceObj.price * (order.isUrgent ? 1.5 : 1) * service.count;
-      orderService.colors = await getRepository(Color).findBy({ id: In(service.colors)})
+      if (service.colors && service.colors.length > 0) {
+        orderService.colors = await getRepository(Color).findBy({ id: In(service.colors) });
+      }
       await getRepository(OrderService).save(orderService);
       newOrderServices.push({
         ...orderService,
