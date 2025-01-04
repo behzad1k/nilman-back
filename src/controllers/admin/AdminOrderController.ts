@@ -93,7 +93,6 @@ class AdminOrderController {
     }
 
     order.inCart = status == orderStatus.Created;
-    order.status = status;
     order.date = date;
     order.discountAmount = discountAmount;
     order.addressId = addressId;
@@ -106,10 +105,13 @@ class AdminOrderController {
     order.toTime = Number(time) + 1;
     order.isUrgent = isUrgent;
 
-    if (id && status == orderStatus.Done) {
+    if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
       order.doneDate = new Date();
       // await getRepository(User).update({ id: order.workerId }, { walletBalance: order?.worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation)})
     }
+
+    order.status = status;
+
     const errors = await validate(order);
     if (errors.length > 0) {
       return res.status(400).send(errors);
