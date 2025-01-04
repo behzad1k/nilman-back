@@ -30,13 +30,16 @@ class AdminDashboardController {
     })
   }
   static generalInfo = async (req: Request, res: Response): Promise<Response> => {
-    const { from, to, worker } = req.query;
+    const { from, to, worker, service } = req.query;
     const where = { status: orderStatus.Done}
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }
     if (worker && worker != '0'){
       where['workerId'] = worker;
+    }
+    if (service && service != '0'){
+      where['serviceId'] = service;
     }
     const orders = await this.orders().find({
       where: where
@@ -47,26 +50,31 @@ class AdminDashboardController {
       data: {
         past: {
           all: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + curr.finalPrice ,0),
-          profit: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0)
+          profit: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0),
+          worker: orders.filter(e => e.status == orderStatus.Done).reduce((acc, curr) => acc + ((curr.price * curr.workerPercent / 100) + 100000) ,0)
         },
         future: {
           all: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + curr.finalPrice ,0),
-          profit: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0)
+          profit: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + (curr.finalPrice - (curr.price * curr.workerPercent / 100) - 100000) ,0),
+          worker: orders.filter(e => e.status == orderStatus.Paid || e.status == orderStatus.Assigned).reduce((acc, curr) => acc + ((curr.price * curr.workerPercent / 100) + 100000) ,0)
         }
       }
     })
   }
   static sales = async (req: Request, res: Response): Promise<Response> => {
-    const { from, to, worker } = req.query;
-    const where = { status: orderStatus.Done}
+    const { from, to, worker, service } = req.query;
+    const where = { status: orderStatus.Done }
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }
     if (worker && worker != '0'){
       where['workerId'] = worker;
     }
+    if (service && service != '0'){
+      where['serviceId'] = service;
+    }
     const orders = await this.orders().find({
-      where: where
+      where: where,
     });
 
     let total = 0;
