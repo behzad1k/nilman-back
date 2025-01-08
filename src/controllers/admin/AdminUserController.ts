@@ -345,6 +345,26 @@ class AdminUserController {
       data: user
     });
   };
+  static deleteWorkerOff = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    try {
+      await getRepository(WorkerOffs).delete(
+        {
+          id: Number(id)
+        }
+      );
+    } catch (error) {
+      res.status(409).send({
+        code: 409,
+        data: 'Something went wrong'
+      });
+      return;
+    }
+    return res.status(200).send({
+      code: 200,
+      data: 'Successful'
+    });
+  };
 
 }
 
