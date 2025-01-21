@@ -299,7 +299,6 @@ class OrderController {
       });
       return;
     }
-    console.log(Object.values(attributes)?.map((e: any) => Object.keys(e.addOns)));
     try {
       attributeObjs = await this.services().find({
         where: {
