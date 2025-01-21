@@ -75,7 +75,7 @@ class AddressController {
   }
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
-    const { title, description, longitude, latitude, phoneNumber, pelak, vahed, district, postalCode } = req.body;
+    const { title, description, longitude, floor, latitude, phoneNumber, pelak, vahed, district, postalCode } = req.body;
     const { id } = req.params;
     const userId = jwtDecode(req.headers.authorization);
     let user;
@@ -116,6 +116,7 @@ class AddressController {
     address.latitude = latitude;
     address.districtId = 1;
     address.phoneNumber = phoneNumber;
+    address.floor = floor;
     address.districtId = district;
 
     const errors = await validate(address);

@@ -9,6 +9,7 @@ import { Color } from '../entity/Color';
 import { Discount } from '../entity/Discount';
 import { Order } from '../entity/Order';
 import { OrderService } from '../entity/OrderService';
+import { OrderServiceAddOn } from '../entity/OrderServiceAddOn';
 import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
@@ -48,18 +49,20 @@ class OrderController {
     try {
       if (user.role === 'WORKER') {
         orders = await this.orders().find({
+          relationLoadStrategy: 'query',
           where: {
             workerId: user.id
           },
-          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker']
+          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker', 'orderServices.addOns.addOn']
         });
       } else {
         orders = await this.orders().find({
+          relationLoadStrategy: 'query',
           where: {
             userId: user.id,
             inCart: false
           },
-          relations: ['orderServices', 'service', 'address', 'worker', 'worker.profilePic']
+          relations: ['orderServices', 'service', 'address', 'worker', 'worker.profilePic', 'orderServices.addOns.addOn']
         });
       }
     } catch (e) {
@@ -296,10 +299,11 @@ class OrderController {
       });
       return;
     }
+    console.log(Object.values(attributes)?.map((e: any) => Object.keys(e.addOns)));
     try {
       attributeObjs = await this.services().find({
         where: {
-          id: In(Object.keys(attributes)),
+          id: In(Object.keys(attributes)) ,
         }
       });
     } catch (error) {
@@ -372,10 +376,17 @@ class OrderController {
     const transportation = 100000;
     let totalPrice = 0, sections = 0;
     const order = new Order();
-    attributeObjs.map((attr) => {
+    for (const attr of attributeObjs) {
       totalPrice += (attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id].count));
       sections += attr.section;
-    });
+      if (attributes[attr.id].addOns) {
+        for (const [key, value] of Object.entries(attributes[attr.id].addOns)) {
+          const addOnObj = await getRepository(Service).findOneBy({ id: Number(key) });
+          totalPrice += (addOnObj.price * (isUrgent ? 1.5 : 1) * Number((value as any).count));
+          sections += addOnObj.section;
+        }
+      }
+    }
     if (discountObj && (discountObj.amount || discountObj.percent)) {
       const discountAmount = discountObj.percent ? (totalPrice * discountObj.percent / 100) : discountObj.amount;
       order.discountId = discountObj.id;
@@ -443,20 +454,48 @@ class OrderController {
         orderService.count = attributes[attr.id]?.count;
         orderService.service = await getRepository(Service).findOneBy({ id: attr.id });
         orderService.price = attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id]?.count);
-        orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
         orderService.pinterest = attributes[attr.id]?.pinterest;
+        if (attributes[attr.id]?.colors?.length > 0) {
+          orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
+        }
 
         await getRepository(OrderService).save(orderService);
+        if (attributes[attr.id]?.addOns) {
+          for (const [key, value] of Object.entries(attributes[attr.id]?.addOns)) {
+            const addOnObj = await await getRepository(Service).findOneBy({ id: Number(key) })
+            const orderServiceAddOn = new OrderServiceAddOn();
+            orderServiceAddOn.orderServiceId = orderService.id;
+            orderServiceAddOn.addOnId = Number(key);
+            orderServiceAddOn.count = Number((value as any)?.count);
+            orderServiceAddOn.singlePrice = await getRepository(Service).findOneBy({ id: Number(key) }).then(e => e.price);
+            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count
+
+            await getRepository(OrderServiceAddOn).save(orderServiceAddOn)
+
+            const addOnOrderService = new OrderService();
+            addOnOrderService.orderId = order.id;
+            addOnOrderService.serviceId = Number(key);
+            addOnOrderService.count = Number((value as any)?.count);
+            addOnOrderService.service = addOnObj;
+            addOnOrderService.isAddOn = true;
+            addOnOrderService.price = addOnObj.price * (isUrgent ? 1.5 : 1) * Number((value as any)?.count);
+            // if (attributes[attr.id]?.colors?.length > 0) {
+            //   orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
+            // }
+            await getRepository(OrderService).save(addOnOrderService);
+
+          }
+        }
 
         newOrderServices.push(orderService);
       }));
       order.orderServices = newOrderServices;
 
-      if (workerId){
-        smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
-        smsLookup.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
-
-      }
+      // if (workerId){
+      //   smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
+      //   smsLookup.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+      //
+      // }
       // const workerOff = new WorkerOffs();
       // workerOff.orderId = order.id;
       // workerOff.workerId = worker.id;
@@ -582,13 +621,14 @@ class OrderController {
       return;
     }
     let orders = await this.orders().find({
+      relationLoadStrategy: 'query',
       where: {
         userId: user.id,
         inCart: true
       },
       relations: {
         service: true,
-        orderServices: true,
+        orderServices: { addOns: { addOn: true } },
         address: true
       }
     });
@@ -793,6 +833,7 @@ class OrderController {
           }
         }).catch(function (err) {
           console.log(err);
+          return res.status(400).send({ code: 400, data: 'Invalid Portal'})
         });
         refId = zarinpalRes ? zarinpalRes.toString() : null
       } else if (payment.method == 'sep') {

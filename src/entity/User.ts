@@ -88,6 +88,11 @@ export class User {
   })
   isVerified: boolean;
 
+  @Column(dataTypes.boolean, {
+    default: true
+  })
+  isWorkerChoosable: boolean;
+
   @Column(dataTypes.integer, {
     default: 1
   })

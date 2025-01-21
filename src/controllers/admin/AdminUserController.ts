@@ -77,7 +77,8 @@ class AdminUserController {
       bankName,
       walletBalance,
       districts,
-      isVerified
+      isVerified,
+      isWorkerChoosable
     } = req.body;
 
     const { id } = req.params;
@@ -108,6 +109,7 @@ class AdminUserController {
     user.nationalCode = nationalCode;
     user.phoneNumber = phoneNumber;
     user.percent = percent;
+    user.isWorkerChoosable = isWorkerChoosable;
     user.status = status;
     user.walletBalance = walletBalance != '' ? walletBalance : 0;
 

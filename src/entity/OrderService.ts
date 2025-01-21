@@ -10,6 +10,7 @@ import { dataTypes } from '../utils/enums';
 import { Color } from './Color';
 import Media from './Media';
 import { Order } from "./Order";
+import { OrderServiceAddOn } from './OrderServiceAddOn';
 import { Service } from './Service';
 import { User } from "./User";
 
@@ -39,6 +40,9 @@ export class OrderService {
   @Column(dataTypes.text, { nullable: true })
   pinterest: string;
 
+  @Column(dataTypes.boolean, { default: false })
+  isAddOn: boolean;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;
@@ -62,6 +66,9 @@ export class OrderService {
 
   @ManyToOne(() => Media, media => media.orderServices, { onDelete: 'CASCADE', nullable: true })
   media: Relation<Media>
+
+  @OneToMany(() => OrderServiceAddOn, addOn => addOn.orderService, { onDelete: 'CASCADE', nullable: true })
+  addOns: Relation<OrderServiceAddOn>
 
   @ManyToOne(() => Service, (order) => order.orderServices, { onDelete: 'CASCADE', eager: true })
   @JoinColumn({

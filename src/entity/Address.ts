@@ -49,6 +49,9 @@ export class Address {
   @Column(dataTypes.string, { nullable: true })
   vahed?: string;
 
+  @Column(dataTypes.string, { nullable: true, default: null })
+  floor?: string;
+
   @Column(dataTypes.datetime)
   @CreateDateColumn()
   createdAt: Date;

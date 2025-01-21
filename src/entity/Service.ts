@@ -11,6 +11,7 @@ import { dataTypes } from '../utils/enums';
 import Media from './Media';
 import { Order } from "./Order";
 import { OrderService } from './OrderService';
+import { OrderServiceAddOn } from './OrderServiceAddOn';
 import { User } from "./User";
 import "reflect-metadata";
 @Entity()
@@ -97,6 +98,9 @@ export class Service {
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
+
+  @OneToMany(() => OrderServiceAddOn, orderService => orderService.addOn, { onDelete: 'CASCADE'})
+  orderServicesAddOns: OrderServiceAddOn[];
 
   @ManyToMany(() => Service, service => service.addOns, { onDelete: 'CASCADE'})
   @JoinTable({
