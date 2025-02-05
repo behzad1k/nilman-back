@@ -342,16 +342,20 @@ class AdminOrderController {
     //     (e.fromTime <= order.fromTime && e.toTime > order.toTime))
     //   )
     // }));
-
-    const freeWorkers = suitableWorkers.filter(employee => {
-      return !employee.workerOffs.some(timeOff => {
-        return (
-          (order.fromTime >= timeOff.fromTime && order.fromTime < timeOff.toTime) ||
-          (order.toTime > timeOff.fromTime && order.toTime <= timeOff.toTime) ||
-          (order.fromTime <= timeOff.fromTime && order.toTime >= timeOff.toTime)
-        );
-      });
-    });
+    const freeWorkers = suitableWorkers?.filter(worker => !worker.workerOffs.find(timeOff => {
+      return (
+        timeOff.date === order.date && (
+          // Case 1: Worker's off time is completely within order time
+          (timeOff.fromTime >= order.fromTime && timeOff.toTime <= order.toTime) ||
+          // Case 2: Order time is completely within worker's off time
+          (timeOff.fromTime <= order.fromTime && timeOff.toTime >= order.toTime) ||
+          // Case 3: Worker's off time overlaps with start of order
+          (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.fromTime) ||
+          // Case 4: Worker's off time overlaps with end of order
+          (timeOff.fromTime < order.toTime && timeOff.toTime >= order.toTime)
+        )
+      );
+    }));
     return res.status(200).send({
       code: 200,
       data: freeWorkers
