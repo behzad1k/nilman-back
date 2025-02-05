@@ -269,11 +269,11 @@ class OrderController {
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 16 && Number(moment().format('HH')) < 18 && time < 10) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 18 && time < 12)){
       res.status(400).send({
-        code: 400,
+        code: 1012,
         data: 'Invalid Date'
       });
       return;
-    } 
+    }
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },

@@ -336,12 +336,22 @@ class AdminOrderController {
       return;
     }
     const suitableWorkers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
-    const freeWorkers = suitableWorkers?.filter(j => !j.workerOffs.find(e => {
-      return (e.date == order.date &&
-      ((e.fromTime > order.fromTime && e.toTime < order.toTime) ||
-        (e.fromTime <= order.fromTime && e.toTime > order.toTime))
-      )
-    }));
+    // const freeWorkers = suitableWorkers?.filter(j => !j.workerOffs.find(e => {
+    //   return (e.date == order.date &&
+    //   ((e.fromTime > order.fromTime && e.toTime < order.toTime) ||
+    //     (e.fromTime <= order.fromTime && e.toTime > order.toTime))
+    //   )
+    // }));
+
+    const freeWorkers = suitableWorkers.filter(employee => {
+      return !employee.workerOffs.some(timeOff => {
+        return (
+          (order.fromTime >= timeOff.fromTime && order.fromTime < timeOff.toTime) ||
+          (order.toTime > timeOff.fromTime && order.toTime <= timeOff.toTime) ||
+          (order.fromTime <= timeOff.fromTime && order.toTime >= timeOff.toTime)
+        );
+      });
+    });
     return res.status(200).send({
       code: 200,
       data: freeWorkers
