@@ -51,6 +51,7 @@
    "scripts": {
       "tsc": "tsc",
       "start": "NODE_ENV=development ts-node-dev src/index.ts --transpileOnly",
+      "start_win": "ts-node-dev src/index.ts --transpileOnly",
       "build": "ts-node src/index.ts --transpileOnly",
       "prod": "NODE_ENV=deployment node build/index.js",
       "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
