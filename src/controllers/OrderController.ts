@@ -433,9 +433,7 @@ class OrderController {
       }
       order.worker = worker;
       order.workerId = workerId;
-      order.status = orderStatus.Assigned
       order.workerPercent = worker?.percent;
-      order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
     }
 
     const errors = await validate(order);
