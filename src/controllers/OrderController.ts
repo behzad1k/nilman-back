@@ -706,7 +706,7 @@ class OrderController {
         const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token',{
           data:{
             'serviceTypeId': 1,
-            'merchantConfigurationId': '270219',
+            'merchantConfigurationId': 270219,
             'localInvoiceId': generateCode(8, dataTypes.number),
             'amountInRials': 20000,
             'localDate': moment().format('YYYYMMDD HHmmss'),
