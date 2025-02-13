@@ -297,8 +297,8 @@ class UserController {
 
 
   private static calculateBusySchedule(workers: User[]) {
-    const startDate = moment().format('jYYYY/jMM/jDD');
-    const endDate = moment().add(30, 'days').format('jYYYY/jMM/jDD');
+    const startDate = moment().unix();
+    const endDate = moment().add(30, 'days').unix();
 
     const workerOffsByDate = new Map<string, Map<number, number[]>>();
     const result: Record<string, number[]> = {};
@@ -306,7 +306,10 @@ class UserController {
     // Group workerOffs by date and worker, only for dates within range
     workers.forEach(worker => {
       worker.workerOffs
-      .filter(off => off.date >= startDate && off.date <= endDate)
+      .filter(off => {
+        const offDate = moment(off.date, 'jYYYY/jMM/jDD').unix();
+        return offDate >= startDate && offDate <= endDate;
+      })
       .forEach(off => {
         if (!workerOffsByDate.has(off.date)) {
           workerOffsByDate.set(off.date, new Map());
