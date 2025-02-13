@@ -303,7 +303,6 @@ class UserController {
     const workerOffsByDate = new Map<string, Map<number, number[]>>();
     const result: Record<string, number[]> = {};
 
-    // Group workerOffs by date and worker, only for dates within range
     workers.forEach(worker => {
       worker.workerOffs
       .filter(off => {
@@ -322,9 +321,10 @@ class UserController {
       });
     });
 
-    // Rest of your existing calculateBusySchedule code...
+    // Rest of the code remains the same
     return result;
   }
+
 
   private static getTimeSlots(fromTime: number, toTime: number): number[] {
     const slots = [];
