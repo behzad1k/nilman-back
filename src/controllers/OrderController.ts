@@ -638,7 +638,7 @@ class OrderController {
   static pay = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
     const { isCredit, method } = req.body
-    let user, orderObj, url, authority;
+    let user, orderObj, url, authority, payment;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -675,7 +675,30 @@ class OrderController {
       finalPrice = finalPrice - user.walletBalance
     }
 
-    if (method == 'sep'){
+    try {
+      payment = await getRepository(Payment).findOneBy({
+        orders: {
+          id: In(orders.map(e => e.id))
+        }
+      });
+
+      if (!payment) {
+        payment = new Payment();
+      }
+      payment.price = finalPrice;
+      payment.method = method
+
+      await getRepository(Payment).save(payment);
+
+    }catch (e){
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Payment'
+      });
+    }
+
+      if (method == 'sep'){
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
         proxy: false,
@@ -711,7 +734,7 @@ class OrderController {
             'amountInRials': 20000,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
-            'paymentId': 0,
+            'paymentId': payment.id,
           },
           headers: {
             usr: 'saln 5312721',
@@ -750,16 +773,7 @@ class OrderController {
     }
 
     try {
-      let payment = await getRepository(Payment).findOneBy({
-        orders: {
-          id: In(orders.map(e => e.id))
-        }
-      });
-      if (!payment) {
-        payment = new Payment();
-      }
-      payment.price = finalPrice;
-      payment.method = method
+
       payment.authority = authority;
 
       await getRepository(Payment).save(payment);
@@ -786,18 +800,27 @@ class OrderController {
       authority,
       status,
       refNum,
-      terminalId
+      terminalId,
+      tranId
     } = req.body;
 
     let orders: Order[];
     let payment: Payment;
     let refId = null;
     let success = false;
+    let decryptedValue = ',,,,,,'
+    if (tranId){
+      decryptedValue = decrypt(authority, 'IoXFYhJLEyTFy0W7N8RRqaxKSHnVFDUZP75/jKhJ5nI=', 'Aqx/70Tt6qUtkYiwjagNQSyz4E+KTK1gFuB99aA+/Vw=')
+      console.log(decryptedValue);
+    }
     try {
       orders = await this.orders().find({
-        where: {
-          payment: { authority: authority }
-        },
+        where: [{
+            payment: { authority: authority }
+          },
+          {
+            payment: { id: Number(decryptedValue[1]) }
+          }],
         relations: { user: true }
       });
 
@@ -840,7 +863,6 @@ class OrderController {
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
       } else if (payment.method == 'ap') {
-        const decryptedValue = decrypt(authority, 'IoXFYhJLEyTFy0W7N8RRqaxKSHnVFDUZP75/jKhJ5nI=', 'Aqx/70Tt6qUtkYiwjagNQSyz4E+KTK1gFuB99aA+/Vw=')
         const apRes = await axios.post('https://ipgrest.asanpardakht.ir/v1/Verify', {
           merchantConfigurationId: '270219',
           payGateTranId: decryptedValue.split(',')[5]
