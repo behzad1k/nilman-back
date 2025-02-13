@@ -19,7 +19,8 @@ class AdminOrderController {
     let orders;
     try {
       orders = await this.orders().find({
-        relations: ['worker', 'service', 'orderServices.service', 'user']
+        relations: ['worker', 'service', 'orderServices.service', 'user'],
+        relationLoadStrategy: 'query'
       });
     } catch (e) {
       return res.status(400).send({

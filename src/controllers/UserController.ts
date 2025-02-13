@@ -282,17 +282,22 @@ class UserController {
     const startDate = moment().format('jYYYY/jMM/jDD');
     const endDate = moment().add(30, 'days').format('jYYYY/jMM/jDD');
 
-    const workers = await this.users().createQueryBuilder('user')
-    .leftJoinAndSelect('user.workerOffs', 'workerOffs')
-    .leftJoinAndSelect('user.services', 'services')
-    .where('user.role = :role', { role: roles.WORKER })
-    .andWhere('user.status = :status', { status: 1 })
-    .andWhere('services.id IN (:...attributes)', { attributes })
-    // .andWhere('workerOffs.date BETWEEN :startDate AND :endDate', { startDate, endDate })
-    .getMany();
+    const workers = await this.users().find({
+      where: {
+        role: roles.WORKER,
+        status: 1,
+        services: { id: In(attributes) }
+      },
+      relations: {
+        workerOffs: true
+      },
+      select: ['id', 'workerOffs']
+    });
+
     const result = this.calculateBusySchedule(workers);
     return res.status(200).send({ code: 200, data: result });
   }
+
 
   private static calculateBusySchedule(workers: User[]) {
     const workerOffsByDate = new Map<string, Map<number, number[]>>();
