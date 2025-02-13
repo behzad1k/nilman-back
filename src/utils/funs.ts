@@ -143,10 +143,12 @@ export const decrypt = (
   key: string,
   iv: string
 ): string => {
+    const ivBuffer = Buffer.from(iv, 'base64');
+
     const decipher = createDecipheriv(
       'aes-256-cbc',
       Buffer.from(key, 'hex'),
-      Buffer.from(iv, 'hex')
+      ivBuffer
     );
 
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
