@@ -255,6 +255,7 @@ class UserController {
       }
       return await this.handleMultipleWorkers(attributes, res);
     } catch (e) {
+      console.log(e);
       return res.status(400).send({
         code: 400,
         data: 'Unexpected Error'
