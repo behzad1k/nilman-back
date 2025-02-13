@@ -4,7 +4,7 @@ import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import jwtD from 'jwt-decode';
-import { getRepository } from 'typeorm';
+import { Between, getRepository, In } from 'typeorm';
 import config from '../config/config';
 import { Discount } from '../entity/Discount';
 import Media from '../entity/Media';
@@ -248,74 +248,104 @@ class UserController {
 
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
     const { attributes, workerId } = req.body;
-    let result = {}
-    if (workerId) {
-      let worker: User;
-      try {
-        worker = await this.users().findOneOrFail({
-          where: {
-            id: Number(workerId),
-            // services: { id: Number(id)}
-          },
-          relations: { workerOffs: true },
-          relationLoadStrategy: 'query'
-        });
-      } catch (e) {
-        return res.status(400).send({
-          code: 400,
-          data: 'Invalid WorkerId'
-        });
+
+    try {
+      if (workerId) {
+        return await this.handleSingleWorker(workerId, res);
       }
-      result = this.workerSchedule(worker.workerOffs);
-    } else {
-      try {
-        const users = await this.users().find({
-          where: {
-            role: roles.WORKER,
-            status: 1
-          },
-          relations: {
-            services: true,
-            workerOffs: true
-          }
-        });
-        const workers = users.filter(e => attributes?.every(k => e.services?.map(e => e.id).includes(k)))
-        for (let i = 0; i <= 30; i++) {
-          const day = moment().add(i, 'day').format('jYYYY/jMM/jDD')
-          const schedule = this.workersScheduleDay(workers, day)
-          if (schedule.length > 0) {
-            result[day] = schedule
-          }
-        }
-      } catch (e) {
-        console.log(e);
-        return res.status(400).send({
-          code: 400,
-          data: 'Unexpected Error'
-        });
-      }
+      return await this.handleMultipleWorkers(attributes, res);
+    } catch (e) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Unexpected Error'
+      });
     }
-    return res.status(200).send({
-      code: 200,
-      data: result
-    });
   };
 
-  private static workersScheduleDay = (workers: User[], day: string) => {
-    const allWorkerOffs: any = {};
-    for (const worker of workers) {
-      const workerOffs = worker.workerOffs.filter(e => e.date == day);
-      if (workerOffs.length > 0) {
-        allWorkerOffs[worker.id] = Object.values(this.workerSchedule(workerOffs))[0];
+  private static async handleSingleWorker(workerId: number, res: Response) {
+    const worker = await this.users().findOne({
+      where: { id: Number(workerId) },
+      relations: { workerOffs: true },
+      select: ['id', 'workerOffs']
+    });
+
+    if (!worker) {
+      return res.status(400).send({ code: 400, data: 'Invalid WorkerId' });
+    }
+
+    const result = this.workerSchedule(worker.workerOffs);
+    return res.status(200).send({ code: 200, data: result });
+  }
+
+  private static async handleMultipleWorkers(attributes: number[], res: Response) {
+    const startDate = moment().format('jYYYY/jMM/jDD');
+    const endDate = moment().add(30, 'days').format('jYYYY/jMM/jDD');
+
+    const workers = await this.users().createQueryBuilder('user')
+    .leftJoinAndSelect('user.workerOffs', 'workerOffs')
+    .leftJoinAndSelect('user.services', 'services')
+    .where('user.role = :role', { role: roles.WORKER })
+    .andWhere('user.status = :status', { status: 1 })
+    .andWhere('services.id IN (:...attributes)', { attributes })
+    // .andWhere('workerOffs.date BETWEEN :startDate AND :endDate', { startDate, endDate })
+    .getMany();
+    const result = this.calculateBusySchedule(workers);
+    return res.status(200).send({ code: 200, data: result });
+  }
+
+  private static calculateBusySchedule(workers: User[]) {
+    const workerOffsByDate = new Map<string, Map<number, number[]>>();
+    const result: Record<string, number[]> = {};
+
+    // Group workerOffs by date and worker
+    workers.forEach(worker => {
+      worker.workerOffs.forEach(off => {
+        if (!workerOffsByDate.has(off.date)) {
+          workerOffsByDate.set(off.date, new Map());
+        }
+        const dateMap = workerOffsByDate.get(off.date)!;
+        if (!dateMap.has(worker.id)) {
+          dateMap.set(worker.id, []);
+        }
+        dateMap.get(worker.id)!.push(...this.getTimeSlots(off.fromTime, off.toTime));
+      });
+    });
+
+    // Calculate busy times
+    for (const [date, workersMap] of workerOffsByDate) {
+      const busyHours = this.findCommonBusyHours(workersMap, workers.length);
+      if (busyHours.length > 0) {
+        result[date] = busyHours;
       }
     }
-    const result = [];
-    for (let i = 8; i < 20; i = i + 2) {
-      if (Object.values(allWorkerOffs).filter((e: any) => e.includes(i)).length == workers.length){
-        result.push(i);
-      }
-    }
+
     return result;
+  }
+
+  private static getTimeSlots(fromTime: number, toTime: number): number[] {
+    const slots = [];
+    for (let i = 8; i < 20; i += 2) {
+      if ((fromTime >= i && fromTime < i + 2) ||
+        (fromTime <= i && toTime > i) ||
+        (fromTime >= i && toTime <= i + 2)) {
+        slots.push(i);
+      }
+    }
+    return slots;
+  }
+
+  private static findCommonBusyHours(workersMap: Map<number, number[]>, totalWorkers: number): number[] {
+    const hourCount = new Map<number, number>();
+
+    for (const timeSlots of workersMap.values()) {
+      timeSlots.forEach(hour => {
+        hourCount.set(hour, (hourCount.get(hour) || 0) + 1);
+      });
+    }
+
+    return Array.from(hourCount.entries())
+    .filter(([_, count]) => count === totalWorkers)
+    .map(([hour]) => hour);
   }
 
   private static workerSchedule = (workerOffs: WorkerOffs[]) => {

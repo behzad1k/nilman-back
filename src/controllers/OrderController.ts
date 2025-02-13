@@ -686,10 +686,10 @@ class OrderController {
         payment = new Payment();
       }
       payment.price = finalPrice;
-      payment.method = method
+      payment.method = method;
+      payment.randomCode = generateCode(8, dataTypes.number);
 
       await getRepository(Payment).save(payment);
-
     }catch (e){
       console.log(e);
       return res.status(400).send({
@@ -730,7 +730,7 @@ class OrderController {
           data:{
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
-            'localInvoiceId': generateCode(8, dataTypes.number),
+            'localInvoiceId': payment.randomCode,
             'amountInRials': 20000,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
@@ -810,6 +810,7 @@ class OrderController {
     let success = false;
     let decryptedValue = ',,,,,,'
     if (tranId){
+      // const apTranRes = await axios.get('https://ipgrest.asanpardakht.ir/v1/TranResult?localInvoiceId=123&merchantConfigurationId=270219')
       decryptedValue = decrypt(authority, 'IoXFYhJLEyTFy0W7N8RRqaxKSHnVFDUZP75/jKhJ5nI=', 'Aqx/70Tt6qUtkYiwjagNQSyz4E+KTK1gFuB99aA+/Vw=')
       console.log(decryptedValue);
     }
@@ -818,9 +819,10 @@ class OrderController {
         where: [{
             payment: { authority: authority }
           },
-          {
-            payment: { id: Number(decryptedValue[1]) }
-          }],
+          // {
+          //   payment: { id: Number(decryptedValue[1]) }
+          // }
+          ],
         relations: { user: true }
       });
 
@@ -846,7 +848,9 @@ class OrderController {
           console.log(response);
           if (response.status == 101 || response.status == 100) {
             success = true
-            return response.RefID;
+            return response.RefID
+
+              ;
           } else {
             console.log(response);
           }

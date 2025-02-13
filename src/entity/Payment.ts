@@ -32,6 +32,9 @@ export class Payment {
   @Column(dataTypes.boolean, { default: false })
   isPaid: boolean;
 
+  @Column(dataTypes.text, { default: null, nullable: true })
+  randomCode: string;
+
   @Column(dataTypes.string, { default: 'zarinpal' })
   method: string;
 
