@@ -147,7 +147,7 @@ export const decrypt = (
     const ivBuffer = Buffer.from(iv, 'base64');
 
     const decipher = createDecipheriv(
-      'aes-256-cfb',
+      'aes-256-ofb',
       keyBuffer,
       ivBuffer
     );
