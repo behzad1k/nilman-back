@@ -4,6 +4,7 @@ import config from '../config/config';
 import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
 import * as jasonWebToken from 'jsonwebtoken';
+import { createDecipheriv } from 'crypto';
 
 export const getUserId = (token:string):number =>{
     const tokens: any = jwt(token);
@@ -135,4 +136,21 @@ export const isNumeric = (str: string) => {
     if (typeof str != "string") return false // we only process strings!
     return !isNaN(Number(str)) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
       !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+}
+
+export const decrypt = (
+  encryptedText: string,
+  key: string,
+  iv: string
+): string => {
+    const decipher = createDecipheriv(
+      'aes-256-cbc',
+      Buffer.from(key, 'hex'),
+      Buffer.from(iv, 'hex')
+    );
+
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
 }

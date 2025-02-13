@@ -15,7 +15,7 @@ import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, orderStatus, roles } from '../utils/enums';
-import { generateCode, jwtDecode, omit } from '../utils/funs';
+import { decrypt, generateCode, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
 const { networkInterfaces } = require('os');
@@ -813,7 +813,6 @@ class OrderController {
         data: 'Invalid Payment'
       });
     }
-    console.log(payment);
     try {
       if (payment.method == 'zarinpal') {
         const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
@@ -840,10 +839,19 @@ class OrderController {
         })
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
+      } else if (payment.method == 'ap') {
+        const decryptedValue = decrypt(authority, 'IoXFYhJLEyTFy0W7N8RRqaxKSHnVFDUZP75/jKhJ5nI=', 'Aqx/70Tt6qUtkYiwjagNQSyz4E+KTK1gFuB99aA+/Vw=')
+        const apRes = await axios.post('https://ipgrest.asanpardakht.ir/v1/Verify', {
+          merchantConfigurationId: '270219',
+          payGateTranId: decryptedValue.split(',')[5]
+        })
+        console.log(apRes);
+        success = apRes.status == 200;
+        refId = decryptedValue.split(',')[2];
       }
 
       if (!success) {
-        throw new Error('Invalid Portal')
+        throw new Error('Unsuccessful')
       }
     }catch (e) {
       console.log(e);
