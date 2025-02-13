@@ -146,13 +146,15 @@ export const decrypt = (
     const keyBuffer = Buffer.from(key, 'base64');
     const ivBuffer = Buffer.from(iv, 'base64');
 
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      keyBuffer,
-      ivBuffer
-    );
+    // Split the encrypted text into ciphertext and auth tag
+    const authTagLength = 16; // 16 bytes for GCM mode
+    const ciphertext = encryptedText.slice(0, -authTagLength * 2); // hex encoding doubles length
+    const authTag = encryptedText.slice(-authTagLength * 2);
 
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    const decipher = createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+
+    let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
     return decrypted;
