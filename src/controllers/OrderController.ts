@@ -710,7 +710,7 @@ class OrderController {
             'localInvoiceId': generateCode(8, dataTypes.number),
             'amountInRials': 20000,
             'localDate': moment().format('YYYYMMDD HHmmss'),
-            'callbackURL': 'https://callback.nilman.co/verify',
+            'callbackURL': 'https://callback.nilman.co/verify/',
             'paymentId': 0,
           },
           headers: {
