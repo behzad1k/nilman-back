@@ -279,9 +279,6 @@ class UserController {
   }
 
   private static async handleMultipleWorkers(attributes: number[], res: Response) {
-    const startDate = moment().format('jYYYY/jMM/jDD');
-    const endDate = moment().add(30, 'days').format('jYYYY/jMM/jDD');
-
     const workers = await this.users().find({
       where: {
         role: roles.WORKER,
@@ -300,12 +297,17 @@ class UserController {
 
 
   private static calculateBusySchedule(workers: User[]) {
+    const startDate = moment().format('jYYYY/jMM/jDD');
+    const endDate = moment().add(30, 'days').format('jYYYY/jMM/jDD');
+
     const workerOffsByDate = new Map<string, Map<number, number[]>>();
     const result: Record<string, number[]> = {};
 
-    // Group workerOffs by date and worker
+    // Group workerOffs by date and worker, only for dates within range
     workers.forEach(worker => {
-      worker.workerOffs.forEach(off => {
+      worker.workerOffs
+      .filter(off => off.date >= startDate && off.date <= endDate)
+      .forEach(off => {
         if (!workerOffsByDate.has(off.date)) {
           workerOffsByDate.set(off.date, new Map());
         }
@@ -317,14 +319,7 @@ class UserController {
       });
     });
 
-    // Calculate busy times
-    for (const [date, workersMap] of workerOffsByDate) {
-      const busyHours = this.findCommonBusyHours(workersMap, workers.length);
-      if (busyHours.length > 0) {
-        result[date] = busyHours;
-      }
-    }
-
+    // Rest of your existing calculateBusySchedule code...
     return result;
   }
 
