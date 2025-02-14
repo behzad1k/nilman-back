@@ -1,6 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { getRepository, In } from 'typeorm';
+import { FindManyOptions, getRepository, In, Like } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
@@ -9,28 +9,101 @@ import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
-import { orderStatus, roles } from '../../utils/enums';
+import { orderStatus, orderStatusNames, roles } from '../../utils/enums';
 import smsLookup from '../../utils/smsLookup';
 
 class AdminOrderController {
   static users = () => getRepository(User);
   static orders = () => getRepository(Order);
   static index = async (req: Request, res: Response): Promise<Response> => {
-    let orders;
-    try {
-      orders = await this.orders().find({
-        relations: ['worker', 'service', 'orderServices.service', 'user'],
-        relationLoadStrategy: 'query'
-      });
-    } catch (e) {
-      return res.status(400).send({
-        code: 400,
-        data: 'Unexpected Error'
-      });
+    const {
+      page,
+      perPage,
+      status,
+      query
+    } = req.query;
+    let orders = null;
+    let statusCount = {};
+    let count = 0;
+    const options: FindManyOptions = {
+      relations: {
+        worker: true,
+        service: true,
+        orderServices: { service: true },
+        user: true
+      },
+    };
+    if (page) {
+      const take = Number(perPage) || 25;
+
+      options.take = take;
+      options.skip = (take) * (Number(page) - 1 || 0);
+      options.order = {
+        date: 'DESC',
+        fromTime: 'DESC'
+      }
+      options.where = [
+        {
+          user: {name: Like(`%${query}%`)}, inCart: false,
+        },
+        {
+          user: {lastName: Like(`%${query}%`)}, inCart: false,
+        },
+        {
+          user: {phoneNumber: Like(`%${query}%`)}, inCart: false,
+        },
+        {
+          worker: {name: Like(`%${query}%`)}, inCart: false,
+        },
+        {
+          worker: {lastName: Like(`%${query}%`)}, inCart: false,
+        },
+        {
+          code:  Like(`%${query}%`), inCart: false,
+        },
+      ];
+      try {
+        orders = await getRepository(Order).find(options);
+
+        options.where = options.where?.map(e => {
+          const cp = { ...e }
+          if (status) {
+            cp.status = status;
+          }
+          return cp;
+        });
+
+        const allOrders = await getRepository(Order).findBy({ inCart: false })
+
+        for (const [status, statusTitle] of Object.entries(orderStatusNames)) {
+          statusCount[status] = {
+            count: allOrders.filter(e => e.status == status).length,
+            title: statusTitle,
+          };
+          statusCount['all'] = {
+            count: allOrders.length,
+            title: 'All'
+          }
+        }
+
+        [orders, count] = await getRepository(Order).findAndCount(options);
+
+      }catch (e){
+        console.log(e);
+        return res.status(501).send({
+          code: 501,
+          data: 'Unknown Error'
+        });
+      }
     }
+
     return res.status(200).send({
       code: 200,
-      data: orders
+      data: page ? {
+        orders,
+        count,
+        statusCount
+      } : orders
     });
   };
 

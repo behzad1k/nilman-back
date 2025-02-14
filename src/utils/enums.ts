@@ -12,6 +12,14 @@ export enum orderStatus  {
   Canceled = 'Canceled',
   Done = 'Done'
 };
+export enum orderStatusNames  {
+  Created = 'سبد خرید',
+  Paid = 'پرداخت شده',
+  Assigned = 'محول شده',
+  InProgress = 'در حال انجام',
+  Canceled = 'کنسل شده',
+  Done = 'تمام شده'
+};
 
 export enum dataTypes {
   string = 'varchar',
