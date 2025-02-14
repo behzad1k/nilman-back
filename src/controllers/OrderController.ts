@@ -372,7 +372,11 @@ class OrderController {
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
-    const transportation = 100000;
+    let transportation = 100000;
+
+    if (moment(date, 'jYYYY/jMM/jDD').unix() >= moment('1403/12/01 00:00', 'jYYYY/jMM/jDD HH:mm').unix()){
+      transportation += 100000
+    }
     let totalPrice = 0, sections = 0;
     const order = new Order();
     for (const attr of attributeObjs) {

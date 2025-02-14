@@ -298,9 +298,9 @@ class UserController {
 
   private static calculateBusySchedule(workers: User[]) {
     const startDate = moment().unix();
-    const endDate = moment().add(30, 'days').unix();
+    const endDate = moment().add(37, 'days').unix();
 
-    const workerOffsByDate = new Map<string, Map<number, number[]>>();
+    const workerOffsByDate = new Map<string, Map<number, Set<number>>>();
     const result: Record<string, number[]> = {};
 
     workers.forEach(worker => {
@@ -315,42 +315,65 @@ class UserController {
         }
         const dateMap = workerOffsByDate.get(off.date)!;
         if (!dateMap.has(worker.id)) {
-          dateMap.set(worker.id, []);
+          dateMap.set(worker.id, new Set());
         }
-        dateMap.get(worker.id)!.push(...this.getTimeSlots(off.fromTime, off.toTime));
+        const timeSlots = this.getTimeSlots(off.fromTime, off.toTime);
+        timeSlots.forEach(slot => dateMap.get(worker.id)!.add(slot));
       });
     });
 
-    // Rest of the code remains the same
+    for (const [date, workersMap] of workerOffsByDate) {
+      // Convert Sets to Arrays here
+      const arrayWorkersMap = new Map<number, number[]>();
+      workersMap.forEach((set, workerId) => {
+        arrayWorkersMap.set(workerId, Array.from(set));
+      });
+
+      const commonBusyHours = this.findCommonBusyHours(arrayWorkersMap, workers.length);
+      if (commonBusyHours.length > 0) {
+        result[date] = commonBusyHours;
+      }
+    }
+
     return result;
   }
+
+
 
 
   private static getTimeSlots(fromTime: number, toTime: number): number[] {
     const slots = [];
     for (let i = 8; i < 20; i += 2) {
-      if ((fromTime >= i && fromTime < i + 2) ||
-        (fromTime <= i && toTime > i) ||
-        (fromTime >= i && toTime <= i + 2)) {
+      if (
+        (i >= fromTime && i < toTime) || // Slot starts within the off period
+        (fromTime >= i && fromTime < i + 2) || // Off period starts within this slot
+        (toTime > i && toTime < i + 2) || // Off period ends within this slot
+        (fromTime <= i && toTime >= i + 2) // Slot is completely within off period
+      ) {
         slots.push(i);
       }
     }
     return slots;
   }
 
+
   private static findCommonBusyHours(workersMap: Map<number, number[]>, totalWorkers: number): number[] {
     const hourCount = new Map<number, number>();
 
-    for (const timeSlots of workersMap.values()) {
+    // Count occurrences of each hour
+    workersMap.forEach((timeSlots, workerId) => {
       timeSlots.forEach(hour => {
         hourCount.set(hour, (hourCount.get(hour) || 0) + 1);
       });
-    }
+    });
 
+    // A time slot is closed only if all workers are busy
+    // Workers not in workersMap (empty workerOffs) are considered free
     return Array.from(hourCount.entries())
-    .filter(([_, count]) => count === totalWorkers)
+    .filter(([_, count]) => count === totalWorkers && count === workersMap.size)
     .map(([hour]) => hour);
   }
+
 
   private static workerSchedule = (workerOffs: WorkerOffs[]) => {
     let result: any = {};

@@ -347,7 +347,7 @@ class AdminOrderController {
       return (
         timeOff.date === order.date && (
           // Case 1: Worker's off time is completely within order time
-          (timeOff.fromTime >= order.fromTime && timeOff.toTime <= order.toTime) ||
+          (timeOff.fromTime >= order.fromTime && timeOff.toTime < order.toTime) ||
           // Case 2: Order time is completely within worker's off time
           (timeOff.fromTime <= order.fromTime && timeOff.toTime >= order.toTime) ||
           // Case 3: Worker's off time overlaps with start of order
