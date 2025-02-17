@@ -739,7 +739,7 @@ class OrderController {
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
             'localInvoiceId': payment.randomCode,
-            'amountInRials': 20000,
+            'amountInRials': finalPrice * 10,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
             'paymentId': payment.id,
@@ -822,7 +822,6 @@ class OrderController {
     let decryptedValue = ',,,,,,';
     if (tranId) {
       decryptedValue = decryptVectors('jlQxyd+MtWbB4iRUAOVsrUm45zz/vFGzgn1atomY5lw=', 'ztPE0f1sZFtNn3C+7yEzB96+9bcr3/CqXpf3RgOTc9I=', authority);
-      console.log(decryptedValue);
     }
     try {
       orders = await this.orders().find({
@@ -894,7 +893,6 @@ class OrderController {
           },
           method: 'POST'
         });
-        console.log(apRes);
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
       }
