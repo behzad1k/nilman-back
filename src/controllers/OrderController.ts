@@ -883,9 +883,16 @@ class OrderController {
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
       } else if (payment.method == 'ap') {
-        const apRes = await axios.post('https://ipgrest.asanpardakht.ir/v1/Verify', {
-          merchantConfigurationId: '270219',
-          payGateTranId: decryptedValue.split(',')[5]
+        const apRes = await axios('https://ipgrest.asanpardakht.ir/v1/Verify', {
+          headers:{
+            usr: 'saln 5312721',
+            pwd: 'MtK5786W'
+          },
+          data: {
+            merchantConfigurationId: '270219',
+            payGateTranId: decryptedValue.split(',')[5]
+          },
+          method: 'POST'
         });
         console.log(apRes);
         success = apRes.status == 200;
