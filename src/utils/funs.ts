@@ -4,10 +4,6 @@ import config from '../config/config';
 import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
 import * as jasonWebToken from 'jsonwebtoken';
-import CryptoJS from 'crypto-js';
-import crypto from 'crypto';
-import iconv from 'iconv-lite'
-import forge from 'node-forge'
 import Rijndael from 'rijndael-js'
 export const getUserId = (token:string):number =>{
     const tokens: any = jwt(token);
@@ -151,34 +147,4 @@ export function decryptVectors(key, iv, input) {
     const decryptedBuffer = new Rijndael(keyBuffer, mode).decrypt(dataBuffer, blockSizeInBits, vectorBuffer);
 
     return Buffer.from(decryptedBuffer).toString('utf8')
-}
-
-function testDecryptionEncodings(decryptedBuffer) {
-
-    // Candidate text encodings to try.
-    const candidateEncodings = [
-        'utf8',
-        'utf16le',
-        'ascii',
-        'latin1',
-        'win1250',
-        'win1254',
-        'iso-8859-1',
-        'iso-8859-8',
-        'iso-8859-15',
-        'cp866',
-        'macroman'
-    ];
-
-    candidateEncodings.forEach((enc) => {
-        try {
-            // iconv.decode takes a Buffer and an encoding name.
-            const decodedText = iconv.decode(decryptedBuffer, enc);
-            console.log(enc, ': ', decodedText);
-        } catch (err) {
-            console.error(`Error with encoding ${enc}: ${err.message}`);
-        }
-        console.log('------------------------------\n');
-    });
-
 }
