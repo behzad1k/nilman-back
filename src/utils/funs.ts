@@ -1,12 +1,14 @@
-// @ts-nocheck
 import jwt from "jwt-decode";
 import { Repository } from "typeorm";
 import config from '../config/config';
 import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
 import * as jasonWebToken from 'jsonwebtoken';
-import { createDecipheriv } from 'crypto';
-
+import CryptoJS from 'crypto-js';
+import crypto from 'crypto';
+import iconv from 'iconv-lite'
+import forge from 'node-forge'
+import Rijndael from 'rijndael-js'
 export const getUserId = (token:string):number =>{
     const tokens: any = jwt(token);
     return tokens.userId
@@ -139,79 +141,44 @@ export const isNumeric = (str: string) => {
       !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
 }
 
-export const decrypt = (
-  encryptedText: string,
-  key: string,
-  iv: string
-): string => {
-    const inputEncodings = ['base64', 'hex', 'binary', 'utf8'];
-    const outputEncodings = ['base64', 'hex', 'binary', 'utf8', 'ascii', 'latin1'];
-    const ivSizes = [16, 32]; // Different IV sizes to try
+export function decryptVectors(key, iv, input) {
+    const keyBuffer = Buffer.from(key, 'base64');
+    const vectorBuffer = Buffer.from(iv, 'base64');
+    const dataBuffer = Buffer.from(input, 'base64');
 
-    const algorithms = [
-        'aes-256-cbc',
-        'aes-256-ctr',
-        'aes-256-cfb',
-        'aes-256-cfb1',
-        'aes-256-cfb8',
-        'aes-256-ofb',
-        'aes-256-gcm'
+    const blockSizeInBits = 256;
+    const mode = 'cbc';
+    const decryptedBuffer = new Rijndael(keyBuffer, mode).decrypt(dataBuffer, blockSizeInBits, vectorBuffer);
+
+    return Buffer.from(decryptedBuffer).toString('utf8')
+}
+
+function testDecryptionEncodings(decryptedBuffer) {
+
+    // Candidate text encodings to try.
+    const candidateEncodings = [
+        'utf8',
+        'utf16le',
+        'ascii',
+        'latin1',
+        'win1250',
+        'win1254',
+        'iso-8859-1',
+        'iso-8859-8',
+        'iso-8859-15',
+        'cp866',
+        'macroman'
     ];
 
-    const results = [];
-
-    for (const inputEncoding of inputEncodings) {
+    candidateEncodings.forEach((enc) => {
         try {
-            const keyBuffer = Buffer.from(key, inputEncoding);
-
-            for (const ivSize of ivSizes) {
-                const ivBuffer = Buffer.from(iv, inputEncoding).slice(0, ivSize);
-                const encryptedBuffer = Buffer.from(encryptedText, inputEncoding);
-
-                for (const algo of algorithms) {
-                    try {
-                        const decipher = createDecipheriv(algo, keyBuffer, ivBuffer);
-                        const decrypted = Buffer.concat([
-                            decipher.update(encryptedBuffer),
-                            decipher.final()
-                        ]);
-
-                        // Try all output encodings
-                        const outputs = {};
-                        for (const outEncoding of outputEncodings) {
-                            outputs[outEncoding] = decrypted.toString(outEncoding);
-                        }
-
-                        results.push({
-                            algorithm: algo,
-                            inputEncoding,
-                            ivSize,
-                            outputs,
-                            success: true
-                        });
-                    } catch (e) {
-                        results.push({
-                            algorithm: algo,
-                            inputEncoding,
-                            ivSize,
-                            error: e.message,
-                            success: false
-                        });
-                    }
-                }
-            }
-        } catch (e) {
-            results.push({
-                inputEncoding,
-                error: `Invalid input encoding: ${e.message}`,
-                success: false
-            });
+            // iconv.decode takes a Buffer and an encoding name.
+            const decodedText = iconv.decode(decryptedBuffer, enc);
+            console.log(enc, ': ', decodedText);
+        } catch (err) {
+            console.error(`Error with encoding ${enc}: ${err.message}`);
         }
-    }
+        console.log('------------------------------\n');
+    });
 
-    console.log('All decryption attempts:', results);
-
-    // Filter successful results
-    const successfulResults = results.filter(r => r.success);
-    return successfulResults.length > 0 ? successfulResults[0].outputs : null;
 }

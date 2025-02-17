@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { validate } from 'class-validator';
+import { lookup } from 'dns';
 import { Request, Response } from 'express';
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 import moment from 'jalali-moment';
 import { getRepository, In } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
@@ -15,13 +18,12 @@ import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, orderStatus, roles } from '../utils/enums';
-import { decrypt, generateCode, jwtDecode, omit } from '../utils/funs';
+import { decryptVectors, generateCode, getUniqueSlug, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import smsLookup from '../utils/smsLookup';
+
 const { networkInterfaces } = require('os');
-import { lookup } from 'dns';
-import { Agent as HttpAgent } from 'http';
-import { Agent as HttpsAgent } from 'https';
+
 class OrderController {
 
   static users = () => getRepository(User);
@@ -264,10 +266,10 @@ class OrderController {
       isUrgent
     } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj: Discount;
-    if((!isUrgent ? date == moment().format('jYYYY/jMM/jDD') || (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().add(24, 'h').format('HH')) > time) : false) ||
+    if ((!isUrgent ? date == moment().format('jYYYY/jMM/jDD') || (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().add(24, 'h').format('HH')) > time) : false) ||
       (date == moment().format('jYYYY/jMM/jDD') && Number(moment().format('HH')) > (time - 5)) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 16 && Number(moment().format('HH')) < 18 && time < 10) ||
-      (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 18 && time < 12)){
+      (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 18 && time < 12)) {
       res.status(400).send({
         code: 1012,
         data: 'Invalid Date'
@@ -302,7 +304,7 @@ class OrderController {
     try {
       attributeObjs = await this.services().find({
         where: {
-          id: In(Object.keys(attributes)) ,
+          id: In(Object.keys(attributes)),
         }
       });
     } catch (error) {
@@ -374,8 +376,8 @@ class OrderController {
 
     let transportation = 100000;
 
-    if (moment(date, 'jYYYY/jMM/jDD').unix() >= moment('1403/12/01 00:00', 'jYYYY/jMM/jDD HH:mm').unix()){
-      transportation += 100000
+    if (moment(date, 'jYYYY/jMM/jDD').unix() >= moment('1403/12/01 00:00', 'jYYYY/jMM/jDD HH:mm').unix()) {
+      transportation += 100000;
     }
     let totalPrice = 0, sections = 0;
     const order = new Order();
@@ -447,7 +449,7 @@ class OrderController {
     }
     try {
       await this.orders().save(order);
-      const newOrderServices: OrderService[] = []
+      const newOrderServices: OrderService[] = [];
       await Promise.all(attributeObjs.map(async (attr) => {
         const orderService = new OrderService();
         orderService.orderId = order.id;
@@ -463,15 +465,15 @@ class OrderController {
         await getRepository(OrderService).save(orderService);
         if (attributes[attr.id]?.addOns) {
           for (const [key, value] of Object.entries(attributes[attr.id]?.addOns)) {
-            const addOnObj = await await getRepository(Service).findOneBy({ id: Number(key) })
+            const addOnObj = await await getRepository(Service).findOneBy({ id: Number(key) });
             const orderServiceAddOn = new OrderServiceAddOn();
             orderServiceAddOn.orderServiceId = orderService.id;
             orderServiceAddOn.addOnId = Number(key);
             orderServiceAddOn.count = Number((value as any)?.count);
             orderServiceAddOn.singlePrice = await getRepository(Service).findOneBy({ id: Number(key) }).then(e => e.price);
-            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count
+            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count;
 
-            await getRepository(OrderServiceAddOn).save(orderServiceAddOn)
+            await getRepository(OrderServiceAddOn).save(orderServiceAddOn);
 
             const addOnOrderService = new OrderService();
             addOnOrderService.orderId = order.id;
@@ -641,7 +643,10 @@ class OrderController {
 
   static pay = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
-    const { isCredit, method } = req.body
+    const {
+      isCredit,
+      method
+    } = req.body;
     let user, orderObj, url, authority, payment;
     try {
       user = await this.users().findOneOrFail({
@@ -675,8 +680,8 @@ class OrderController {
     }
 
     let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
-    if (isCredit){
-      finalPrice = finalPrice - user.walletBalance
+    if (isCredit) {
+      finalPrice = finalPrice - user.walletBalance;
     }
 
     try {
@@ -691,10 +696,10 @@ class OrderController {
       }
       payment.price = finalPrice;
       payment.method = method;
-      payment.randomCode = generateCode(8, dataTypes.number);
+      payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
 
       await getRepository(Payment).save(payment);
-    }catch (e){
+    } catch (e) {
       console.log(e);
       return res.status(400).send({
         code: 400,
@@ -702,7 +707,7 @@ class OrderController {
       });
     }
 
-      if (method == 'sep'){
+    if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
         proxy: false,
@@ -718,19 +723,19 @@ class OrderController {
       });
 
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
-          action: 'token',
-          TerminalId: 14436606,
-          Amount: finalPrice * 10,
-          ResNum: generateCode(8, dataTypes.number),
-          RedirectUrl: "https://app.nilman.co/payment/verify",
-          CellNumber: user.phoneNumber
-        })
-      authority = sepReq.data.token
+        action: 'token',
+        TerminalId: 14436606,
+        Amount: finalPrice * 10,
+        ResNum: generateCode(8, dataTypes.number),
+        RedirectUrl: 'https://app.nilman.co/payment/verify',
+        CellNumber: user.phoneNumber
+      });
+      authority = sepReq.data.token;
 
-    }else if(method == 'ap'){
-      try{
-        const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token',{
-          data:{
+    } else if (method == 'ap') {
+      try {
+        const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token', {
+          data: {
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
             'localInvoiceId': payment.randomCode,
@@ -744,14 +749,14 @@ class OrderController {
             pwd: 'MtK5786W'
           },
           method: 'POST'
-        })
-        authority = apReq.data
-      }catch (e){
+        });
+        authority = apReq.data;
+      } catch (e) {
         console.log('hiiiiiiiiii');
         console.log(e);
         console.log(e.response.data);
       }
-    }else{
+    } else {
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
         Amount: finalPrice, // In Tomans
@@ -793,7 +798,10 @@ class OrderController {
     }
     return res.status(200).send({
       code: 200,
-      data: { url: url, authority: authority }
+      data: {
+        url: url,
+        authority: authority
+      }
     });
 
   };
@@ -811,30 +819,32 @@ class OrderController {
     let payment: Payment;
     let refId = null;
     let success = false;
-    let decryptedValue = ',,,,,,'
-    if (tranId){
-      // const apTranRes = await axios.get('https://ipgrest.asanpardakht.ir/v1/TranResult?localInvoiceId=123&merchantConfigurationId=270219')
-      decryptedValue = decrypt(authority, 'IoXFYhJLEyTFy0W7N8RRqaxKSHnVFDUZP75/jKhJ5nI=', 'Aqx/70Tt6qUtkYiwjagNQSyz4E+KTK1gFuB99aA+/Vw=')
+    let decryptedValue = ',,,,,,';
+    if (tranId) {
+      decryptedValue = decryptVectors('jlQxyd+MtWbB4iRUAOVsrUm45zz/vFGzgn1atomY5lw=', 'ztPE0f1sZFtNn3C+7yEzB96+9bcr3/CqXpf3RgOTc9I=', authority);
       console.log(decryptedValue);
     }
     try {
       orders = await this.orders().find({
         where: [{
-            payment: { authority: authority }
-          },
-          // {
-          //   payment: { id: Number(decryptedValue[1]) }
-          // }
-          ],
+          payment: { authority: authority }
+        },
+          {
+            payment: { randomCode: decryptedValue.split(',')[1] }
+          }
+        ],
         relations: { user: true }
       });
 
       payment = await getRepository(Payment).findOne({
-        where: {
+        where: [{
           authority: authority
-        }
+        },
+        {
+          randomCode: decryptedValue.split(',')[1]
+        }]
       });
-    }catch(e) {
+    } catch (e) {
       console.log('no payment');
       return res.status(400).send({
         code: 400,
@@ -850,7 +860,7 @@ class OrderController {
         }).then(function (response) {
           console.log(response);
           if (response.status == 101 || response.status == 100) {
-            success = true
+            success = true;
             return response.RefID
 
               ;
@@ -859,41 +869,44 @@ class OrderController {
           }
         }).catch(function (err) {
           console.log(err);
-          return res.status(400).send({ code: 400, data: 'Invalid Portal'})
+          return res.status(400).send({
+            code: 400,
+            data: 'Invalid Portal'
+          });
         });
-        refId = zarinpalRes ? zarinpalRes.toString() : null
+        refId = zarinpalRes ? zarinpalRes.toString() : null;
       } else if (payment.method == 'sep') {
         const sepRes = await axios.post('https://sep.shaparak.ir/verifyTxnRandomSessionkey/ipg/VerifyTransaction', {
           RefNum: refNum,
           terminalNumber: terminalId
-        })
+        });
         success = sepRes.data.Success;
         refId = sepRes.data.TraceNo;
       } else if (payment.method == 'ap') {
         const apRes = await axios.post('https://ipgrest.asanpardakht.ir/v1/Verify', {
           merchantConfigurationId: '270219',
           payGateTranId: decryptedValue.split(',')[5]
-        })
+        });
         console.log(apRes);
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
       }
 
       if (!success) {
-        throw new Error('Unsuccessful')
+        throw new Error('Unsuccessful');
       }
-    }catch (e) {
+    } catch (e) {
       console.log(e);
       return res.status(400).send({
         code: 400,
         data: 'Invalid Portal'
       });
     }
-    try{
+    try {
       for (const order of orders) {
-        order.inCart   = false;
+        order.inCart = false;
         order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
-        order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
+        order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false } }));
 
         await getRepository(Order).save(order);
         smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
