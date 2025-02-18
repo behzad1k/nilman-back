@@ -374,11 +374,8 @@ class OrderController {
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 
-    let transportation = 100000;
+    let transportation = 200000;
 
-    if (moment(date, 'jYYYY/jMM/jDD').unix() >= moment('1403/12/01 00:00', 'jYYYY/jMM/jDD HH:mm').unix()) {
-      transportation += 100000;
-    }
     let totalPrice = 0, sections = 0;
     const order = new Order();
     for (const attr of attributeObjs) {
@@ -647,7 +644,7 @@ class OrderController {
       isCredit,
       method
     } = req.body;
-    let user, orderObj, url, authority, payment;
+    let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -681,7 +678,8 @@ class OrderController {
 
     let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
     if (isCredit) {
-      finalPrice = finalPrice - user.walletBalance;
+      creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
+      finalPrice -= creditUsed;
     }
 
     try {
@@ -696,6 +694,7 @@ class OrderController {
       }
       payment.price = finalPrice;
       payment.method = method;
+      payment.credit = creditUsed;
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
 
       await getRepository(Payment).save(payment);
@@ -707,7 +706,9 @@ class OrderController {
       });
     }
 
-    if (method == 'sep') {
+    if (isCredit && finalPrice == 0){
+      url = 'https://app.nilman.co/payment/verify?State=OK';
+    } else if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
         proxy: false,
@@ -806,7 +807,7 @@ class OrderController {
 
   };
   static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
-    // const userId = jwtDecode(req.headers.authorization);
+    const userId = jwtDecode(req.headers.authorization);
     const {
       authority,
       status,
@@ -922,6 +923,13 @@ class OrderController {
         isPaid: true,
         refId: refId
       });
+      if (payment.credit > 0){
+        const user = await getRepository(User).findOneBy({ id: Number(userId) });
+
+        user.walletBalance -= payment.credit;
+
+        await getRepository(User).save(user);
+      }
     } catch (e) {
       console.log(e);
       return res.status(400).send({

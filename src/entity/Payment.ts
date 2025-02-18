@@ -23,6 +23,12 @@ export class Payment {
   @Column(dataTypes.integer)
   price: number;
 
+  @Column(dataTypes.integer, { default: 0})
+  finalPrice: number;
+
+  @Column(dataTypes.integer, { default: 0 })
+  credit: number;
+
   @Column(dataTypes.text, { default: null })
   authority: string;
 
