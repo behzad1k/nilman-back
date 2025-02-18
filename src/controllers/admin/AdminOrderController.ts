@@ -76,12 +76,10 @@ class AdminOrderController {
         const allOrders = await getRepository(Order).find({ where: { inCart: false }, relations: { worker: true, orderServices: { service: true }}})
         for (const order of allOrders) {
           if (order.discountId != null && order.status != 'Created' && order.status != 'Canceled' && order.transactionId != null) {
-            const actualPrice = order.orderServices?.reduce((acc, cur) => {
+            order.price = order.orderServices?.reduce((acc, cur) => {
               return acc + cur.service.price;
-            }, 0);
-            const owed = actualPrice - order.price;
-
-            console.log(order.worker.name + ' ' + order.worker.lastName, order.code, owed);
+            }, 0)
+            await getRepository(Order).save(order);
           }
         }
         for (const [status, statusTitle] of Object.entries(orderStatusNames)) {
