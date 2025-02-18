@@ -16,15 +16,29 @@ class AdminOrderController {
   static users = () => getRepository(User);
   static orders = () => getRepository(Order);
   static index = async (req: Request, res: Response): Promise<Response> => {
-    const {
-      page,
-      perPage,
-      status,
-      query
-    } = req.query;
-    let orders = null;
-    let statusCount = {};
-    let count = 0;
+    const { page, perPage = 25, status, query } = req.query;
+
+    if (!page) {
+      const orders = await getRepository(Order).find({
+        relations: {
+          worker: true,
+          service: true,
+          orderServices: { service: true },
+          user: true
+        }
+      });
+      return res.status(200).send({ code: 200, data: orders });
+    }
+
+    const baseWhere = [
+      { user: { name: Like(`%${query}%`) }, inCart: false },
+      { user: { lastName: Like(`%${query}%`) }, inCart: false },
+      { user: { phoneNumber: Like(`%${query}%`) }, inCart: false },
+      { worker: { name: Like(`%${query}%`) }, inCart: false },
+      { worker: { lastName: Like(`%${query}%`) }, inCart: false },
+      { code: Like(`%${query}%`), inCart: false }
+    ];
+
     const options: FindManyOptions = {
       relations: {
         worker: true,
@@ -32,87 +46,54 @@ class AdminOrderController {
         orderServices: { service: true },
         user: true
       },
-    };
-    if (page) {
-      const take = Number(perPage) || 25;
-
-      options.take = take;
-      options.skip = (take) * (Number(page) - 1 || 0);
-      options.order = {
+      take: Number(perPage),
+      skip: Number(perPage) * (Number(page) - 1 || 0),
+      order: {
         date: 'DESC',
         fromTime: 'DESC'
-      }
-      options.where = [
-        {
-          user: {name: Like(`%${query}%`)}, inCart: false,
-        },
-        {
-          user: {lastName: Like(`%${query}%`)}, inCart: false,
-        },
-        {
-          user: {phoneNumber: Like(`%${query}%`)}, inCart: false,
-        },
-        {
-          worker: {name: Like(`%${query}%`)}, inCart: false,
-        },
-        {
-          worker: {lastName: Like(`%${query}%`)}, inCart: false,
-        },
-        {
-          code:  Like(`%${query}%`), inCart: false,
-        },
-      ];
-      try {
-        orders = await getRepository(Order).find(options);
+      },
+      where: status ? baseWhere.map(condition => ({ ...condition, status })) : baseWhere
+    };
 
-        options.where = options.where?.map(e => {
-          const cp = { ...e }
-          if (status) {
-            cp.status = status;
-          }
-          return cp;
-        });
+    try {
+      const orderRepository = getRepository(Order);
+      const [orders, count] = await orderRepository.findAndCount(options);
 
-        const allOrders = await getRepository(Order).find({ where: { inCart: false }, relations: { worker: true, orderServices: { service: true }}})
-        for (const order of allOrders) {
-          if (order.discountId != null && order.status != 'Created' && order.status != 'Canceled') {
-            order.price = order.orderServices?.reduce((acc, cur) => {
-              return acc + cur.service.price;
-            }, 0)
-            await getRepository(Order).save(order);
-          }
+      const allOrders = await orderRepository.find({
+        where: { inCart: false },
+        relations: { worker: true, orderServices: { service: true }}
+      });
+
+      const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
+        ...acc,
+        [status]: {
+          count: allOrders.filter(e => e.status === status).length,
+          title: statusTitle
         }
-        for (const [status, statusTitle] of Object.entries(orderStatusNames)) {
-          statusCount[status] = {
-            count: allOrders.filter(e => e.status == status).length,
-            title: statusTitle,
-          };
-          statusCount['all'] = {
-            count: allOrders.length,
-            title: 'All'
-          }
+      }), {
+        all: {
+          count: allOrders.length,
+          title: 'All'
         }
+      });
 
-        [orders, count] = await getRepository(Order).findAndCount(options);
-
-      }catch (e){
-        console.log(e);
-        return res.status(501).send({
-          code: 501,
-          data: 'Unknown Error'
-        });
-      }
+      return res.status(200).send({
+        code: 200,
+        data: {
+          orders,
+          count,
+          statusCount
+        }
+      });
+    } catch (e) {
+      console.log(e);
+      return res.status(501).send({
+        code: 501,
+        data: 'Unknown Error'
+      });
     }
-
-    return res.status(200).send({
-      code: 200,
-      data: page ? {
-        orders,
-        count,
-        statusCount
-      } : orders
-    });
   };
+
 
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
