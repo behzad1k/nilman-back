@@ -343,7 +343,7 @@ class UserController {
 
   private static getTimeSlots(fromTime: number, toTime: number): number[] {
     const slots = [];
-    for (let i = 8; i < 20; i += 2) {
+    for (let i = 8; i <= 20; i += 2) {
       if (
         (i >= fromTime && i < toTime) || // Slot starts within the off period
         (fromTime >= i && fromTime < i + 2) || // Off period starts within this slot
