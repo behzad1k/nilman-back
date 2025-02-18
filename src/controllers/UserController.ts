@@ -381,7 +381,7 @@ class UserController {
       if (!result[workerOff.date]){
         result[workerOff.date] = []
       }
-      for (let i = 8; i < 20; i = i + 2) {
+      for (let i = 8; i <= 20; i = i + 2) {
         if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 2)) || (workerOff.fromTime <= i && workerOff.toTime >= (i))){
           result[workerOff.date].push(i);
           break;
