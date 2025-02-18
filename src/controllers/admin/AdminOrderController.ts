@@ -73,8 +73,17 @@ class AdminOrderController {
           return cp;
         });
 
-        const allOrders = await getRepository(Order).findBy({ inCart: false })
+        const allOrders = await getRepository(Order).find({ where: { inCart: false }, relations: { worker: true, orderServices: { service: true }}})
+        for (const order of allOrders) {
+          if (order.discountId != null && order.status != 'Created' && order.status != 'Canceled') {
+            const actualPrice = order.orderServices?.reduce((acc, cur) => {
+              return acc + cur.service.price;
+            }, 0);
+            const owed = actualPrice - order.price;
 
+            console.log(order.worker.name + ' ' + order.worker.lastName, order.code, owed);
+          }
+        }
         for (const [status, statusTitle] of Object.entries(orderStatusNames)) {
           statusCount[status] = {
             count: allOrders.filter(e => e.status == status).length,

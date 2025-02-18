@@ -392,6 +392,7 @@ class OrderController {
         }
       }
     }
+    order.price = totalPrice;
     if (discountObj && (discountObj.amount || discountObj.percent)) {
       const discountAmount = discountObj.percent ? (totalPrice * discountObj.percent / 100) : discountObj.amount;
       order.discountId = discountObj.id;
@@ -399,7 +400,6 @@ class OrderController {
       totalPrice -= discountAmount;
     }
     order.transportation = transportation;
-    order.price = totalPrice;
     totalPrice += transportation;
     order.finalPrice = totalPrice;
     order.service = serviceObj;
