@@ -740,7 +740,7 @@ class OrderController {
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
             'localInvoiceId': payment.randomCode,
-            'amountInRials': 30000,
+            'amountInRials': finalPrice * 10,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
             'paymentId': payment.id,
