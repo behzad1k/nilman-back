@@ -740,7 +740,7 @@ class OrderController {
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
             'localInvoiceId': payment.randomCode,
-            'amountInRials': finalPrice * 10,
+            'amountInRials': 30000,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
             'paymentId': payment.id,
@@ -903,6 +903,7 @@ class OrderController {
       }
     } catch (e) {
       console.log(e);
+      console.log(e?.response);
       return res.status(400).send({
         code: 400,
         data: 'Invalid Portal'
