@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
+import { Discount } from './Discount';
 import Media from './Media';
 import { Order } from "./Order";
 import { OrderService } from './OrderService';
@@ -98,6 +99,9 @@ export class Service {
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
+
+  @OneToMany(() => Discount, discount => discount.service, { onDelete: 'CASCADE'})
+  discounts: Discount[];
 
   @OneToMany(() => OrderServiceAddOn, orderService => orderService.addOn, { onDelete: 'CASCADE'})
   orderServicesAddOns: OrderServiceAddOn[];

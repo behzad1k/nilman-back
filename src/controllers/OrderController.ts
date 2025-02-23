@@ -371,6 +371,13 @@ class OrderController {
         return;
       }
 
+      if (discountObj.serviceId != serviceObj.id) {
+        return res.status(400).send({
+          code: 1012,
+          data: 'Discount Not Active'
+        });
+      }
+
       await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
     }
 

@@ -1,15 +1,9 @@
-import "reflect-metadata";
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation
-} from 'typeorm';
+import 'reflect-metadata';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, Relation, UpdateDateColumn } from 'typeorm';
 import { dataTypes } from '../utils/enums';
-import { Order } from "./Order";
-import { User } from "./User";
+import { Order } from './Order';
+import { Service } from './Service';
+import { User } from './User';
 
 @Entity()
 export class Discount {
@@ -19,47 +13,63 @@ export class Discount {
   @Column(dataTypes.text, {})
   title: string;
 
-  @Column("int", {nullable: true})
+  @Column('int', { nullable: true })
   percent: number;
 
-  @Column("int", {nullable: true})
+  @Column('int', { nullable: true })
   amount: number;
 
-  @Column("int", {default: 0})
+  @Column('int', { default: 0 })
   timesUsed: number;
 
-  @Column("int")
+  @Column('int')
   maxCount: number;
 
-  @Column("text")
+  @Column('text')
   code: string;
 
-  @Column("int", {nullable: true})
+  @Column('int', { nullable: true })
   userId: number;
 
-  @Column("int", {nullable: true})
+  @Column('int', { nullable: true })
+  serviceId: number;
+
+  @Column('int', { nullable: true })
   forUserId: number;
 
-  @Column("boolean", {default: false})
+  @Column('boolean', { default: false })
   active: boolean;
 
-  @Column("date")
+  @Column('date')
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column("date")
+  @Column('date')
   @UpdateDateColumn()
   updatedAt: Date;
 
   @ManyToOne(() => User, (user) => user.discounts, { onDelete: 'CASCADE' })
-  @JoinColumn({ name:"userId", referencedColumnName: "id"})
-  user: Relation<User>
+  @JoinColumn({
+    name: 'userId',
+    referencedColumnName: 'id'
+  })
+  user: Relation<User>;
+
+  @ManyToOne(() => Service, (service) => service.discounts, { onDelete: 'CASCADE' })
+  @JoinColumn({
+    name: 'serviceId',
+    referencedColumnName: 'id'
+  })
+  service: Relation<Service>;
 
   @ManyToOne(() => User, (user) => user.discounts, { onDelete: 'CASCADE' })
-  @JoinColumn({ name:"forUserId", referencedColumnName: "id"})
-  forUser: Relation<User>
+  @JoinColumn({
+    name: 'forUserId',
+    referencedColumnName: 'id'
+  })
+  forUser: Relation<User>;
 
   @OneToMany(() => Order, (order) => order.discount, { onDelete: 'CASCADE' })
-  orders: Order[]
+  orders: Order[];
 
 }

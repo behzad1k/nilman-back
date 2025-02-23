@@ -16,11 +16,11 @@ export class OrderRoutes {
 
   routes() {
     this.router.get("", this.authController.authenticateJWT, OrderController.index);
-    this.router.get("/single/:code", this.authController.authenticateJWT ,OrderController.single);
-    this.router.post("/media/:id", multer(multerConfig('uploads/order')).any(), OrderController.medias)
     this.router.post("", this.authController.authenticateJWT,OrderController.create);
     this.router.put("", this.authController.authorizeJWTWorker, OrderController.update);
     this.router.delete("", this.authController.authenticateJWT ,OrderController.delete);
+    this.router.get("/single/:code", this.authController.authenticateJWT ,OrderController.single);
+    this.router.post("/media/:id", multer(multerConfig('uploads/order')).any(), OrderController.medias)
     this.router.get("/workers", OrderController.workers);
     this.router.get("/cart", OrderController.cart);
     this.router.delete("/service/:id", OrderController.deleteCartService);

@@ -38,33 +38,9 @@ class AdminDiscountController {
     });
   };
 
-  static create = async (req: Request, res: Response): Promise<Response> => {
-    const { title, percent, amount, code, userId } = req.body;
-    const discount = new Discount();
-    if (percent && amount){
-      return res.status(400).send({code: 400, data: 'Cant Have Both percent and amount'});
-    }
-    discount.title = title;
-    discount.percent = percent;
-    discount.code = code;
-    discount.amount = amount;
-    discount.userId = userId;
-    const errors = await validate(discount);
-    if (errors.length > 0) {
-      return res.status(400).send(errors);
-    }
-    
-    try {
-      await this.discounts().save(discount);
-    } catch (e) {
-      return res.status(409).send({code: 409, data: "error try again later"});
-    }
-    return res.status(201).send({ code: 201, data: discount});
-  };
-
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { title, percent, amount, code, maxCount, forUserId } = req.body;
+    const { title, percent, amount, code, maxCount, forUserId, serviceId } = req.body;
     
     let discount: Discount;
     if (id) {
@@ -82,6 +58,7 @@ class AdminDiscountController {
     }
 
     discount.title = title;
+    discount.serviceId = serviceId;
     discount.percent = percent;
     discount.amount = amount;
     discount.code = code;
