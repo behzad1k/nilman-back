@@ -25,6 +25,9 @@ export class Discount {
   @Column('int')
   maxCount: number;
 
+  @Column('int', { default: null })
+  expirationDay: number;
+
   @Column('text')
   code: string;
 

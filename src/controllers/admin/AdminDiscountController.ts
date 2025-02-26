@@ -40,7 +40,7 @@ class AdminDiscountController {
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { title, percent, amount, code, maxCount, forUserId, serviceId } = req.body;
+    const { title, percent, amount, code, maxCount, forUserId, serviceId, expirationDay } = req.body;
     
     let discount: Discount;
     if (id) {
@@ -58,6 +58,7 @@ class AdminDiscountController {
     }
 
     discount.title = title;
+    discount.expirationDay = expirationDay;
     discount.serviceId = serviceId;
     discount.percent = percent;
     discount.amount = amount;

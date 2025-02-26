@@ -374,7 +374,21 @@ class OrderController {
       if (discountObj.serviceId != serviceObj.id) {
         return res.status(400).send({
           code: 1012,
-          data: 'Discount Not Active'
+          data: 'Invalid Discount Service'
+        });
+      }
+      if (moment().unix() > moment(discountObj.createdAt).add(discountObj.expirationDay, 'day').unix()) {
+        return res.status(400).send({
+          code: 1013,
+          data: 'Discount Expired'
+        });
+      }
+
+
+      if (await getRepository(Order).findOne({ where: { userId: Number(userId), discountId: discountObj.id } })) {
+        return res.status(400).send({
+          code: 1014,
+          data: 'Invalid discount User'
         });
       }
 
