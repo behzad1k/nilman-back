@@ -8,7 +8,7 @@ import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
 import { generateCode, signJWT, signTmpJWT } from '../utils/funs';
-import sms from '../utils/smsLookup';
+import sms from '../utils/sms';
 
 class LoginController {
   static users = () => getRepository(User);

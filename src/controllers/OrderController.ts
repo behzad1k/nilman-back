@@ -20,7 +20,7 @@ import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, orderStatus, roles } from '../utils/enums';
 import { decryptVectors, generateCode, getUniqueSlug, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
-import smsLookup from '../utils/smsLookup';
+import sms from '../utils/sms';
 
 const { networkInterfaces } = require('os');
 
@@ -513,8 +513,8 @@ class OrderController {
       order.orderServices = newOrderServices;
 
       // if (workerId){
-      //   smsLookup.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
-      //   smsLookup.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+      //   sms.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
+      //   sms.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
       //
       // }
       // const workerOff = new WorkerOffs();
@@ -612,7 +612,7 @@ class OrderController {
 
     orderObj.status = orderStatus.Done;
     orderObj.doneDate = new Date();
-    // smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
+    // sms.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
 
     try {
       await this.orders().save(orderObj);
@@ -937,9 +937,9 @@ class OrderController {
         order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false } }));
 
         await getRepository(Order).save(order);
-        smsLookup.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
-        smsLookup.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09125190659');
-        smsLookup.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09122251784');
+        sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
+        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09125190659');
+        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09122251784');
       }
       await getRepository(Payment).update({ id: payment.id }, {
         isPaid: true,

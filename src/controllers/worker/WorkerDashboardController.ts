@@ -8,7 +8,7 @@ import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { orderStatus } from '../../utils/enums';
 import { getUniqueSlug, jwtDecode } from '../../utils/funs';
-import smsLookup from '../../utils/smsLookup';
+import sms from '../../utils/sms';
 
 class WorkerDashboardController {
   static users = () => getRepository(User)

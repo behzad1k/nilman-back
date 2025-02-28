@@ -7,43 +7,98 @@ const send = (text: string, to: string) => {
 
 const afterPaid = (name: string, phoneNumber: string, date: string, time: string) => {
   const text = `${name} عزیز
-    کاربر گرامی نیلمان ؛
-    با سلام و تشکر از اینکه مجموعه ما را برای انجام خدمات خود انتخاب کردید. سفارش شما برای تاریخ ${date} ساعت ${time} ثبت شد.`
+
+کاربر گرامی نیلمان ؛
+
+با سلام و تشکر از اینکه مجموعه ما را برای انجام خدمات خود انتخاب کردید. سفارش شما برای تاریخ ${date} ثبت شد.`
   send(text, phoneNumber)
 }
 
-const feedback = (name: string, phoneNumber: string, url: string) => {
+const emergency = (orderCode: string, name: string, lastName: string) => {
+  // send(text, phoneNumber)
+}
+
+const notify = (code: string, price: string, order: string, phoneNumber: string) => {
+  const text = `سفارش به شماره ${code} برای خدمت ${order} به مبلغ ${price} ثبت شده است.`
+  send(text, phoneNumber)
+}
+
+const feedback = (name: string, code: string, phoneNumber: string) => {
   const text = `سلام ${name} عزیز
+
 ضمن تشكر از انتخاب نیلمان و آرزومندی جلب رضایت شما از سرویس انجام شده  ، ممنون میشویم تا میزان رضایتمندی و نظرات خود را در رابطه با سرویس انجام شده از طریق لینک زیر به ما انتقال دهید .
-${url}
+
+https://app.nilman.co/feedback/${code}
+
 سپاس از مهر شما
+
 '
-نیلمان`
+
+نیلمان
+`
   send(text, phoneNumber);
+}
+
+const orderAssignWorker = (code: string, address: string, phoneNumber: string, date: string, time: string) => {
+   const text =  `زیباکار محترم مجموعه نیلمان
+
+سفارش ${code} 
+
+به آدرس ${address}
+
+در تاریخ ${date + ' ' + time}
+
+به شما محول شده است.`
+  send(text, phoneNumber);
+
 }
 
 const orderAssignUser = (name: string, worker: string, phoneNumber: string, date: string, time: string) => {
    const text =  `${name} عزیز؛
-  خانم ${worker} در تاریخ ${date} ساعت ${time} به آدرس انتخابی شما مراجعه میکند.`
+
+خانم ${worker} در تاریخ ${date} به آدرس انتخابی شما مراجعه میکند.`
   send(text, phoneNumber);
 
 }
 
 const welcome = (code: string, phoneNumber: string) => {
-  const text = `کاربر گرامی \nبه نیلمان خوش آمدید.\nکد ورود شما: \ncode: ${code}`
+  const text = `کاربر گرامی
+
+به نیلمان خوش آمدید.
+
+کد ورود شما: ${code}
+
+
+
+@app.nilman.co ${code}`
   send(text, phoneNumber);
 }
 
 const referral = (name: string, code: string, phoneNumber: string) => {
-  const text = `کاربر گرامی \nبه نیلمان خوش آمدید.\nکد معرف شما: \ncode: ${code}`
+  const text = `کاربر گرامی 
+
+به نیلمان خوش آمدید.
+
+کد معرف شما:
+
+code: ${code}
+
+با ثبت کد توسط دوستان شما
+
+10درصدتخفیف درسفارش بعدی
+
+شما اعمال میگردد.`
   send(text, phoneNumber);
 }
 
 export default {
+  emergency,
   referral,
   welcome,
   send,
   afterPaid,
   feedback,
-  orderAssignUser
+  orderAssignUser,
+  orderAssignWorker,
+  notify
 }

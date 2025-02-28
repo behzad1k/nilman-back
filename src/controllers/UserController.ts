@@ -13,7 +13,7 @@ import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
 import { generateCode, jwtDecode, signJWT } from '../utils/funs';
 import media from '../utils/media';
-import sms from '../utils/smsLookup';
+import sms from '../utils/sms';
 
 class UserController {
   static users = () => getRepository(User);

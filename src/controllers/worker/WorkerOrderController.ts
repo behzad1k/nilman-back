@@ -10,7 +10,7 @@ import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { orderStatus } from '../../utils/enums';
 import media from '../../utils/media';
-import smsLookup from '../../utils/smsLookup';
+import sms from '../../utils/sms';
 import { jwtDecode, omit } from '../../utils/funs';
 
 class WorkerOrderController {
@@ -164,7 +164,7 @@ class WorkerOrderController {
     order.finalImageId = await media.create(req, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
 
     // worker.walletBalance = worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation) ;
-    smsLookup.feedback(order.user.name, order.user.phoneNumber, order.code);
+    sms.feedback(order.user.name, order.user.phoneNumber, order.code);
 
     try {
       await this.orders().save(order);
@@ -221,7 +221,7 @@ class WorkerOrderController {
 
     orderObj.status = orderStatus.Done;
     orderObj.doneDate = new Date();
-    smsLookup.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
+    sms.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
 
     try {
       await this.orders().save(orderObj);

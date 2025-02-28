@@ -4,7 +4,7 @@ import { getRepository, MoreThan } from 'typeorm';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 import { jwtDecode } from '../../utils/funs';
-import smsLookup from '../../utils/smsLookup';
+import sms from '../../utils/sms';
 
 class WorkerUserController {
   static users = () => getRepository(User);
@@ -131,7 +131,7 @@ class WorkerUserController {
       //   const order = await getRepository(Order).find({ where: { workerId: Number(userId), status: In([orderStatus.InProgress, orderStatus.Assigned])}, order: })
       // }
       const user = await getRepository(User).findOneBy({ id: Number(userId) });
-      smsLookup.emergency((code || 'نامشخص'), user.name, user.lastName);
+      sms.emergency((code || 'نامشخص'), user.name, user.lastName);
 
     } catch (e) {
 

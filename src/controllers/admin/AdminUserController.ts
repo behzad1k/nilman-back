@@ -11,7 +11,7 @@ import { WorkerOffs } from '../../entity/WorkerOffs';
 import { dataTypes, orderStatus, roles } from '../../utils/enums';
 import { generateCode, jwtDecode } from '../../utils/funs';
 import media from '../../utils/media';
-import smsLookup from '../../utils/smsLookup';
+import sms from '../../utils/sms';
 
 class AdminUserController {
   static users = () => getRepository(User);

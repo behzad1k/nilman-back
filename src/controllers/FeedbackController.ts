@@ -6,7 +6,7 @@ import { FeedbackFactor } from '../entity/FeedbackFactor';
 import { Order } from '../entity/Order';
 import {Service} from "../entity/Service";
 import { getUniqueSlug } from '../utils/funs';
-import sms from '../utils/smsLookup';
+import sms from '../utils/sms';
 
 class FeedbackController {
   static feedbacks = () => getRepository(Feedback)
