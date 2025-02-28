@@ -39,8 +39,8 @@ https://app.nilman.co/feedback/${code}
   send(text, phoneNumber);
 }
 
-const orderAssignWorker = (code: string, address: string, phoneNumber: string, date: string, time: string) => {
-   const text =  `زیباکار محترم مجموعه نیلمان
+const orderAssignWorker = (name: string, code: string, address: string, phoneNumber: string, date: string, time: string) => {
+   const text =  `سرکار خانم ${name}
 
 سفارش ${code} 
 
@@ -49,6 +49,16 @@ const orderAssignWorker = (code: string, address: string, phoneNumber: string, d
 در تاریخ ${date + ' ' + time}
 
 به شما محول شده است.`
+  send(text, phoneNumber);
+
+}
+
+const orderAssignWorkerChange = (name: string, code: string, phoneNumber: string) => {
+  const text =  `سرکار خانم ${name}
+
+سفارش ${code} 
+
+لفو شد.`
   send(text, phoneNumber);
 
 }
@@ -100,5 +110,6 @@ export default {
   feedback,
   orderAssignUser,
   orderAssignWorker,
-  notify
+  notify,
+  orderAssignWorkerChange
 }

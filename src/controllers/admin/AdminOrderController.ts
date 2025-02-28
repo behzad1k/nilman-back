@@ -270,6 +270,7 @@ class AdminOrderController {
       data: order
     });
   };
+
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {
@@ -290,6 +291,8 @@ class AdminOrderController {
     }
 
     if (order.workerId) {
+      sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
+
       await getRepository(WorkerOffs).delete({
         userId: order.workerId,
         orderId: order.id
@@ -309,6 +312,7 @@ class AdminOrderController {
       });
       return;
     }
+
     order.worker = user;
     order.status = orderStatus.Assigned;
     order.workerPercent = user.percent;
@@ -320,7 +324,7 @@ class AdminOrderController {
     try {
       await this.orders().save(order);
       sms.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
-      sms.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
+      sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
       await getRepository(WorkerOffs).insert({
         fromTime: order.fromTime,
         toTime: order.toTime,
