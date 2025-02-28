@@ -154,7 +154,7 @@ class AdminOrderController {
       order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
     }
 
-    order.inCart = status == orderStatus.Created;
+    order.inCart = (status == orderStatus.Created);
     order.date = date;
     order.discountAmount = discountAmount;
     order.addressId = addressId;
@@ -166,6 +166,7 @@ class AdminOrderController {
     order.fromTime = time;
     order.toTime = Number(time) + 1;
     order.isUrgent = isUrgent;
+    order.isWebsite = false;
 
     if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
       order.doneDate = new Date();

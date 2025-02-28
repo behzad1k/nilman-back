@@ -113,6 +113,11 @@ export class Order {
   })
   isFeedbacked: boolean
 
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isWebsite: boolean
+
   @Column(dataTypes.integer, { nullable: true, default: null })
   finalImageId: number;
 

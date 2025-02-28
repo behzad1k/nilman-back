@@ -854,7 +854,7 @@ class OrderController {
             payment: { randomCode: decryptedValue.split(',')[1] }
           }
         ],
-        relations: { user: true }
+        relations: { user: true, orderServices: { service: true } }
       });
 
       payment = await getRepository(Payment).findOne({
@@ -938,8 +938,8 @@ class OrderController {
 
         await getRepository(Order).save(order);
         sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
-        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09125190659');
-        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), '09122251784');
+        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + ' ' + cur.service.title, '').toString(), '09125190659');
+        sms.notify(order.code, order.finalPrice.toString(), order.orderServices?.reduce((acc, cur) => acc + ' ' + cur.service.title, '').toString(), '09122251784');
       }
       await getRepository(Payment).update({ id: payment.id }, {
         isPaid: true,
