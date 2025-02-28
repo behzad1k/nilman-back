@@ -243,6 +243,23 @@ class AdminOrderController {
         isMulti: services.filter(e => e.count > 1).length > 0,
         toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0))
       });
+      if (order.workerId){
+        let workerOff = await getRepository(WorkerOffs).findOneBy({
+          userId: order.workerId,
+          orderId: order.id
+        });
+
+        if(!workerOff){
+          workerOff = new WorkerOffs();
+          workerOff.userId = order.workerId;
+          workerOff.orderId = order.id;
+        }
+
+        workerOff.date = order.date;
+        workerOff.fromTime = order.fromTime;
+        workerOff.toTime = Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0));
+        await getRepository(WorkerOffs).save(workerOff);
+      }
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
