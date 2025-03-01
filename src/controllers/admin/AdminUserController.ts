@@ -296,6 +296,29 @@ class AdminUserController {
       data: 'Successful'
     });
   }
+  static textMessage = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const { text } = req.body
+    let user: User;
+    try {
+      user = await this.users().findOneOrFail({
+        where: {
+          id: Number(id)
+        },
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 1002,
+        data: 'Invalid Id'
+      });
+      return;
+    }
+    sms.send(text, user.phoneNumber)
+    return res.status(200).send({
+      code: 200,
+      data: { user, text }
+    });
+  }
   static findBy = async (req: Request, res: Response): Promise<Response> => {
     let user: User;
     try {
