@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import moment from 'jalali-moment';
-import { Between, getRepository, IsNull } from 'typeorm';
+import { Between, getRepository, In, IsNull } from 'typeorm';
 import { validate } from "class-validator";
 import { Order } from "../../entity/Order";
 import { Service } from "../../entity/Service";
@@ -31,7 +31,7 @@ class AdminDashboardController {
   }
   static generalInfo = async (req: Request, res: Response): Promise<Response> => {
     const { from, to, worker, service } = req.query;
-    const where = { status: orderStatus.Done}
+    const where = { status: In([orderStatus.Done, orderStatus.Assigned, orderStatus.Paid])}
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }
