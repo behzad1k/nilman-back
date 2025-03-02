@@ -33,7 +33,7 @@ class AdminDashboardController {
     const { from, to, worker, service } = req.query;
     const where = { }
     if (from && to){
-      where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
+      where['date'] = Between(from, to)
     }
     if (worker && worker != '0'){
       where['workerId'] = worker;
