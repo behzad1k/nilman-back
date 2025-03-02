@@ -31,7 +31,7 @@ class AdminDashboardController {
   }
   static generalInfo = async (req: Request, res: Response): Promise<Response> => {
     const { from, to, worker, service } = req.query;
-    const where = { status: In([orderStatus.Done, orderStatus.Assigned, orderStatus.Paid])}
+    const where = { }
     if (from && to){
       where['doneDate'] = Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'))
     }
