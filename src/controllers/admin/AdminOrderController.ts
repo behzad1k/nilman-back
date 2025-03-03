@@ -1,6 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { FindManyOptions, getRepository, In, Like } from 'typeorm';
+import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
@@ -14,6 +14,7 @@ import sms from '../../utils/sms';
 
 class AdminOrderController {
   static users = () => getRepository(User);
+  static workerOffs = () => getRepository(User);
   static orders = () => getRepository(Order);
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { page, perPage = 25, status, query } = req.query;
@@ -399,51 +400,39 @@ class AdminOrderController {
       return;
     }
 
-    try {
-      users = await this.users().find({
-        where: {
-          role: roles.WORKER,
-          status: 1
+    const busyWorkerIds = await getRepository(WorkerOffs)
+    .find({
+      select: ['userId'],
+      where: [
+        {
+          date: order.date,
+          fromTime: LessThanOrEqual(order.fromTime),
+          toTime: MoreThan(order.fromTime)
         },
-        relations: {
-          services: true,
-          workerOffs: true
+        {
+          date: order.date,
+          fromTime: Between(order.fromTime, order.toTime)
         },
-        relationLoadStrategy: 'query'
-      });
-    } catch (error) {
-      console.log(error);
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid Worker'
-      });
-      return;
-    }
-    const suitableWorkers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
-    // const freeWorkers = suitableWorkers?.filter(j => !j.workerOffs.find(e => {
-    //   return (e.date == order.date &&
-    //   ((e.fromTime > order.fromTime && e.toTime < order.toTime) ||
-    //     (e.fromTime <= order.fromTime && e.toTime > order.toTime))
-    //   )
-    // }));
-    const freeWorkers = suitableWorkers?.filter(worker => !worker.workerOffs.find(timeOff => {
-      return (
-        timeOff.date === order.date && (
-          // Case 1: Worker's off time is completely within order time
-          (timeOff.fromTime >= order.fromTime && timeOff.toTime < order.toTime) ||
-          // Case 2: Order time is completely within worker's off time
-          (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.toTime) ||
-          // Case 3: Worker's off time overlaps with start of order
-          (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.fromTime) ||
-          // Case 4: Worker's off time overlaps with end of order
-          (timeOff.fromTime < order.toTime && timeOff.toTime > order.toTime)
-        )
-      );
-    }));
+        {
+          date: order.date,
+          fromTime: LessThanOrEqual(order.toTime),
+          toTime: MoreThanOrEqual(order.toTime)
+        }
+      ]
+    });
+
+    const availableWorkers = await this.users().find({
+      select: ['id', 'name', 'lastName'],
+      where: {
+        role: roles.WORKER,
+        status: 1,
+        services: { id: In(order.orderServices.map((e => e.serviceId ))) },
+        id: Not(In(busyWorkerIds.map(w => w.userId)))
+      }
+    });
     return res.status(200).send({
       code: 200,
-      data: freeWorkers
-
+      data: availableWorkers
     });
   };
 }
