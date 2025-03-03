@@ -385,13 +385,22 @@ class AdminOrderController {
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
 
-    // Execute both queries concurrently
-    const [order, workers]: any = await Promise.all([
-      this.orders().findOneOrFail({
+    let order: Order, users: User[];
+    try {
+      order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
         relations: ['service', 'user', 'orderServices']
-      }),
-      this.users().find({
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
+    }
+
+    try {
+      users = await this.users().find({
         where: {
           role: roles.WORKER,
           status: 1
@@ -401,37 +410,40 @@ class AdminOrderController {
           workerOffs: true
         },
         relationLoadStrategy: 'query'
-      })
-    ]).catch(error => {
-      return res.status(400).send({
-        code: 400,
-        data: error.message.includes('Order') ? 'Invalid Order' : 'Invalid Worker'
       });
-    });
-
-    // Create a Set of required service IDs for faster lookup
-    const requiredServiceIds = new Set(order.orderServices.map(service => service.serviceId));
-
-    // Filter workers with matching services
-    const suitableWorkers = workers.filter(worker =>
-      worker.services?.every(service => requiredServiceIds.has(service.id))
-    );
-
-    // Check for time conflicts
-    const availableWorkers = suitableWorkers.filter(worker =>
-      !worker.workerOffs.some(timeOff =>
-          timeOff.date === order.date && (
-            (timeOff.fromTime >= order.fromTime && timeOff.toTime < order.toTime) ||
-            (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.toTime) ||
-            (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.fromTime) ||
-            (timeOff.fromTime < order.toTime && timeOff.toTime > order.toTime)
-          )
-      )
-    );
-
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Worker'
+      });
+      return;
+    }
+    const suitableWorkers = users.filter(e => order.orderServices.map(j => j.serviceId).every(k => e.services?.map(e => e.id).includes(k)));
+    // const freeWorkers = suitableWorkers?.filter(j => !j.workerOffs.find(e => {
+    //   return (e.date == order.date &&
+    //   ((e.fromTime > order.fromTime && e.toTime < order.toTime) ||
+    //     (e.fromTime <= order.fromTime && e.toTime > order.toTime))
+    //   )
+    // }));
+    const freeWorkers = suitableWorkers?.filter(worker => !worker.workerOffs.find(timeOff => {
+      return (
+        timeOff.date === order.date && (
+          // Case 1: Worker's off time is completely within order time
+          (timeOff.fromTime >= order.fromTime && timeOff.toTime < order.toTime) ||
+          // Case 2: Order time is completely within worker's off time
+          (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.toTime) ||
+          // Case 3: Worker's off time overlaps with start of order
+          (timeOff.fromTime <= order.fromTime && timeOff.toTime > order.fromTime) ||
+          // Case 4: Worker's off time overlaps with end of order
+          (timeOff.fromTime < order.toTime && timeOff.toTime > order.toTime)
+        )
+      );
+    }));
     return res.status(200).send({
       code: 200,
-      data: availableWorkers
+      data: freeWorkers
+
     });
   };
 }
