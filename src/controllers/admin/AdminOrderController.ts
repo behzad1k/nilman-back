@@ -406,17 +406,23 @@ class AdminOrderController {
       where: [
         {
           date: order.date,
+          fromTime: MoreThanOrEqual(order.fromTime),
+          toTime: LessThan(order.toTime)
+        },
+        {
+          date: order.date,
+          fromTime: LessThanOrEqual(order.fromTime),
+          toTime: MoreThan(order.toTime)
+        },
+        {
+          date: order.date,
           fromTime: LessThanOrEqual(order.fromTime),
           toTime: MoreThan(order.fromTime)
         },
         {
           date: order.date,
-          fromTime: Between(order.fromTime, order.toTime)
-        },
-        {
-          date: order.date,
-          fromTime: LessThanOrEqual(order.toTime),
-          toTime: MoreThanOrEqual(order.toTime)
+          fromTime: LessThan(order.toTime),
+          toTime: MoreThan(order.toTime)
         }
       ]
     });
