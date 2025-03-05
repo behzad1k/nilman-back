@@ -1,6 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
+import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw, ArrayContainedBy } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
@@ -432,7 +432,7 @@ class AdminOrderController {
       where: {
         role: roles.WORKER,
         status: 1,
-        services: { id: In(order.orderServices.map((e => e.serviceId ))) },
+        services: { id: ArrayContainedBy(order.orderServices.map((e => e.serviceId ))) },
         id: Not(In(busyWorkerIds.map(w => w.userId)))
       }
     });
