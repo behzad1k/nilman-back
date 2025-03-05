@@ -1,6 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw, ArrayContainedBy } from 'typeorm';
+import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
@@ -426,16 +426,26 @@ class AdminOrderController {
         }
       ]
     });
+    const requiredServiceIds = order.orderServices.map(e => e.serviceId);
 
-    const availableWorkers = await this.users().find({
+    // First get the smaller set of potential workers
+    const potentialWorkers = await this.users().find({
       select: ['id', 'name', 'lastName'],
+      relations: ['services'],
       where: {
         role: roles.WORKER,
         status: 1,
-        services: { id: ArrayContainedBy(order.orderServices.map((e => e.serviceId ))) },
+        services: { id: In(requiredServiceIds) },
         id: Not(In(busyWorkerIds.map(w => w.userId)))
       }
     });
+
+    // Then filter for exact service matches on the smaller array
+    const availableWorkers = potentialWorkers.filter(worker =>
+      requiredServiceIds.every(serviceId =>
+        worker.services.some(service => service.id === serviceId)
+      )
+    );
     return res.status(200).send({
       code: 200,
       data: availableWorkers
