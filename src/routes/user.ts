@@ -19,6 +19,7 @@ export class UserRoutes {
     this.router.get("", this.authController.authenticateJWT, UserController.getUser);
     this.router.put("", this.authController.authenticateJWT, UserController.update);
     this.router.get("/address", this.authController.authenticateJWT, UserController.getAddresses);
+    this.router.get("/workers", this.authController.authenticateJWT, UserController.getUserWorkers);
     this.router.post("/workerOffs", UserController.getWorkerOffs);
     this.router.post("/medias", [this.authController.authenticateJWT, multer(multerConfig('uploads/profilePic')).any()], UserController.medias);
     this.router.put("/changePassword", this.authController.authenticateJWT, UserController.changePassword);

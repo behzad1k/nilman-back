@@ -244,6 +244,23 @@ class UserController {
     });
   };
 
+  static getUserWorkers = async (req: Request, res: Response): Promise<Response> => {
+    const id = jwtDecode(req.headers.authorization);
+
+    const workers = await getRepository(User).find({
+      where: {
+        role: roles.WORKER,
+        status: 1,
+        jobs: { user: { id: Number(id) } }
+      },
+      relations: { services: true },
+    });
+
+    return res.status(200).send({
+      code: 200,
+      data: workers
+    });
+  }
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
     const { attributes, workerId } = req.body;
 
