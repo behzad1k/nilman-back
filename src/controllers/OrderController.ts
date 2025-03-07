@@ -698,6 +698,7 @@ class OrderController {
     }
 
     for (const order of orders) {
+      console.log(moment(order.createdAt).diff(moment().subtract(1, 'minute'), 'minute', true));
       if (moment(order.createdAt).diff(moment().subtract(1, 'minute'), 'minute', true) > 1){
         await getRepository(Order).delete({ id: order.id })
         return res.status(400).send({
