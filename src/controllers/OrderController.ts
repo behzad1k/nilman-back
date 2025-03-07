@@ -698,10 +698,10 @@ class OrderController {
     }
 
     for (const order of orders) {
-      if (moment(moment().subtract(1, 'minute')).diff(order.createdAt, 'minute', true) > 1){
-        await getRepository(Order).delete({ id: order.id });
+      if (moment(moment().subtract(1, 'hour')).diff(order.createdAt, 'hour', true) > 1){
+        await getRepository(Order).delete({ id: In(orders.map(e => e.id)) });
         return res.status(400).send({
-          code: 400,
+          code: 1015,
           data: 'Invalid Time'
         });
       }
