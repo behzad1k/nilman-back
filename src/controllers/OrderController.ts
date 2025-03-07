@@ -697,6 +697,16 @@ class OrderController {
       });
     }
 
+    for (const order of orders) {
+      if (moment(order.createdAt).diff(moment().subtract(1, 'minute'), 'minute', true) > 1){
+        await getRepository(Order).delete({ id: order.id })
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Time'
+        });
+      }
+    }
+
     let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
     if (isCredit) {
       creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
