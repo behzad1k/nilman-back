@@ -10,6 +10,7 @@ import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
 import { orderStatus, orderStatusNames, roles } from '../../utils/enums';
+import { getUniqueOrderCode } from '../../utils/funs';
 import sms from '../../utils/sms';
 
 class AdminOrderController {
@@ -152,7 +153,8 @@ class AdminOrderController {
       }
     } else {
       order = new Order();
-      order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false }}));
+      order.code = await getUniqueOrderCode();
+      console.log(order.code);
     }
 
     order.inCart = (status == orderStatus.Created);

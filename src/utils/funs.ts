@@ -1,5 +1,6 @@
+import { response } from 'express';
 import jwt from "jwt-decode";
-import { Repository } from "typeorm";
+import { getRepository, Repository } from 'typeorm';
 import config from '../config/config';
 import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
@@ -39,6 +40,22 @@ export const getUniqueSlug = async (repository: Repository<any>, value:string, k
         return value;
     }
     return where[key];
+}
+
+export const getUniqueOrderCode = async (): Promise<string> => {
+    let index = 0;
+    const code = 10000 + await getRepository(Order).count({ where: { inCart: false } })
+    try{
+        while(await getRepository(Order).findOne({
+            where: { code: `NIL-${code + index}` },
+            withDeleted: true
+        })){
+            index = Number(index) + 1;
+        }
+    }catch (e){
+        return `NIL-${code + index}`;
+    }
+    return `NIL-${code + index}`;
 }
 
 export const getUniqueCode = async (repository: Repository<any>) => {

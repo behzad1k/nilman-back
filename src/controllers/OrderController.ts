@@ -18,7 +18,7 @@ import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, orderStatus, roles } from '../utils/enums';
-import { decryptVectors, generateCode, getUniqueSlug, jwtDecode, omit } from '../utils/funs';
+import { decryptVectors, generateCode, getUniqueOrderCode, getUniqueSlug, jwtDecode, omit } from '../utils/funs';
 import Media from '../utils/media';
 import sms from '../utils/sms';
 
@@ -944,7 +944,7 @@ class OrderController {
       for (const order of orders) {
         order.inCart = false;
         order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
-        order.code = 'NIL-' + (10000 + await getRepository(Order).count({ where: { inCart: false } }));
+        order.code = await getUniqueOrderCode();
 
         await getRepository(Order).save(order);
         sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
