@@ -698,9 +698,8 @@ class OrderController {
     }
 
     for (const order of orders) {
-      console.log(moment(moment().subtract(1, 'minute')).diff(order.createdAt, 'minute', true));
-      if (moment(order.createdAt).diff(moment().subtract(1, 'minute'), 'minute', true) > 1){
-        await getRepository(Order).delete({ id: order.id })
+      if (moment(moment().subtract(1, 'minute')).diff(order.createdAt, 'minute', true) > 1){
+        await getRepository(Order).delete({ id: order.id });
         return res.status(400).send({
           code: 400,
           data: 'Invalid Time'
