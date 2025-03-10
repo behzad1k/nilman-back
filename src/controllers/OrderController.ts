@@ -946,6 +946,15 @@ class OrderController {
         order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
         order.code = await getUniqueOrderCode();
 
+        if (order.workerId){
+          await getRepository(WorkerOffs).insert({
+            userId: order.workerId,
+            orderId: order.id,
+            fromTime: order.fromTime,
+            toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
+            date: order.date
+          })
+        }
         await getRepository(Order).save(order);
         sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
