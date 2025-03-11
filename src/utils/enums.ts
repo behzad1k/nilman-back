@@ -27,5 +27,6 @@ export enum dataTypes {
   datetime = 'datetime',
   boolean = 'boolean',
   text = 'text',
-  integer = 'integer'
+  integer = 'integer',
+  float = 'float'
 }

@@ -427,7 +427,7 @@ class OrderController {
     order.address = addressObj;
     order.date = date;
     order.fromTime = time;
-    order.toTime = Number(time) + sections;
+    order.toTime = Number(time) + (sections / 2);
 
     if (workerId) {
       try {

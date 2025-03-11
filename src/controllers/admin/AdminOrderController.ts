@@ -1,5 +1,6 @@
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
+import moment from 'jalali-moment';
 import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
@@ -66,6 +67,23 @@ class AdminOrderController {
         relations: { worker: true, orderServices: { service: true }}
       });
 
+      for (const order of allOrders.filter(e => moment(e.date, 'jYYYY/jMM/jDD').unix() > moment().unix() && e.status == orderStatus.Assigned)) {
+        const workerOff = await getRepository(WorkerOffs).findOne({
+          where: {
+            orderId: order.id,
+          }
+        })
+        if (!workerOff){
+          console.log(order.id);
+          await getRepository(WorkerOffs).insert({
+            fromTime: order.fromTime,
+            toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
+            date: order.date,
+            userId: order.workerId,
+            orderId: order.id
+          })
+        }
+      }
       const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
         ...acc,
         [status]: {
