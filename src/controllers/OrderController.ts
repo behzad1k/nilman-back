@@ -708,9 +708,6 @@ class OrderController {
     }
 
     let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
-    if (isCredit) {
-      creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
-    }
 
     try {
       payment = await getRepository(Payment).findOneBy({
@@ -724,8 +721,14 @@ class OrderController {
       }
       payment.price = finalPrice;
       payment.method = method;
-      payment.credit = creditUsed;
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
+      payment.credit = creditUsed;
+
+      if (isCredit) {
+        creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
+        payment.authority = payment.randomCode;
+      }
+
 
       await getRepository(Payment).save(payment);
     } catch (e) {
@@ -737,7 +740,7 @@ class OrderController {
     }
     console.log(finalPrice, creditUsed, isCredit);
     if (isCredit && finalPrice == creditUsed){
-      url = 'https://app.nilman.co/payment/verify?State=OK';
+      url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
     } else if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
