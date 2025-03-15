@@ -926,6 +926,8 @@ class OrderController {
         });
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
+      } else if(payment.method == 'wallet'){
+        success = true
       }
 
       if (!success) {
