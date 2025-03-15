@@ -710,7 +710,6 @@ class OrderController {
     let finalPrice: any = orders.reduce<number>((acc, curr) => acc + curr.finalPrice, 0);
     if (isCredit) {
       creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
-      finalPrice -= creditUsed;
     }
 
     try {
@@ -736,8 +735,8 @@ class OrderController {
         data: 'Invalid Payment'
       });
     }
-
-    if (isCredit && finalPrice == 0){
+    console.log(finalPrice, creditUsed, isCredit);
+    if (isCredit && finalPrice == creditUsed){
       url = 'https://app.nilman.co/payment/verify?State=OK';
     } else if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
@@ -889,12 +888,9 @@ class OrderController {
           Amount: payment.price,
           Authority: authority,
         }).then(function (response) {
-          console.log(response);
           if (response.status == 101 || response.status == 100) {
             success = true;
-            return response.RefID
-
-              ;
+            return response.RefID;
           } else {
             console.log(response);
           }
