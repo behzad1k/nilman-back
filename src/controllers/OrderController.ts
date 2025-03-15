@@ -722,13 +722,13 @@ class OrderController {
       payment.price = finalPrice;
       payment.method = method;
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
-      payment.credit = creditUsed;
 
       if (isCredit) {
         creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
         payment.authority = payment.randomCode;
       }
 
+      payment.credit = creditUsed;
 
       await getRepository(Payment).save(payment);
     } catch (e) {
