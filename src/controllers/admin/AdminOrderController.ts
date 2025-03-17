@@ -201,6 +201,11 @@ class AdminOrderController {
       return res.status(400).send(errors);
     }
     try {
+      if (status == orderStatus.Canceled){
+        await getRepository(WorkerOffs).delete({
+          orderId: order.id
+        })
+      }
       await this.orders().save(order);
 
     } catch (e) {

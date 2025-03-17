@@ -84,6 +84,8 @@ class AdminUserController {
     const { id } = req.params;
 
     let user = undefined;
+    const isEdit = id != null || id == ''
+
     if (id) {
       try {
         user = await getRepository(User).findOneOrFail({ where: { id: Number(id) } });
@@ -127,10 +129,12 @@ class AdminUserController {
 
     if (role == roles.WORKER){
       if (services){
-        let allServices = [];
-        for (const serviceId of services) {
-          const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
-          allServices = [...allServices, ...serviceChildren.map(e => e.id)];
+        let allServices = services;
+        if (!isEdit) {
+          for (const serviceId of services) {
+            const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
+            allServices = [...allServices, ...serviceChildren.map(e => e.id)];
+          }
         }
         user.services = await getRepository(Service).findBy({ id: In(allServices) });
       }

@@ -60,8 +60,8 @@ class AdminDiscountController {
     discount.title = title;
     discount.expirationDay = expirationDay;
     discount.serviceId = serviceId;
-    discount.percent = percent;
-    discount.amount = amount;
+    discount.percent = percent || 0;
+    discount.amount = amount || 0;
     discount.code = code;
     discount.forUserId = forUserId;
     discount.maxCount = maxCount;
@@ -73,6 +73,7 @@ class AdminDiscountController {
     try {
       await this.discounts().save(discount);
     } catch (e) {
+      console.log(e);
       return res.status(409).send("error try again later");
     }
     return res.status(200).send({code: 200, data: discount});

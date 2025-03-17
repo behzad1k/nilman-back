@@ -17,22 +17,34 @@ class WorkerDashboardController {
 
   static salary = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
-    const { from, to } = req.query;
+    const { from, to} = req.query;
     const orders = await this.orders().find({
       where: {
-        transactionId: null,
         workerId: Number(id),
         // @ts-ignore
         doneDate: Between(moment(from.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss'), moment(to.toString(),'jYYYY-jMM-jDD-HH-ss').format('YYYY-MM-DD HH:ss')),
       }
     });
 
+    let totalMonth = 0
     let total = 0;
-    orders.map(e => total += ((e.price * e.workerPercent / 100) + e.transportation));
+    let totalProfit = 0;
+
+    for (const dt of orders) {
+      totalMonth = totalMonth + dt.finalPrice
+      if (!dt.transactionId) {
+        total = dt.finalPrice + total;
+        totalProfit = (dt.price * dt.workerPercent / 100) + dt.transportation;
+      }
+    }
 
     return res.status(200).send({
       code: 200,
-      data: { salary: total }
+      data: {
+        month: totalMonth,
+        total: total,
+        profit: totalProfit,
+      }
     })
   }
   static index = async (req: Request, res: Response): Promise<Response> => {

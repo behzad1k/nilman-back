@@ -372,7 +372,7 @@ class OrderController {
         return;
       }
 
-      if (discountObj.serviceId != serviceObj.id) {
+      if (discountObj.serviceId && (discountObj.serviceId != serviceObj.id)) {
         return res.status(400).send({
           code: 1012,
           data: 'Invalid Discount Service'
