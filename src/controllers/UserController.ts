@@ -4,6 +4,7 @@ import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import { Between, getRepository, In } from 'typeorm';
+import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import Media from '../entity/Media';
 import { User } from '../entity/User';
@@ -262,13 +263,18 @@ class UserController {
     });
   }
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
-    const { attributes, workerId } = req.body;
+    const { attributes, workerId, addressId } = req.body;
+
+    const address = await getRepository(Address).findOne({
+      where: { id: addressId },
+      relations: { district: true }
+    });
 
     try {
       if (workerId) {
-        return await this.handleSingleWorker(workerId, res);
+        return await this.handleSingleWorker(workerId, res, address.district.id);
       }
-      return await this.handleMultipleWorkers(attributes, res);
+      return await this.handleMultipleWorkers(attributes, res, address.district.id);
     } catch (e) {
       console.log(e);
       return res.status(400).send({
@@ -278,41 +284,54 @@ class UserController {
     }
   };
 
-  private static async handleSingleWorker(workerId: number, res: Response) {
+  private static async handleSingleWorker(workerId: number, res: Response, districtId: number) {
+
     const worker = await this.users().findOne({
       where: { id: Number(workerId) },
-      relations: { workerOffs: true },
+      relations: { workerOffs: true, districts: true },
       select: ['id', 'workerOffs']
     });
 
     if (!worker) {
-      return res.status(400).send({ code: 400, data: 'Invalid WorkerId' });
+      return res.status(400).send({ code: 400, data: 'Invalid Worker' });
     }
 
+    if (!worker.districts.find(e => e.id == districtId)){
+      return res.status(400).send({
+        code: 3000,
+        data: 'Invalid Worker'
+      });
+    }
     const result = this.workerSchedule(worker.workerOffs);
     return res.status(200).send({ code: 200, data: result });
   }
 
-  private static async handleMultipleWorkers(attributes: number[], res: Response) {
+  private static async handleMultipleWorkers(attributes: number[], res: Response, districtId: number) {
     const workers = await this.users().find({
       where: {
         role: roles.WORKER,
         status: 1,
-        services: { id: In(attributes) }
+        services: { id: In(attributes) },
+        districts: { id: districtId }
       },
       relations: {
         workerOffs: true
       },
       select: ['id', 'workerOffs']
     });
-
+    if (!workers.length) {
+      return res.status(400).send({
+        code: 3000,
+        data: 'Invalid Worker'
+      });
+    }
     const result = this.calculateBusySchedule(workers);
     return res.status(200).send({ code: 200, data: result });
   }
 
 
   private static calculateBusySchedule(workers: User[]) {
-    const startDate = moment().unix();
+    const startDate = moment().subtract(1, 'day').unix();
     const endDate = moment().add(37, 'days').unix();
 
     const workerOffsByDate = new Map<string, Map<number, Set<number>>>();

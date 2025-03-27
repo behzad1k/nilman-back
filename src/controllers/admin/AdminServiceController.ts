@@ -212,7 +212,7 @@ class AdminServiceController {
       return;
     }
     try{
-      await this.services().delete({ id: serviceObj.id });
+      await this.services().softDelete({ id: serviceObj.id })
 
     }catch (e){
       console.log(e);

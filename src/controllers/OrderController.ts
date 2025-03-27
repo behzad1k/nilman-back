@@ -424,6 +424,7 @@ class OrderController {
     order.finalPrice = totalPrice;
     order.service = serviceObj;
     order.isUrgent = isUrgent;
+    order.isWebsite = true;
     order.user = user;
     order.status = orderStatus.Created;
     order.address = addressObj;
@@ -477,6 +478,7 @@ class OrderController {
         orderService.count = attributes[attr.id]?.count;
         orderService.service = await getRepository(Service).findOneBy({ id: attr.id });
         orderService.price = attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id]?.count || 1);
+        orderService.singlePrice = attr.price * (isUrgent ? 1.5 : 1);
         orderService.pinterest = attributes[attr.id]?.pinterest;
         if (attributes[attr.id]?.colors?.length > 0) {
           orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
@@ -485,13 +487,13 @@ class OrderController {
         await getRepository(OrderService).save(orderService);
         if (attributes[attr.id]?.addOns) {
           for (const [key, value] of Object.entries(attributes[attr.id]?.addOns)) {
-            const addOnObj = await await getRepository(Service).findOneBy({ id: Number(key) });
+            const addOnObj = await getRepository(Service).findOneBy({ id: Number(key) });
             const orderServiceAddOn = new OrderServiceAddOn();
             orderServiceAddOn.orderServiceId = orderService.id;
             orderServiceAddOn.addOnId = Number(key);
             orderServiceAddOn.count = Number((value as any)?.count);
-            orderServiceAddOn.singlePrice = await getRepository(Service).findOneBy({ id: Number(key) }).then(e => e.price);
-            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count;
+            orderServiceAddOn.singlePrice = addOnObj.price * (isUrgent ? 1.5 : 1);
+            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count * (isUrgent ? 1.5 : 1);
 
             await getRepository(OrderServiceAddOn).save(orderServiceAddOn);
 
@@ -502,6 +504,7 @@ class OrderController {
             addOnOrderService.service = addOnObj;
             addOnOrderService.isAddOn = true;
             addOnOrderService.price = addOnObj.price * (isUrgent ? 1.5 : 1) * Number((value as any)?.count);
+            addOnOrderService.singlePrice = addOnObj.price * (isUrgent ? 1.5 : 1);
             // if (attributes[attr.id]?.colors?.length > 0) {
             //   orderService.colors = await getRepository(Color).find({ where: { slug: In(attributes[attr.id]?.colors) } });
             // }
@@ -724,12 +727,12 @@ class OrderController {
       payment.price = finalPrice;
       payment.method = method;
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
-
       if (isCredit) {
         creditUsed = user.walletBalance > finalPrice ? finalPrice : user.walletBalance;
         payment.authority = payment.randomCode;
       }
 
+      payment.finalPrice = finalPrice - creditUsed;
       payment.credit = creditUsed;
 
       await getRepository(Payment).save(payment);
@@ -740,7 +743,6 @@ class OrderController {
         data: 'Invalid Payment'
       });
     }
-    console.log(finalPrice, creditUsed, isCredit);
     if (isCredit && finalPrice == creditUsed){
       url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
     } else if (method == 'sep') {
@@ -761,7 +763,7 @@ class OrderController {
       const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
         action: 'token',
         TerminalId: 14436606,
-        Amount: finalPrice * 10,
+        Amount: payment.finalPrice * 10,
         ResNum: generateCode(8, dataTypes.number),
         RedirectUrl: 'https://app.nilman.co/payment/verify',
         CellNumber: user.phoneNumber
@@ -775,7 +777,7 @@ class OrderController {
             'serviceTypeId': 1,
             'merchantConfigurationId': '270219',
             'localInvoiceId': payment.randomCode,
-            'amountInRials': finalPrice * 10,
+            'amountInRials': payment.finalPrice * 10,
             'localDate': moment().format('YYYYMMDD HHmmss'),
             'callbackURL': 'https://callback.nilman.co/verify/',
             'paymentId': payment.id,
@@ -795,7 +797,7 @@ class OrderController {
     } else {
       const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
       const zarinpalResult = await zarinpal.PaymentRequest({
-        Amount: finalPrice, // In Tomans
+        Amount: payment.finalPrice, // In Tomans
         CallbackURL: 'https://app.nilman.co/payment/verify',
         Description: 'A Payment from Nilman',
         Mobile: user.phoneNumber
@@ -890,7 +892,7 @@ class OrderController {
       if (payment.method == 'zarinpal') {
         const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
         const zarinpalRes = await zarinpal.PaymentVerification({
-          Amount: payment.price,
+          Amount: payment.finalPrice,
           Authority: authority,
         }).then(function (response) {
           if (response.status == 101 || response.status == 100) {

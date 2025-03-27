@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation
+  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation, DeleteDateColumn
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
@@ -78,6 +78,10 @@ export class Service {
   @Column(dataTypes.datetime)
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column(dataTypes.datetime)
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @OneToMany(() => Order, (order) => order.service, { onDelete: 'CASCADE' })
   orders: Relation<Order[]>

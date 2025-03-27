@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
@@ -172,7 +173,7 @@ class AdminOrderController {
     } else {
       order = new Order();
       order.code = await getUniqueOrderCode();
-      console.log(order.code);
+      order.isWebsite = false;
     }
 
     order.inCart = (status == orderStatus.Created);
@@ -187,7 +188,6 @@ class AdminOrderController {
     order.fromTime = time;
     order.toTime = Number(time) + 1;
     order.isUrgent = isUrgent;
-    order.isWebsite = false;
 
     if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
       order.doneDate = new Date();
@@ -245,7 +245,7 @@ class AdminOrderController {
     }
     const newOrderServices = [];
     for (const service of services) {
-      const serviceObj = await getRepository(Service).findOneBy({ id: service.id });
+      const serviceObj = await getRepository(Service).findOneBy({ id: service.serviceId });
       let orderService = order.orderServices.find(e => e.serviceId == service.serviceId);
       if (!orderService) {
         orderService = new OrderService();
@@ -415,9 +415,10 @@ class AdminOrderController {
     try {
       order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
-        relations: ['service', 'user', 'orderServices']
+        relations: ['service', 'user', 'orderServices', 'address.district']
       });
     } catch (error) {
+      console.log(error);
       res.status(400).send({
         code: 400,
         data: 'Invalid Order'
@@ -471,9 +472,50 @@ class AdminOrderController {
         worker.services.some(service => service.id === serviceId)
       )
     );
+
+    const suggestedWorkers: any = await getRepository(User).find({
+      where: {
+        role: roles.WORKER,
+        id: In(availableWorkers.map(w => w.id)),
+        // districts: {
+        //   code: order.address.district.code
+        // }
+      },
+      relations: {
+        jobs: { address: true }
+      }
+    })
+    let response: any = {}
+
+    const closeWorkers: any = {}
+    for (const suggestedWorker of suggestedWorkers) {
+      const closeOrder: Order = suggestedWorker.jobs.find(e => e.date == order.date && e.fromTime < order.fromTime && e.fromTime >= order.fromTime - 2);
+      if (closeOrder){
+        closeWorkers[suggestedWorker.id] = closeOrder.address;
+
+        response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`,{
+          params: {
+            type: 'car',
+            origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
+            destinations: order.address.latitude + ',' + order.address.longitude,
+          },
+          headers: {
+            'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+          }
+        })
+
+        const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
+        suggestedWorkers[suggestedWorkerIndex] = { ...suggestedWorkers[suggestedWorkerIndex], approximatedDistance: response.data.rows[0].elements[0].distance, approximatedTime: response.data.rows[0].elements[0].duration }
+      }
+    }
+
+    // if (closeWorkers.length > 1){
+
+    // }
+
     return res.status(200).send({
       code: 200,
-      data: availableWorkers
+      data: { availableWorkers, suggestedWorkers, data: response.data }
     });
   };
 }
