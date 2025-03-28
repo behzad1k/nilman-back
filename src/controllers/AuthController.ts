@@ -15,7 +15,7 @@ export default class AuthController {
         jwt.verify(req.headers?.authorization?.split(' ')[1], config.jwtSecret)
       }catch (e){
         return res.status(401).send({
-          code: 1000,
+          code: 401,
           'message': 'Token Expired'
         });
       }
@@ -33,6 +33,14 @@ export default class AuthController {
       }
       if (!user) {
         return res.status(401).json({ status: "error", code: "401" });
+      }
+      try{
+        jwt.verify(req.headers?.authorization?.split(' ')[1], config.jwtSecret)
+      }catch (e){
+        return res.status(401).send({
+          code: 401,
+          'message': 'Token Expired'
+        });
       }
       if (user.role !== roles.SUPER_ADMIN) {
         return res.status(403).json({ status: "error", code: "403" });
