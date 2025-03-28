@@ -492,8 +492,8 @@ class OrderController {
             orderServiceAddOn.orderServiceId = orderService.id;
             orderServiceAddOn.addOnId = Number(key);
             orderServiceAddOn.count = Number((value as any)?.count);
-            orderServiceAddOn.singlePrice = addOnObj.price * (isUrgent ? 1.5 : 1);
-            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count * (isUrgent ? 1.5 : 1);
+            orderServiceAddOn.singlePrice = addOnObj.price;
+            orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count;
 
             await getRepository(OrderServiceAddOn).save(orderServiceAddOn);
 
