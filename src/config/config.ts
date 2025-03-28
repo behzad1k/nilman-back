@@ -2,5 +2,5 @@ export default {
   jwtSecret: "aidaShahabi",
   issuer: "behzad",
   audience: "behzad",
-  expiration: "5m",
+  expiration: "7d",
 };
