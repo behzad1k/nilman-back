@@ -15,5 +15,7 @@ export class WorkerDashboardRoutes {
 
   routes() {
     this.router.get("/salary", WorkerDashboardController.salary);
+    this.router.get("/chart", WorkerDashboardController.chart);
+    this.router.get("/income", WorkerDashboardController.income);
   }
 }
