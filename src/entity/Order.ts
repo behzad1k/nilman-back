@@ -93,12 +93,6 @@ export class Order {
   @Column(dataTypes.float)
   toTime: number
 
-  @Column(dataTypes.float)
-  newFromTime: number
-
-  @Column(dataTypes.float)
-  newToTime: number
-
   @Column(dataTypes.boolean, {
     default: true
   })
