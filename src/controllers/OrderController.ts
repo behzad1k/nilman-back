@@ -430,7 +430,7 @@ class OrderController {
     order.address = addressObj;
     order.date = date;
     order.fromTime = time;
-    order.toTime = Number(time) + (sections / 2);
+    order.toTime = Number(time) + sections / 4;
 
     if (workerId) {
       try {

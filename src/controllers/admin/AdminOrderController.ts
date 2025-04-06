@@ -268,7 +268,7 @@ class AdminOrderController {
     try {
       await this.orders().update({ id: order.id }, {
         isMulti: services.filter(e => e.count > 1).length > 0,
-        toTime: Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0))
+        toTime: Number(order.fromTime) + (newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0) / 4)
       });
       if (order.workerId){
         let workerOff = await getRepository(WorkerOffs).findOneBy({
@@ -284,7 +284,7 @@ class AdminOrderController {
 
         workerOff.date = order.date;
         workerOff.fromTime = order.fromTime;
-        workerOff.toTime = Number(order.fromTime) + Number(newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0));
+        workerOff.toTime = Number(order.fromTime) + (newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0) / 4);
         await getRepository(WorkerOffs).save(workerOff);
       }
     } catch (e) {
