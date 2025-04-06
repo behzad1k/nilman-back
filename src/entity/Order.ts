@@ -87,10 +87,10 @@ export class Order {
   @Column(dataTypes.text)
   date: string
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.float)
   fromTime: number
 
-  @Column(dataTypes.integer)
+  @Column(dataTypes.float)
   toTime: number
 
   @Column(dataTypes.float)
