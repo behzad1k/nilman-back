@@ -422,7 +422,7 @@ class OrderController {
     order.transportation = transportation;
     totalPrice += transportation;
 
-    if (totalPrice < 550000){
+    if (totalPrice < 500000){
       return res.status(400).send({
         code: 1016,
         data: 'Under Price Limit'
