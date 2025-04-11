@@ -58,7 +58,7 @@ class LoginController {
     if (!user.isBlockSMS){
       await sms.welcome(code, phoneNumber);
     }
-
+    console.log(code);
     return res.status(200).send({
       token: token
     });

@@ -421,6 +421,14 @@ class OrderController {
     }
     order.transportation = transportation;
     totalPrice += transportation;
+
+    if (totalPrice < 550000){
+      return res.status(400).send({
+        code: 1016,
+        data: 'Under Price Limit'
+      });
+    }
+
     order.finalPrice = totalPrice;
     order.service = serviceObj;
     order.isUrgent = isUrgent;
