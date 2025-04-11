@@ -230,7 +230,7 @@ class AdminUserController {
 
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let user = null;
+    let user: User = null;
     try {
       user = await this.users().findOneOrFail({
         where: { id: Number(id) },
@@ -300,6 +300,7 @@ class AdminUserController {
       data: 'Successful'
     });
   }
+
   static textMessage = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const { text } = req.body
@@ -323,6 +324,7 @@ class AdminUserController {
       data: { user, text }
     });
   }
+
   static findBy = async (req: Request, res: Response): Promise<Response> => {
     let user: User;
     try {

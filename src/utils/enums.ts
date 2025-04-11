@@ -6,6 +6,7 @@ export enum roles  {
 };
 export enum orderStatus  {
   Created = 'Created',
+  AwaitingPayment = 'AwaitingPayment',
   Paid = 'Paid',
   Assigned = 'Assigned',
   InProgress = 'InProgress',
@@ -30,3 +31,25 @@ export enum dataTypes {
   integer = 'integer',
   float = 'float'
 }
+
+export enum PaymentMethods {
+  Card = 'card',
+  Ap = 'ap',
+  Sep = 'sep',
+  ZarinPal = 'zarinPal',
+  Credit = 'credit',
+}
+
+export enum Portals {
+  Ap = 'ap',
+  Sep = 'sep',
+  ZarinPal = 'zarinPal',
+}
+
+export enum PaymentMethodNames {
+  Card = 'کارت به کارت',
+  Ap = 'آسان پرداخت',
+  Sep = 'سامان پرداخت',
+  ZarinPal = 'زرین پال',
+  Credit = 'کیف پول',
+};

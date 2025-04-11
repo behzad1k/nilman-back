@@ -7,12 +7,13 @@ import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
+import { Payment } from '../../entity/Payment';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
 
-import { orderStatus, orderStatusNames, roles } from '../../utils/enums';
-import { getUniqueOrderCode } from '../../utils/funs';
+import { orderStatus, orderStatusNames, PaymentMethods, roles } from '../../utils/enums';
+import { generateCode, getUniqueCode, getUniqueOrderCode, getUniqueSlug } from '../../utils/funs';
 import sms from '../../utils/sms';
 
 class AdminOrderController {
@@ -118,11 +119,11 @@ class AdminOrderController {
 
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let order;
+    let order: Order;
     try {
       order = await this.orders().findOne({
         where: { id: Number(id) },
-        relations: ['worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors']
+        relations: ['payment', 'worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors']
       });
     } catch (e) {
       return res.status(400).send({
@@ -149,16 +150,19 @@ class AdminOrderController {
       serviceId,
       addressId,
       userId,
-      isUrgent
+      isUrgent,
+      shouldUseWallet,
+      paymentMethod,
     } = req.body;
-    let order: Order, user: User;
+    let order: Order, user: User
     if (id) {
       try {
         order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
           relations: {
             orderServices: { service: true },
-            worker: true
+            worker: true,
+            payment: true
           }
         });
 
@@ -172,8 +176,23 @@ class AdminOrderController {
       }
     } else {
       order = new Order();
-      order.code = await getUniqueOrderCode();
+      if (status != orderStatus.Created) {
+        order.code = await getUniqueOrderCode();
+      }
       order.isWebsite = false;
+    }
+
+    try {
+      user = await this.users().findOneOrFail({
+        where: { id: Number(userId) },
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+      return;
     }
 
     order.inCart = (status == orderStatus.Created);
@@ -196,12 +215,39 @@ class AdminOrderController {
 
     order.status = status;
 
+    const payment = order.payment || new Payment();
+
+    payment.price = finalPrice;
+    payment.method = PaymentMethods.Credit;
+    payment.isPaid = [orderStatus.Done, orderStatus.Paid, orderStatus.Assigned, orderStatus.InProgress].includes(status);
+    payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
+
+    if (shouldUseWallet && user.walletBalance > 0){
+      const walletDiff = user.walletBalance - finalPrice;
+      if (walletDiff >= 0) {
+        user.walletBalance = walletDiff;
+        payment.finalPrice = 0;
+        payment.credit = finalPrice;
+      } else {
+        user.walletBalance = 0;
+        payment.finalPrice = Math.abs(walletDiff);
+        payment.credit = finalPrice - Math.abs(walletDiff);
+      }
+    }
+
+    await getRepository(Payment).save(payment);
+
+    order.paymentId = payment.id;
+
     const errors = await validate(order);
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
     try {
       if (status == orderStatus.Canceled){
+        if (order.worker) {
+          sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
+        }
         await getRepository(WorkerOffs).delete({
           orderId: order.id
         })
@@ -350,7 +396,9 @@ class AdminOrderController {
     }
     try {
       await this.orders().save(order);
-      sms.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+      if (!order.user.isBlockSMS) {
+        sms.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+      }
       sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
       await getRepository(WorkerOffs).insert({
         fromTime: order.fromTime,

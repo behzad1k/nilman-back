@@ -42,7 +42,7 @@ https://app.nilman.co/feedback/${code}
 const orderAssignWorker = (name: string, code: string, address: string, phoneNumber: string, date: string, time: string) => {
    const text =  `سرکار خانم ${name}
 
-سفارش ${code} 
+سفارش ${code}   
 
 به آدرس ${address}
 
@@ -66,7 +66,7 @@ const orderAssignWorkerChange = (name: string, code: string, phoneNumber: string
 const orderAssignUser = (name: string, worker: string, phoneNumber: string, date: string, time: string) => {
    const text =  `${name} عزیز؛
 
-خانم ${worker} در تاریخ ${date} به آدرس انتخابی شما مراجعه میکند.`
+خانم ${worker} در تاریخ ${date} ساعت ${time} به آدرس انتخابی شما مراجعه میکند. `
   send(text, phoneNumber);
 
 }

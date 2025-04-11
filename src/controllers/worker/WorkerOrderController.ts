@@ -164,7 +164,9 @@ class WorkerOrderController {
     order.finalImageId = await media.create(req, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
 
     // worker.walletBalance = worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation) ;
-    sms.feedback(order.user.name, order.user.phoneNumber, order.code);
+    if (!order.user.isBlockSMS) {
+      sms.feedback(order.user.name, order.user.phoneNumber, order.code);
+    }
 
     try {
       await this.orders().save(order);
@@ -221,7 +223,9 @@ class WorkerOrderController {
 
     orderObj.status = orderStatus.Done;
     orderObj.doneDate = new Date();
-    sms.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
+    if (!orderObj.user.isBlockSMS) {
+      sms.feedback(orderObj.user.name, orderObj.user.phoneNumber, orderObj.code);
+    }
 
     try {
       await this.orders().save(orderObj);

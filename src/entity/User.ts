@@ -93,6 +93,11 @@ export class User {
   })
   isWorkerChoosable: boolean;
 
+  @Column(dataTypes.boolean, {
+    default: false
+  })
+  isBlockSMS: boolean;
+
   @Column(dataTypes.integer, {
     default: 1
   })
