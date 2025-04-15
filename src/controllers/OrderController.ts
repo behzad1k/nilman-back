@@ -855,7 +855,6 @@ class OrderController {
 
   };
   static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
-    const userId = jwtDecode(req.headers.authorization);
     const {
       authority,
       status,
@@ -983,7 +982,7 @@ class OrderController {
         refId: refId
       });
       if (payment.credit > 0){
-        const user = await getRepository(User).findOneBy({ id: Number(userId) });
+        const user = await getRepository(User).findOneBy({ id: Number(orders[0]?.userId) });
 
         user.walletBalance -= payment.credit;
 
