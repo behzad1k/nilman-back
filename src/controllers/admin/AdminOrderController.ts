@@ -23,40 +23,6 @@ class AdminOrderController {
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { page, perPage = 25, status, query } = req.query;
 
-    const users = await getRepository(User).find({
-      where:{
-        orders:{
-          status: orderStatus.Done,
-        }
-      },
-      relations: {
-        orders: {
-          worker: true,
-          service: true,
-          orderServices: { service: true },
-        }
-      }
-    });
-
-    const data = []
-    for (const user of users) {
-      if (user.orders.length == 1){
-        data.push(user.orders[0])
-      }
-    }
-
-    const workers = await getRepository(User).find({
-      where: {
-        role: roles.WORKER
-      }
-    })
-
-    const data2 = {}
-
-    for (const worker of workers) {
-      data2[worker.name + '-' + worker.lastName] = data.filter(e => e.workerId == worker.id).length
-    }
-
     if (!page) {
       const orders = await getRepository(Order).find({
         relations: {
@@ -138,7 +104,6 @@ class AdminOrderController {
           orders,
           count,
           statusCount,
-          data
         }
       });
     } catch (e) {
@@ -439,7 +404,6 @@ class AdminOrderController {
   static sendPortal = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
-
     try {
       orderObj = await getRepository(Order).findOne({
         where: {
@@ -453,10 +417,9 @@ class AdminOrderController {
 
       payment = { ...orderObj.payment }
 
-      if (!payment || ![PaymentMethods.Zarinpal].includes(payment.method as any)) {
+      if (!payment) {
         throw new Error('Invalid Payment');
       }
-
     } catch (e) {
       console.log(e);
       return res.status(400).send({
@@ -505,7 +468,7 @@ class AdminOrderController {
         Amount: payment.finalPrice, // In Tomans
         CallbackURL: 'https://app.nilman.co/payment/verify',
         Description: 'A Payment from Nilman',
-        Mobile: user.phoneNumber
+        Mobile: orderObj.user.phoneNumber
       }).then(response => {
         if (response.status === 100) {
           return response;
@@ -519,19 +482,17 @@ class AdminOrderController {
           data: 'Invalid Portal'
         });
       }
+
+      console.log(zarinpalResult);;
       url = zarinpalResult.url;
       authority = zarinpalResult.authority;
     }
-
     try {
       payment.authority = authority;
 
       await getRepository(Payment).save(payment);
 
-      for (const order of payment.orders) {
-        await getRepository(Order).update({ id: order.id }, { paymentId: payment.id });
-      }
-
+      await getRepository(Order).update({ id: orderObj.id }, { paymentId: payment.id });
       sms.sendPortal(orderObj.user.name + ' ' + orderObj.user.lastName, payment.finalPrice.toString(), url, orderObj.user.phoneNumber);
     } catch (e) {
       console.log(e);

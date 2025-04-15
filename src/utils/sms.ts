@@ -103,9 +103,9 @@ code: ${code}
 
 const sendPortal = (name: string, price: string, link: string, phoneNumber: string) => {
   const text = `${name}   عزیز; 
-  لطفا از طریق لینک درگاه زیر نسبت به پرداخت سفارش خود به مبلغ ${price} اقدام نمایید.
-  باتشکر; نیلمان
-  ${link}`
+لطفا از طریق لینک درگاه زیر نسبت به پرداخت سفارش خود به مبلغ${price} اقدام نمایید.
+باتشکر; نیلمان
+${link}`
   send(text, phoneNumber);
 }
 
