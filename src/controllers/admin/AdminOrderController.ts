@@ -358,7 +358,7 @@ class AdminOrderController {
     const {
       shouldUseWallet,
       method,
-      price,
+      finalPrice,
       refId,
       description
     } = req.body
@@ -388,7 +388,7 @@ class AdminOrderController {
 
     payment.refId = refId;
     payment.price = order?.finalPrice;
-    payment.finalPrice = price;
+    payment.finalPrice = finalPrice;
     payment.method = method;
     payment.description = description;
     payment.isPaid = ![orderStatus.Canceled, orderStatus.AwaitingPayment, orderStatus.Created].includes(order?.status as any);
