@@ -20,5 +20,6 @@ export class AdminOrderRoutes {
     this.router.put("/products/:id", AdminOrderController.services);
     this.router.put("/payment/:id", AdminOrderController.payment);
     this.router.post("/assign/:id", AdminOrderController.assign);
+    this.router.post("/sendPortal/:id", AdminOrderController.sendPortal);
   }
 }

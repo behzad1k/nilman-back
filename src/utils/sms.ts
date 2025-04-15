@@ -101,6 +101,14 @@ code: ${code}
   send(text, phoneNumber);
 }
 
+const sendPortal = (name: string, price: string, link: string, phoneNumber: string) => {
+  const text = `${name}   عزیز; 
+  لطفا از طریق لینک درگاه زیر نسبت به پرداخت سفارش خود به مبلغ ${price} اقدام نمایید.
+  باتشکر; نیلمان
+  ${link}`
+  send(text, phoneNumber);
+}
+
 export default {
   emergency,
   referral,
@@ -111,5 +119,6 @@ export default {
   orderAssignUser,
   orderAssignWorker,
   notify,
-  orderAssignWorkerChange
+  orderAssignWorkerChange,
+  sendPortal
 }

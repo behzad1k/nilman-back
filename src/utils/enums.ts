@@ -36,7 +36,7 @@ export enum PaymentMethods {
   Card = 'card',
   Ap = 'ap',
   Sep = 'sep',
-  ZarinPal = 'zarinPal',
+  Zarinpal = 'zarinPal',
   Credit = 'credit',
 }
 

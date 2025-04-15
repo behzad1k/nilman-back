@@ -2,17 +2,17 @@ import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
+import { FindManyOptions, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not } from 'typeorm';
+import ZarinPalCheckout from 'zarinpal-checkout';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
-import { Log } from '../../entity/Log';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
 import { Payment } from '../../entity/Payment';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
-import { orderStatus, orderStatusNames, PaymentMethods, roles } from '../../utils/enums';
+import { dataTypes, orderStatus, orderStatusNames, PaymentMethods, roles } from '../../utils/enums';
 import { generateCode, getUniqueOrderCode, getUniqueSlug } from '../../utils/funs';
 import sms from '../../utils/sms';
 
@@ -436,6 +436,118 @@ class AdminOrderController {
     });
   }
 
+  static sendPortal = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
+
+    try {
+      orderObj = await getRepository(Order).findOne({
+        where: {
+          id: Number(id)
+        },
+        relations:{
+          user: true,
+          payment: true
+        }
+      });
+
+      payment = { ...orderObj.payment }
+
+      if (!payment || ![PaymentMethods.Zarinpal].includes(payment.method as any)) {
+        throw new Error('Invalid Payment');
+      }
+
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Payment'
+      });
+    }
+    if (payment.method == PaymentMethods.Sep) {
+
+      const sepReq = await axios.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
+        action: 'token',
+        TerminalId: 14436606,
+        Amount: payment.finalPrice * 10,
+        ResNum: generateCode(8, dataTypes.number),
+        RedirectUrl: 'https://app.nilman.co/payment/verify',
+        CellNumber: user.phoneNumber
+      });
+      authority = sepReq.data.token;
+
+    } else if (payment.method == PaymentMethods.Ap) {
+      try {
+        const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token', {
+          data: {
+            'serviceTypeId': 1,
+            'merchantConfigurationId': '270219',
+            'localInvoiceId': payment.randomCode,
+            'amountInRials': payment.finalPrice * 10,
+            'localDate': moment().format('YYYYMMDD HHmmss'),
+            'callbackURL': 'https://callback.nilman.co/verify/',
+            'paymentId': payment.id,
+          },
+          headers: {
+            usr: 'saln 5312721',
+            pwd: 'MtK5786W'
+          },
+          method: 'POST'
+        });
+        authority = apReq.data;
+      } catch (e) {
+        console.log(e);
+        console.log(e.response.data);
+      }
+    } else if (payment.method == PaymentMethods.Zarinpal) {
+      const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+      const zarinpalResult = await zarinpal.PaymentRequest({
+        Amount: payment.finalPrice, // In Tomans
+        CallbackURL: 'https://app.nilman.co/payment/verify',
+        Description: 'A Payment from Nilman',
+        Mobile: user.phoneNumber
+      }).then(response => {
+        if (response.status === 100) {
+          return response;
+        }
+      }).catch(err => {
+        console.error(err);
+      });
+      if (!zarinpalResult) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Portal'
+        });
+      }
+      url = zarinpalResult.url;
+      authority = zarinpalResult.authority;
+    }
+
+    try {
+      payment.authority = authority;
+
+      await getRepository(Payment).save(payment);
+
+      for (const order of payment.orders) {
+        await getRepository(Order).update({ id: order.id }, { paymentId: payment.id });
+      }
+
+      sms.sendPortal(orderObj.user.name + ' ' + orderObj.user.lastName, payment.finalPrice.toString(), url, orderObj.user.phoneNumber);
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Payment'
+      });
+    }
+    return res.status(200).send({
+      code: 200,
+      data: {
+        url: url,
+        authority: authority
+      }
+    });
+  }
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const {
