@@ -2,18 +2,18 @@ import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import { Brackets, FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
+import { FindManyOptions, MoreThanOrEqual, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, Not, Between, Raw } from 'typeorm';
 import { Color } from '../../entity/Color';
 import { Feedback } from '../../entity/Feedback';
+import { Log } from '../../entity/Log';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
 import { Payment } from '../../entity/Payment';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
-
 import { orderStatus, orderStatusNames, PaymentMethods, roles } from '../../utils/enums';
-import { generateCode, getUniqueCode, getUniqueOrderCode, getUniqueSlug } from '../../utils/funs';
+import { generateCode, getUniqueOrderCode, getUniqueSlug } from '../../utils/funs';
 import sms from '../../utils/sms';
 
 class AdminOrderController {
@@ -22,6 +22,40 @@ class AdminOrderController {
   static orders = () => getRepository(Order);
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { page, perPage = 25, status, query } = req.query;
+
+    const users = await getRepository(User).find({
+      where:{
+        orders:{
+          status: orderStatus.Done,
+        }
+      },
+      relations: {
+        orders: {
+          worker: true,
+          service: true,
+          orderServices: { service: true },
+        }
+      }
+    });
+
+    const data = []
+    for (const user of users) {
+      if (user.orders.length == 1){
+        data.push(user.orders[0])
+      }
+    }
+
+    const workers = await getRepository(User).find({
+      where: {
+        role: roles.WORKER
+      }
+    })
+
+    const data2 = {}
+
+    for (const worker of workers) {
+      data2[worker.name + '-' + worker.lastName] = data.filter(e => e.workerId == worker.id).length
+    }
 
     if (!page) {
       const orders = await getRepository(Order).find({
@@ -76,7 +110,6 @@ class AdminOrderController {
           }
         })
         if (!workerOff){
-          console.log(order.id);
           await getRepository(WorkerOffs).insert({
             fromTime: order.fromTime,
             toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
@@ -104,7 +137,8 @@ class AdminOrderController {
         data: {
           orders,
           count,
-          statusCount
+          statusCount,
+          data
         }
       });
     } catch (e) {
@@ -151,8 +185,6 @@ class AdminOrderController {
       addressId,
       userId,
       isUrgent,
-      shouldUseWallet,
-      paymentMethod,
     } = req.body;
     let order: Order, user: User
     if (id) {
@@ -214,30 +246,6 @@ class AdminOrderController {
     }
 
     order.status = status;
-
-    const payment = order.payment || new Payment();
-
-    payment.price = finalPrice;
-    payment.method = PaymentMethods.Credit;
-    payment.isPaid = [orderStatus.Done, orderStatus.Paid, orderStatus.Assigned, orderStatus.InProgress].includes(status);
-    payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
-
-    if (shouldUseWallet && user.walletBalance > 0){
-      const walletDiff = user.walletBalance - finalPrice;
-      if (walletDiff >= 0) {
-        user.walletBalance = walletDiff;
-        payment.finalPrice = 0;
-        payment.credit = finalPrice;
-      } else {
-        user.walletBalance = 0;
-        payment.finalPrice = Math.abs(walletDiff);
-        payment.credit = finalPrice - Math.abs(walletDiff);
-      }
-    }
-
-    await getRepository(Payment).save(payment);
-
-    order.paymentId = payment.id;
 
     const errors = await validate(order);
     if (errors.length > 0) {
@@ -343,6 +351,90 @@ class AdminOrderController {
       data: order
     });
   };
+
+
+  static payment = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const {
+      shouldUseWallet,
+      method,
+      price,
+      refId,
+      description
+    } = req.body
+    let order: Order, payment: Payment;
+
+    try{
+      order = await getRepository(Order).findOneOrFail({
+        where: { id: Number(id) },
+        relations: {
+          user: true,
+        }
+      });
+
+      payment = await getRepository(Payment).findOne({
+        where: { id: order.paymentId },
+      });
+    }catch (e){
+      console.log(e);
+      return res.status(400).send({ code: 400, data: 'Invalid Order' });
+    }
+
+
+    if (!payment){
+      payment = new Payment();
+      payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
+    }
+
+    payment.refId = refId;
+    payment.price = order?.finalPrice;
+    payment.finalPrice = price;
+    payment.method = method;
+    payment.description = description;
+    payment.isPaid = ![orderStatus.Canceled, orderStatus.AwaitingPayment, orderStatus.Created].includes(order?.status as any);
+
+    let newWalletBalance = order?.user?.walletBalance || 0;
+    if (shouldUseWallet && order?.user?.walletBalance > 0){
+      const walletDiff = order?.user?.walletBalance - order?.finalPrice;
+      if (walletDiff >= 0) {
+        newWalletBalance = walletDiff;
+        payment.finalPrice = 0;
+        payment.credit = order?.finalPrice;
+      } else {
+        newWalletBalance = 0;
+        payment.finalPrice = Math.abs(walletDiff);
+        payment.credit = order?.finalPrice - Math.abs(walletDiff);
+      }
+    }
+
+    if (method == PaymentMethods.Credit){
+      payment.finalPrice = 0;
+    }
+
+    try{
+      await getRepository(Payment).save(payment);
+      if (shouldUseWallet && order?.user?.walletBalance > 0) {
+        await getRepository(User).update({ id: order?.user?.id }, {
+          walletBalance: newWalletBalance
+        });
+      }
+      await getRepository(Order).update({ id: order.id }, {
+        paymentId: payment.id
+      });
+
+    }catch (e){
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Order'
+      });
+    }
+
+    return res.status(200).send({
+      code: 200,
+      data: payment
+    });
+  }
 
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;

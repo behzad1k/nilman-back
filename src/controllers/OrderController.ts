@@ -278,6 +278,7 @@ class OrderController {
       });
       return;
     }
+
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -290,6 +291,7 @@ class OrderController {
       });
       return;
     }
+
     try {
       serviceObj = await this.services().findOneOrFail({
         where: {
@@ -303,6 +305,7 @@ class OrderController {
       });
       return;
     }
+
     try {
       attributeObjs = await this.services().find({
         where: {

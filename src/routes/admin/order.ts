@@ -18,6 +18,7 @@ export class AdminOrderRoutes {
     this.router.delete("/:id", AdminOrderController.delete);
     this.router.post("/basic/:id?", AdminOrderController.basic);
     this.router.put("/products/:id", AdminOrderController.services);
+    this.router.put("/payment/:id", AdminOrderController.payment);
     this.router.post("/assign/:id", AdminOrderController.assign);
   }
 }
