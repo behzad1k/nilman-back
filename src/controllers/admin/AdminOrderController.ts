@@ -173,9 +173,6 @@ class AdminOrderController {
       }
     } else {
       order = new Order();
-      if (status != orderStatus.Created) {
-        order.code = await getUniqueOrderCode();
-      }
       order.isWebsite = false;
     }
 
@@ -191,7 +188,9 @@ class AdminOrderController {
       });
       return;
     }
-
+    if (status != orderStatus.Created) {
+      order.code = await getUniqueOrderCode();
+    }
     order.inCart = (status == orderStatus.Created);
     order.date = date;
     order.discountAmount = discountAmount;
@@ -402,6 +401,7 @@ class AdminOrderController {
   }
 
   static sendPortal = async (req: Request, res: Response): Promise<Response> => {
+    const { finalPrice,  } = req.body;
     const { id } = req.params;
     let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
     try {

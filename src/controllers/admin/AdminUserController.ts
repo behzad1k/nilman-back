@@ -130,12 +130,10 @@ class AdminUserController {
     if (role == roles.WORKER){
       if (services){
         let allServices = services;
-        if (!isEdit) {
           for (const serviceId of services) {
             const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
             allServices = [...allServices, ...serviceChildren.map(e => e.id)];
           }
-        }
         user.services = await getRepository(Service).findBy({ id: In(allServices) });
       }
       if (districts){

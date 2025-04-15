@@ -331,7 +331,6 @@ class UserController {
     return res.status(200).send({ code: 200, data: result });
   }
 
-
   private static calculateBusySchedule(workers: User[]) {
     const startDate = moment().subtract(1, 'day').unix();
     const endDate = moment().add(37, 'days').unix();
