@@ -401,11 +401,11 @@ class AdminOrderController {
   }
 
   static sendPortal = async (req: Request, res: Response): Promise<Response> => {
-    const { finalPrice,  } = req.body;
+    const { finalPrice, method, refId, description } = req.body;
     const { id } = req.params;
     let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
     try {
-      orderObj = await getRepository(Order).findOne({
+      orderObj = await getRepository(Order).findOneOrFail({
         where: {
           id: Number(id)
         },
@@ -418,8 +418,16 @@ class AdminOrderController {
       payment = { ...orderObj.payment }
 
       if (!payment) {
-        throw new Error('Invalid Payment');
+        payment = new Payment();
+        payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8, dataTypes.number), 'randomCode');
       }
+
+      payment.finalPrice = finalPrice;
+      payment.price = orderObj?.finalPrice;
+      payment.method = method;
+      payment.description = description;
+      payment.refId = refId;
+
     } catch (e) {
       console.log(e);
       return res.status(400).send({
