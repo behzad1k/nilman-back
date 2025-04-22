@@ -8,6 +8,7 @@ import {
   JoinColumn,
   ManyToOne, Relation, ManyToMany, JoinTable
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import * as bcrypt from "bcryptjs";
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
@@ -104,6 +105,7 @@ export class User {
   status: number;
 
   @Column(dataTypes.text, {nullable: true})
+  @Exclude()
   password: string;
 
   @Column(dataTypes.text, {nullable: false})

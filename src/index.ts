@@ -21,6 +21,7 @@ class Server {
 
   public routes(): void {
     this.app.use("/", log ,routes);
+
   }
 
   public config(): void {

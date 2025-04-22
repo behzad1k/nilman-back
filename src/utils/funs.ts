@@ -1,4 +1,5 @@
 import { response } from 'express';
+import { instanceToPlain, ClassTransformOptions } from 'class-transformer';
 import jwt from "jwt-decode";
 import { getRepository, Repository } from 'typeorm';
 import config from '../config/config';
@@ -6,7 +7,7 @@ import { Order } from '../entity/Order';
 import { dataTypes } from './enums';
 import * as jasonWebToken from 'jsonwebtoken';
 import Rijndael from 'rijndael-js'
-export const getUserId = (token:string):number =>{
+export const getUserId = (token:string): number => {
     const tokens: any = jwt(token);
     return tokens.userId
 }
@@ -133,7 +134,7 @@ export const jwtDecode  = (token) => {
             userId = decoded?.userId;
         }
     }catch (e){
-        console.log(e, token);
+        // console.log(e, token);
         return -1;
     }
     return userId;
@@ -164,4 +165,8 @@ export function decryptVectors(key, iv, input) {
     const decryptedBuffer = new Rijndael(keyBuffer, mode).decrypt(dataBuffer, blockSizeInBits, vectorBuffer);
 
     return Buffer.from(decryptedBuffer).toString('utf8')
+}
+
+export function transformEntity<T>(entity: T, options?: ClassTransformOptions): Record<string, any> {
+    return instanceToPlain(entity, options);
 }

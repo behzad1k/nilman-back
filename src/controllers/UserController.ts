@@ -266,12 +266,10 @@ class UserController {
   }
   static getWorkerOffs = async (req: Request, res: Response): Promise<Response> => {
     const { attributes, workerId, addressId } = req.body;
-
     const address = await getRepository(Address).findOne({
       where: { id: addressId },
       relations: { district: true }
     });
-
     try {
       if (workerId) {
         return await this.handleSingleWorker(workerId, res, address.district.id);
@@ -287,7 +285,6 @@ class UserController {
   };
 
   private static async handleSingleWorker(workerId: number, res: Response, districtId: number) {
-
     const worker = await this.users().findOne({
       where: { id: Number(workerId) },
       relations: { workerOffs: true, districts: true },
@@ -304,6 +301,7 @@ class UserController {
         data: 'Invalid Worker'
       });
     }
+
     const result = this.workerSchedule(worker.workerOffs);
     return res.status(200).send({ code: 200, data: result });
   }
@@ -321,12 +319,14 @@ class UserController {
       },
       select: ['id', 'workerOffs']
     });
+
     if (!workers.length) {
       return res.status(400).send({
         code: 3000,
         data: 'Invalid Worker'
       });
     }
+
     const result = this.calculateBusySchedule(workers);
     return res.status(200).send({ code: 200, data: result });
   }
@@ -334,7 +334,6 @@ class UserController {
   private static calculateBusySchedule(workers: User[]) {
     const startDate = moment().subtract(1, 'day').unix();
     const endDate = moment().add(37, 'days').unix();
-
     const workerOffsByDate = new Map<string, Map<number, Set<number>>>();
     const result: Record<string, number[]> = {};
 
@@ -352,7 +351,8 @@ class UserController {
         if (!dateMap.has(worker.id)) {
           dateMap.set(worker.id, new Set());
         }
-        const timeSlots = this.getTimeSlots(off.fromTime, off.toTime);
+        // Add an extra hour to toTime for the break
+        const timeSlots = this.getTimeSlots(off.fromTime, off.toTime + 1);
         timeSlots.forEach(slot => dateMap.get(worker.id)!.add(slot));
       });
     });
@@ -373,9 +373,6 @@ class UserController {
     return result;
   }
 
-
-
-
   private static getTimeSlots(fromTime: number, toTime: number): number[] {
     const slots = [];
     for (let i = 8; i <= 20; i += 2) {
@@ -391,10 +388,8 @@ class UserController {
     return slots;
   }
 
-
   private static findCommonBusyHours(workersMap: Map<number, number[]>, totalWorkers: number): number[] {
     const hourCount = new Map<number, number>();
-
     // Count occurrences of each hour
     workersMap.forEach((timeSlots, workerId) => {
       timeSlots.forEach(hour => {
@@ -409,22 +404,25 @@ class UserController {
     .map(([hour]) => hour);
   }
 
-
   private static workerSchedule = (workerOffs: WorkerOffs[]) => {
     let result: any = {};
     for (const workerOff of workerOffs) {
-      if (!result[workerOff.date]){
+      if (!result[workerOff.date]) {
         result[workerOff.date] = []
       }
+
+      // Add the original off time
       for (let i = 8; i <= 20; i = i + 2) {
-        if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 2)) || (workerOff.fromTime <= i && workerOff.toTime >= (i))){
+        if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 2)) ||
+          (workerOff.fromTime <= i && workerOff.toTime >= (i))) {
           result[workerOff.date].push(i);
-          break;
-        }else if((workerOff.fromTime >= i && workerOff.toTime <= (i + 2))){
-          result[workerOff.date].push((i + 2));
-          break;
+        } else if ((workerOff.fromTime >= i && workerOff.toTime <= (i + 2))) {
+          result[workerOff.date].push(i);
         }
       }
+
+      // Sort the hours for better readability
+      result[workerOff.date].sort((a: number, b: number) => a - b);
     }
     return result;
   }
