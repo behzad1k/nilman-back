@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import helmet from "helmet";
 import cors from "cors";
 import log from './middlewares/log';
+import transformInterceptor from './middlewares/transformInterceptor';
 import routes from "./routes";
 import passport from "passport";
 
@@ -31,6 +32,7 @@ class Server {
     this.app.use('/public', express.static('public'))
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
+    this.app.use(transformInterceptor)
     this.app.use(cors({
       origin: "*"
     }));

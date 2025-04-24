@@ -190,11 +190,14 @@ export class User {
   })
   profilePic: Relation<Media>
   // eslint-disable-next-line @typescript-eslint/require-await
+
+  @Exclude()
   hashPassword = async (): Promise<void> => {
-    this.password = bcrypt.hashSync(this.password, 10);
+    this.password = bcrypt?.hashSync(this.password, 10);
   };
 
+  @Exclude()
   checkIfUnencryptedPasswordIsValid(unencryptedPassword: string): boolean {
-    return bcrypt.compareSync(unencryptedPassword, this.password);
+    return bcrypt?.compareSync(unencryptedPassword, this.password);
   }
 }
