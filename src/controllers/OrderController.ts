@@ -1018,6 +1018,7 @@ class OrderController {
       });
       return;
     }
+
     try {
       orderObj = await this.orders().findOneOrFail({ where: { id: Number(orderId) } });
     } catch (error) {
@@ -1031,6 +1032,12 @@ class OrderController {
       return res.status(403).send({
         code: 403,
         body: 'Access Forbidden'
+      });
+    }
+    if (orderObj.status != orderStatus.Created){
+      return res.status(400).send({
+        code: 1017,
+        body: 'Invalid Order Status'
       });
     }
     try {
