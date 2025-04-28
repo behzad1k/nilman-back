@@ -938,6 +938,7 @@ class OrderController {
           },
           method: 'POST'
         });
+        console.log(apRes);
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
       } else if(payment.method == 'wallet'){
