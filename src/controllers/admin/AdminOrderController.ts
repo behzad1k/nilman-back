@@ -336,15 +336,17 @@ class AdminOrderController {
         }
       });
 
-      payment = await getRepository(Payment).findOne({
-        where: { id: order.paymentId },
-      });
+      if (order.paymentId) {
+        payment = await getRepository(Payment).findOne({
+          where: { id: order.paymentId },
+        });
+      }
     }catch (e){
       console.log(e);
       return res.status(400).send({ code: 400, data: 'Invalid Order' });
     }
 
-
+    console.log(payment);
     if (!payment){
       payment = new Payment();
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');

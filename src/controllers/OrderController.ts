@@ -55,7 +55,7 @@ class OrderController {
           where: {
             workerId: user.id
           },
-          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker', 'orderServices.addOns.addOn']
+          relations: ['orderServices.colors', 'orderServices.media', 'service', 'address', 'worker.profilePic', 'orderServices.addOns.addOn']
         });
       } else {
         orders = await this.orders().find({
@@ -486,7 +486,7 @@ class OrderController {
         const orderService = new OrderService();
         orderService.orderId = order.id;
         orderService.serviceId = attr.id;
-        orderService.count = attributes[attr.id]?.count;
+        orderService.count = attributes[attr.id]?.count || 1;
         orderService.service = await getRepository(Service).findOneBy({ id: attr.id });
         orderService.price = attr.price * (isUrgent ? 1.5 : 1) * Number(attributes[attr.id]?.count || 1);
         orderService.singlePrice = attr.price * (isUrgent ? 1.5 : 1);
@@ -502,7 +502,7 @@ class OrderController {
             const orderServiceAddOn = new OrderServiceAddOn();
             orderServiceAddOn.orderServiceId = orderService.id;
             orderServiceAddOn.addOnId = Number(key);
-            orderServiceAddOn.count = Number((value as any)?.count);
+            orderServiceAddOn.count = Number((value as any)?.count) || 1;
             orderServiceAddOn.singlePrice = addOnObj.price;
             orderServiceAddOn.price = orderServiceAddOn.singlePrice * orderServiceAddOn.count;
 
@@ -511,7 +511,7 @@ class OrderController {
             const addOnOrderService = new OrderService();
             addOnOrderService.orderId = order.id;
             addOnOrderService.serviceId = Number(key);
-            addOnOrderService.count = Number((value as any)?.count);
+            addOnOrderService.count = Number((value as any)?.count) || 1;
             addOnOrderService.service = addOnObj;
             addOnOrderService.isAddOn = true;
             addOnOrderService.price = addOnObj.price * (isUrgent ? 1.5 : 1) * Number((value as any)?.count);
@@ -938,7 +938,6 @@ class OrderController {
           },
           method: 'POST'
         });
-        console.log(apRes);
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
       } else if(payment.method == 'wallet'){
