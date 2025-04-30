@@ -311,7 +311,8 @@ class UserController {
       where: {
         role: roles.WORKER,
         status: 1,
-        districts: { id: districtId }
+        districts: { id: districtId },
+        services: { id: In(attributes)}
       },
       relations: {
         services: true,
@@ -319,15 +320,16 @@ class UserController {
       },
       select: ['id', 'workerOffs', 'services']
     });
-
     // Then filter them to only include those who have all the required attributes
     const workers = potentialWorkers.filter(worker => {
       const workerAttributeIds = worker.services.map(service => service.id);
       // Check if all required attributes are present in this worker's attributes
       return attributes.every(attributeId =>
-        workerAttributeIds.includes(attributeId)
+        workerAttributeIds.includes(Number(attributeId))
       );
     });
+    console.log(workers);
+
     if (!workers.length) {
       return res.status(400).send({
         code: 3000,
