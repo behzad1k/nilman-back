@@ -307,19 +307,27 @@ class UserController {
   }
 
   private static async handleMultipleWorkers(attributes: number[], res: Response, districtId: number) {
-    const workers = await this.users().find({
+    const potentialWorkers = await this.users().find({
       where: {
         role: roles.WORKER,
         status: 1,
-        services: { id: In(attributes) },
         districts: { id: districtId }
       },
       relations: {
+        services: true,
         workerOffs: true
       },
-      select: ['id', 'workerOffs']
+      select: ['id', 'workerOffs', 'services']
     });
 
+    // Then filter them to only include those who have all the required attributes
+    const workers = potentialWorkers.filter(worker => {
+      const workerAttributeIds = worker.services.map(service => service.id);
+      // Check if all required attributes are present in this worker's attributes
+      return attributes.every(attributeId =>
+        workerAttributeIds.includes(attributeId)
+      );
+    });
     if (!workers.length) {
       return res.status(400).send({
         code: 3000,
