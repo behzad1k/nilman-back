@@ -328,7 +328,6 @@ class UserController {
         workerAttributeIds.includes(Number(attributeId))
       );
     });
-    console.log(workers);
 
     if (!workers.length) {
       return res.status(400).send({
