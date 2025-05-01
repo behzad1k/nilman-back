@@ -69,22 +69,7 @@ class AdminOrderController {
         relations: { worker: true, orderServices: { service: true }}
       });
 
-      for (const order of allOrders.filter(e => moment(e.date, 'jYYYY/jMM/jDD').unix() > moment().unix() && e.status == orderStatus.Assigned)) {
-        const workerOff = await getRepository(WorkerOffs).findOne({
-          where: {
-            orderId: order.id,
-          }
-        })
-        if (!workerOff){
-          await getRepository(WorkerOffs).insert({
-            fromTime: order.fromTime,
-            toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
-            date: order.date,
-            userId: order.workerId,
-            orderId: order.id
-          })
-        }
-      }
+
       const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
         ...acc,
         [status]: {

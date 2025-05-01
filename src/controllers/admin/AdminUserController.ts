@@ -1,14 +1,14 @@
 import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import { getRepository, getTreeRepository, In, Like } from 'typeorm';
+import {FindManyOptions, getRepository, getTreeRepository, In, Like} from 'typeorm';
 import { Address } from '../../entity/Address';
 import { District } from '../../entity/District';
 import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
-import { dataTypes, orderStatus, roles } from '../../utils/enums';
+import {dataTypes, orderStatus, orderStatusNames, roles} from '../../utils/enums';
 import { generateCode, jwtDecode } from '../../utils/funs';
 import media from '../../utils/media';
 import sms from '../../utils/sms';
@@ -24,18 +24,35 @@ class AdminUserController {
       role,
       type,
       phoneNumber,
-      relations
+      perPage = 25,
+      relations,
+      query,
+      page
     } = req.query;
-    let users, productObj;
+    let users;
+
+    if (!page) {
+      users = await getRepository(User).find({
+        relations: {
+          services: true,
+        }
+      });
+      return res.status(200).send({ code: 200, data: users });
+    }
+
+    const baseWhere = [
+      { user: { name: Like(`%${query}%`) }, inCart: false },
+      { user: { lastName: Like(`%${query}%`) }, inCart: false },
+      { user: { phoneNumber: Like(`%${query}%`) }, inCart: false },
+      { worker: { name: Like(`%${query}%`) }, inCart: false },
+      { worker: { lastName: Like(`%${query}%`) }, inCart: false },
+      { code: Like(`%${query}%`), inCart: false }
+    ];
 
     const relationsObj = {
       jobs: true
     };
-    const where = {};
 
-    if (role) {
-      where['role'] = role;
-    }
     if (Array.isArray(relations)) {
       await Promise.all(relations.map(async e => {
         if (await getRepository(User).metadata.relations.find(relation => relation.propertyName == e)) {
@@ -44,19 +61,62 @@ class AdminUserController {
       }));
     }
 
-    if (phoneNumber) {
-      where['phoneNumber'] = Like(`%${phoneNumber}%`);
-    }
-    relationsObj['services'] = true;
-    users = await this.users().find({
-      where: where,
-      relations: relationsObj
-    });
+    const options: FindManyOptions = {
+      relations: {
+        services: true,
+        jobs: true,
+        ...relationsObj
+      },
+      take: Number(perPage),
+      skip: Number(perPage) * (Number(page) - 1 || 0),
+      order: {
+        date: 'DESC',
+        fromTime: 'DESC'
+      },
+      where: role ? baseWhere.map(condition => ({ ...condition, role })) : baseWhere
+    };
 
-    return res.status(200).send({
-      'code': 200,
-      'data': users
-    });
+    if (role) {
+      options.where['role'] = role;
+    }
+
+    if (phoneNumber) {
+      options.where['phoneNumber'] = Like(`%${phoneNumber}%`);
+    }
+    try {
+      const [users, count] = await getRepository(User).findAndCount(options);
+
+      const allUsers = await getRepository(User).find();
+
+      const statusCount = Object.entries(roles).reduce((acc, [role, roleTitle]) => ({
+        ...acc,
+        [role]: {
+          count: allUsers.filter(e => e.role === role).length,
+          title: roleTitle
+        }
+      }), {
+        all: {
+          count: allUsers.length,
+          title: 'All'
+        }
+      });
+
+      console.log(users)
+      return res.status(200).send({
+        code: 200,
+        data: {
+          users,
+          count,
+          statusCount,
+        }
+      });
+    } catch (e) {
+      console.log(e);
+      return res.status(501).send({
+        code: 501,
+        data: 'Unknown Error'
+      });
+    }
   };
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
