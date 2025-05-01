@@ -41,12 +41,9 @@ class AdminUserController {
     }
 
     const baseWhere = [
-      { user: { name: Like(`%${query}%`) }, inCart: false },
-      { user: { lastName: Like(`%${query}%`) }, inCart: false },
-      { user: { phoneNumber: Like(`%${query}%`) }, inCart: false },
-      { worker: { name: Like(`%${query}%`) }, inCart: false },
-      { worker: { lastName: Like(`%${query}%`) }, inCart: false },
-      { code: Like(`%${query}%`), inCart: false }
+      { name: Like(`%${query}%`) },
+      { lastName: Like(`%${query}%`) },
+      { phoneNumber: Like(`%${query}%`) },
     ];
 
     const relationsObj = {
@@ -70,8 +67,7 @@ class AdminUserController {
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
       order: {
-        date: 'DESC',
-        fromTime: 'DESC'
+        id: 'ASC',
       },
       where: role ? baseWhere.map(condition => ({ ...condition, role })) : baseWhere
     };
@@ -88,7 +84,7 @@ class AdminUserController {
 
       const allUsers = await getRepository(User).find();
 
-      const statusCount = Object.entries(roles).reduce((acc, [role, roleTitle]) => ({
+      const rolesCount = Object.entries(roles).reduce((acc, [role, roleTitle]) => ({
         ...acc,
         [role]: {
           count: allUsers.filter(e => e.role === role).length,
@@ -101,13 +97,12 @@ class AdminUserController {
         }
       });
 
-      console.log(users)
       return res.status(200).send({
         code: 200,
         data: {
           users,
           count,
-          statusCount,
+          rolesCount,
         }
       });
     } catch (e) {
