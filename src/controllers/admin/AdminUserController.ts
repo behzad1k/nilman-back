@@ -35,7 +35,7 @@ class AdminUserController {
       users = await getRepository(User).find({
         relations: {
           services: true,
-          role: role ? role : In(Object.values(roles))
+          role: (role ? role : In(Object.values(roles))) as never
         }
       });
       return res.status(200).send({ code: 200, data: users });
