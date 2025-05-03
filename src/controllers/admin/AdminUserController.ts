@@ -8,7 +8,7 @@ import { Order } from '../../entity/Order';
 import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { WorkerOffs } from '../../entity/WorkerOffs';
-import {dataTypes, orderStatus, orderStatusNames, roles} from '../../utils/enums';
+import { dataTypes, roles } from '../../utils/enums';
 import { generateCode, jwtDecode } from '../../utils/funs';
 import media from '../../utils/media';
 import sms from '../../utils/sms';
@@ -35,6 +35,7 @@ class AdminUserController {
       users = await getRepository(User).find({
         relations: {
           services: true,
+          role: role ? role : In(Object.values(roles))
         }
       });
       return res.status(200).send({ code: 200, data: users });
