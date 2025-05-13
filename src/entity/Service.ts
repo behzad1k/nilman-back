@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation, DeleteDateColumn
+  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation, DeleteDateColumn, OneToOne
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
@@ -13,6 +13,7 @@ import Media from './Media';
 import { Order } from "./Order";
 import { OrderService } from './OrderService';
 import { OrderServiceAddOn } from './OrderServiceAddOn';
+import { Package } from './Package';
 import { User } from "./User";
 import "reflect-metadata";
 @Entity()
@@ -109,6 +110,9 @@ export class Service {
 
   @OneToMany(() => OrderServiceAddOn, orderService => orderService.addOn, { onDelete: 'CASCADE'})
   orderServicesAddOns: OrderServiceAddOn[];
+
+  @OneToOne(() => Package, pack => pack.triggerService, { onDelete: 'CASCADE'})
+  triggerPackage: Package;
 
   @ManyToMany(() => Service, service => service.addOns, { onDelete: 'CASCADE'})
   @JoinTable({

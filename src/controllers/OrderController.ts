@@ -62,7 +62,8 @@ class OrderController {
           relationLoadStrategy: 'query',
           where: {
             userId: user.id,
-            inCart: false
+            inCart: false,
+            showUser: true
           },
           relations: ['orderServices', 'service', 'address', 'worker', 'worker.profilePic', 'orderServices.addOns.addOn']
         });
@@ -880,7 +881,7 @@ class OrderController {
             payment: { randomCode: decryptedValue.split(',')[1] }
           }
         ],
-        relations: { user: true, orderServices: { service: true }, service: true  }
+        relations: { user: true, orderServices: { service: { triggerPackage: true } }, service: true }
       });
 
       payment = await getRepository(Payment).findOne({
@@ -970,10 +971,20 @@ class OrderController {
             date: order.date
           })
         }
+
+        // const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)
+        //
+        // if (triggeredOrderService){
+        //   order.showUser = false; TODO: set the package services to false instead
+        //   order.packageId = triggeredOrderService.service.triggerPackage.id
+        // }
+
         await getRepository(Order).save(order);
+
         if (!order.user.isBlockSMS) {
           sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
+
         sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
         sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
       }

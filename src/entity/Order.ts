@@ -14,6 +14,7 @@ import { Discount } from './Discount';
 import { Feedback } from './Feedback';
 import Media from './Media';
 import { OrderService } from './OrderService';
+import { Package } from './Package';
 import { Payment } from './Payment';
 import { Service } from "./Service";
 import { Transaction } from './Transaction';
@@ -84,6 +85,9 @@ export class Order {
   @Column(dataTypes.integer)
   addressId: number
 
+  @Column(dataTypes.integer, { nullable: true, default: null })
+  packageId?: number
+
   @Column(dataTypes.text)
   date: string
 
@@ -117,6 +121,11 @@ export class Order {
     default: false
   })
   isWebsite: boolean
+
+  @Column(dataTypes.boolean, {
+    default: true
+  })
+  showUser: boolean
 
   @Column(dataTypes.integer, { nullable: true, default: null })
   finalImageId: number;
@@ -172,4 +181,11 @@ export class Order {
 
   @OneToMany(() => OrderService, orderService => orderService.order, { onDelete: 'CASCADE'})
   orderServices: OrderService[];
+
+  @ManyToOne(() => Package, pack => pack.orders, { onDelete: 'CASCADE'})
+  @JoinColumn({
+    name: 'packageId',
+    referencedColumnName: 'id'
+  })
+  package: Package;
 }
