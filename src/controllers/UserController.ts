@@ -7,6 +7,7 @@ import { Between, getRepository, In } from 'typeorm';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import Media from '../entity/Media';
+import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
@@ -320,6 +321,12 @@ class UserController {
       },
       select: ['id', 'workerOffs', 'services']
     });
+
+    const services = await getRepository(Service).find({ where: { id: In(attributes) }, relations: { triggerPackage: true } });
+
+    if (services.find(e => e.triggerPackage?.id)){
+      return res.status(200).send({ code: 200, data: { } })
+    }
     // Then filter them to only include those who have all the required attributes
     const workers = potentialWorkers.filter(worker => {
       const workerAttributeIds = worker.services.map(service => service.id);

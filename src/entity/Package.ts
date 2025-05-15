@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Relation, DeleteDateColumn
+  ManyToOne, JoinColumn, OneToMany, Relation, DeleteDateColumn, OneToOne, ManyToMany, JoinTable
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Discount } from './Discount';
@@ -38,7 +38,7 @@ export class Package {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => Service, service => service.triggerPackage)
+  @OneToOne(() => Service, service => service.triggerPackage)
   @JoinColumn({
     name: 'triggerServiceId',
     referencedColumnName: 'id'
@@ -47,4 +47,7 @@ export class Package {
 
   @OneToMany(() => Order, (order) => order.package, { onDelete: 'CASCADE' })
   orders: Relation<Order[]>
+
+  @ManyToMany(() => Service, (service) => service.packages, { onDelete: 'CASCADE' })
+  services: Relation<Service[]>
 }

@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { validate } from 'class-validator';
+import { isArray, validate } from 'class-validator';
 import { lookup } from 'dns';
 import { Request, Response } from 'express';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 import moment from 'jalali-moment';
-import { getRepository, In } from 'typeorm';
+import { getRepository, getTreeRepository, In } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
 import { Address } from '../entity/Address';
 import { Color } from '../entity/Color';
@@ -13,6 +13,7 @@ import { Discount } from '../entity/Discount';
 import { Order } from '../entity/Order';
 import { OrderService } from '../entity/OrderService';
 import { OrderServiceAddOn } from '../entity/OrderServiceAddOn';
+import { Package } from '../entity/Package';
 import { Payment } from '../entity/Payment';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
@@ -34,7 +35,6 @@ class OrderController {
   static discounts = () => getRepository(Discount);
   static index = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
-    const users = await this.users().find();
     let user;
     try {
       user = await this.users().findOneOrFail({
@@ -63,7 +63,6 @@ class OrderController {
           where: {
             userId: user.id,
             inCart: false,
-            showUser: true
           },
           relations: ['orderServices', 'service', 'address', 'worker', 'worker.profilePic', 'orderServices.addOns.addOn']
         });
@@ -75,6 +74,14 @@ class OrderController {
         data: 'Unexpected Error'
       });
     }
+
+    for (let i = 0; i < orders.length; i++) {
+      if (!orders[i].showUser) {
+        delete orders[i].price;
+        delete orders[i].finalPrice;
+      }
+    }
+
     return res.status(200).send({
       code: 200,
       data: orders
@@ -756,7 +763,7 @@ class OrderController {
       });
     }
     if (isCredit && finalPrice == creditUsed){
-      url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
+      url = `http://localhost:3000/payment/verify?State=OK&Authority=${payment.authority}`;
     } else if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
@@ -941,7 +948,7 @@ class OrderController {
         });
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
-      } else if(payment.method == 'wallet'){
+      } else if(payment.method == 'credit'){
         success = true
       }
 
@@ -972,12 +979,76 @@ class OrderController {
           })
         }
 
-        // const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)
-        //
-        // if (triggeredOrderService){
-        //   order.showUser = false; TODO: set the package services to false instead
-        //   order.packageId = triggeredOrderService.service.triggerPackage.id
-        // }
+        const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)
+        if (triggeredOrderService){
+          const packageUsed = await getRepository(Package).findOne({
+            where: { id: triggeredOrderService.service.triggerPackage.id },
+            relations: { services: true, triggerService: true }
+          });
+
+          const newOrders: any = {}
+
+          for (const newService of packageUsed.services) {
+            const ancestors = await getTreeRepository(Service).findAncestors(newService);
+
+            if (!newOrders[ancestors[0].id]) {
+              newOrders[ancestors[0].id] = []
+            }
+
+            newOrders[ancestors[0].id].push(newService);
+          }
+
+          let firstAvailableHour = order.fromTime;
+
+          for (const [key, value] of Object.entries(newOrders)) {
+            const newOrder = new Order()
+            newOrder.showUser = false;
+            newOrder.serviceId = Number(key);
+            newOrder.packageId = packageUsed.id
+            newOrder.isWebsite = true;
+            newOrder.transportation = 200000;
+            newOrder.inCart = false;
+            newOrder.status = orderStatus.Paid;
+            newOrder.userId = order.userId;
+            newOrder.addressId = order.addressId;
+            newOrder.date = order.date
+            newOrder.price = 0;
+
+            const newOrderServices = []
+
+            let orderTime = 0;
+
+            if (isArray(value)) {
+              for (const newService of value as any) {
+                const newOrderService = new OrderService()
+
+                newOrderService.price = newService.price;
+                newOrderService.singlePrice = newService.price;
+                newOrderService.count = 1;
+                newOrderService.serviceId = newService.id;
+
+                newOrder.price += newService.price
+
+                orderTime += (newService.section / 4)
+                newOrderServices.push(newOrderService)
+              }
+            }
+
+            newOrder.finalPrice = newOrder.price + newOrder.transportation;
+            newOrder.fromTime = order.fromTime;
+            newOrder.toTime = order.fromTime + orderTime;
+
+            await getRepository(Order).save(newOrder)
+
+            for (const newOrderService of newOrderServices) {
+              newOrderService.orderId = newOrder.id
+
+              await getRepository(OrderService).save(newOrderService)
+            }
+          }
+
+          order.finalPrice = packageUsed.price
+        }
 
         await getRepository(Order).save(order);
 
@@ -985,8 +1056,8 @@ class OrderController {
           sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
-        sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
-        sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
+        // sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
+        // sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
       }
       await getRepository(Payment).update({ id: payment.id }, {
         isPaid: true,

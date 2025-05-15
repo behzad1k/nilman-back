@@ -111,9 +111,6 @@ export class Service {
   @OneToMany(() => OrderServiceAddOn, orderService => orderService.addOn, { onDelete: 'CASCADE'})
   orderServicesAddOns: OrderServiceAddOn[];
 
-  @OneToOne(() => Package, pack => pack.triggerService, { onDelete: 'CASCADE'})
-  triggerPackage: Package;
-
   @ManyToMany(() => Service, service => service.addOns, { onDelete: 'CASCADE'})
   @JoinTable({
     name: 'addOns',
@@ -129,4 +126,13 @@ export class Service {
     // ],
   })
   addOns: Service[];
+
+  @OneToOne(() => Package, pack => pack.triggerService, { onDelete: 'CASCADE'})
+  triggerPackage: Package;
+
+  @ManyToMany(() => Package, (pack) => pack.services, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'package_service'
+  })
+  packages: Relation<Package[]>
 }
