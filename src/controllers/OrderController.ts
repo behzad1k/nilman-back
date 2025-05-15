@@ -763,7 +763,7 @@ class OrderController {
       });
     }
     if (isCredit && finalPrice == creditUsed){
-      url = `http://localhost:3000/payment/verify?State=OK&Authority=${payment.authority}`;
+      url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
     } else if (method == 'sep') {
       const serverIP = networkInterfaces.eth0?.[0].address;
       const axiosInstance = axios.create({
