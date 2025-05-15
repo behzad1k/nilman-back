@@ -1056,8 +1056,8 @@ class OrderController {
           sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
-        // sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
-        // sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
+        sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
+        sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
       }
       await getRepository(Payment).update({ id: payment.id }, {
         isPaid: true,
