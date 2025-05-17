@@ -1013,6 +1013,7 @@ class OrderController {
             newOrder.addressId = order.addressId;
             newOrder.date = order.date
             newOrder.price = 0;
+            newOrder.code = await getUniqueOrderCode();
 
             const newOrderServices = []
 

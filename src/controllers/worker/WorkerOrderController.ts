@@ -159,6 +159,7 @@ class WorkerOrderController {
     //     data: 'Invalid Date'
     //   })
     // }
+
     order.status = orderStatus.Done;
     order.doneDate = new Date();
     order.finalImageId = await media.create(req, (req as any).files[0], order.code + '-finalImage', '/public/uploads/finalOrder/');
