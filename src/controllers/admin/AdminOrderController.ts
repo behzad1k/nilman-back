@@ -173,9 +173,7 @@ class AdminOrderController {
       });
       return;
     }
-    if (status != orderStatus.Created) {
-      order.code = await getUniqueOrderCode();
-    }
+
     order.inCart = (status == orderStatus.Created);
     order.date = date;
     order.discountAmount = discountAmount;
@@ -188,6 +186,10 @@ class AdminOrderController {
     order.fromTime = time;
     order.toTime = Number(time) + 1;
     order.isUrgent = isUrgent;
+
+    if (status != orderStatus.Created && !order.code) {
+      order.code = await getUniqueOrderCode();
+    }
 
     if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
       order.doneDate = new Date();

@@ -56,7 +56,7 @@
       "start": "NODE_ENV=development ts-node-dev src/index.ts --transpileOnly",
       "start_win": "ts-node-dev src/index.ts --transpileOnly",
       "build": "npx tsc && ts-node src/index.ts --transpileOnly",
-      "prod": "NODE_ENV=deployment node --max-old-space-size=4096 build/index.js",
+      "prod": "npx tsc && NODE_ENV=deployment node --max-old-space-size=4096 build/index.js",
       "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
    }
 }

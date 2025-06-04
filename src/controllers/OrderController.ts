@@ -967,8 +967,9 @@ class OrderController {
       for (const order of orders) {
         order.inCart = false;
         order.status = order.workerId ? orderStatus.Assigned : orderStatus.Paid;
-        order.code = await getUniqueOrderCode();
-
+        if (!order.code) {
+          order.code = await getUniqueOrderCode();
+        }
         if (order.workerId){
           await getRepository(WorkerOffs).insert({
             userId: order.workerId,
