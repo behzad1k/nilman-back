@@ -535,19 +535,6 @@ class OrderController {
         newOrderServices.push(orderService);
       }));
       order.orderServices = newOrderServices;
-
-      // if (workerId){
-      //   sms.orderAssignWorker(order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.worker.phoneNumber, order.date, order.fromTime.toString());
-      //   sms.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
-      //
-      // }
-      // const workerOff = new WorkerOffs();
-      // workerOff.orderId = order.id;
-      // workerOff.workerId = worker.id;
-      // workerOff.date = order.date;
-      // workerOff.fromTime = order.fromTime;
-      // workerOff.toTime = order.toTime;
-      // await this.workerOffs().save(workerOff);
     } catch (e) {
       console.log(e); //todo: delete order if workeroff not created
       res.status(409).send({ 'code': 409 });
@@ -970,7 +957,9 @@ class OrderController {
         if (!order.code) {
           order.code = await getUniqueOrderCode();
         }
+
         if (order.workerId){
+          const worker = await getRepository(User).findOneBy({ id: order.workerId})
           await getRepository(WorkerOffs).insert({
             userId: order.workerId,
             orderId: order.id,
@@ -978,6 +967,8 @@ class OrderController {
             toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
             date: order.date
           })
+          sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.user.phoneNumber, order.date, order.fromTime.toString());
+          sms.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
         const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)

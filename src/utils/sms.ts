@@ -23,7 +23,7 @@ const notify = (code: string, price: string, order: string, phoneNumber: string)
   send(text, phoneNumber)
 }
 
-const feedback = (name: string, code: string, phoneNumber: string) => {
+const feedback = (name: string, phoneNumber: string, code: string) => {
   const text = `سلام ${name} عزیز
 
 ضمن تشكر از انتخاب نیلمان و آرزومندی جلب رضایت شما از سرویس انجام شده  ، ممنون میشویم تا میزان رضایتمندی و نظرات خود را در رابطه با سرویس انجام شده از طریق لینک زیر به ما انتقال دهید .
