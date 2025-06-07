@@ -875,7 +875,7 @@ class OrderController {
             payment: { randomCode: decryptedValue.split(',')[1] }
           }
         ],
-        relations: { user: true, orderServices: { service: { triggerPackage: true } }, service: true }
+        relations: { user: true, orderServices: { service: { triggerPackage: true } }, service: true, address: true }
       });
 
       payment = await getRepository(Payment).findOne({
@@ -967,7 +967,7 @@ class OrderController {
             toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
             date: order.date
           })
-          sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.user.phoneNumber, order.date, order.fromTime.toString());
+          sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.user.phoneNumber, order.date, order.fromTime.toString());
           sms.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
