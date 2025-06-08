@@ -967,8 +967,8 @@ class OrderController {
             toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
             date: order.date
           })
-          sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, order.user.phoneNumber, order.date, order.fromTime.toString());
-          sms.orderAssignUser(order.user.name, order.worker.name + ' ' + order.worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+          sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
+          sms.orderAssignUser(order.user.name, worker.name + ' ' + worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
         const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)

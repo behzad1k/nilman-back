@@ -46,7 +46,7 @@ const orderAssignWorker = (name: string, code: string, address: string, phoneNum
 
 به آدرس ${address}
 
-در تاریخ ${date + ' ' + time}
+در تاریخ ${date + ' ساعت ' + time}
 
 به شما محول شده است.`
   send(text, phoneNumber);
