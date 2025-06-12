@@ -80,7 +80,7 @@ const welcome = (code: string, phoneNumber: string) => {
 
 
 
-@app.nilman.co ${code}`
+@app.nilman.co #${code}`
   send(text, phoneNumber);
 }
 
