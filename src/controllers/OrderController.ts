@@ -902,7 +902,8 @@ class OrderController {
         }).then(function (response) {
           if (response.status == 101 || response.status == 100) {
             success = true;
-            return response.RefID;
+            // @ts-ignore
+            return response.RefID || response.refId;
           } else {
             console.log(response);
           }
