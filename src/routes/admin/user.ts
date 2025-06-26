@@ -21,6 +21,7 @@ export class AdminUserRoutes {
     this.router.post("/textMessage/:id", AdminUserController.textMessage);
     this.router.post("/verify/", AdminUserController.verifyUser);
     this.router.post("/status/:id", AdminUserController.active);
+    this.router.post("/excel", AdminUserController.excelExport);
     this.router.post("/workerOff/:id", AdminUserController.workerOff);
     this.router.delete("/workerOff/:id", AdminUserController.deleteWorkerOff);
     this.router.post("/medias/:id", multer(multerConfig('uploads/profilePic')).any(), AdminUserController.medias);

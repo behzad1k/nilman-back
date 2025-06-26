@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
-import {FindManyOptions, getRepository, getTreeRepository, In, Like} from 'typeorm';
+import fsPromisses from 'fs/promises';
+import moment from 'jalali-moment';
+import path from 'path';
+import { FindManyOptions, FindOptionsWhere, getRepository, getTreeRepository, In, Like } from 'typeorm';
+import writeXlsxFile from 'write-excel-file/node';
 import { Address } from '../../entity/Address';
 import { District } from '../../entity/District';
 import { Order } from '../../entity/Order';
@@ -452,7 +456,46 @@ class AdminUserController {
       data: 'Successful'
     });
   };
+  static excelExport = async (req: Request, res: Response): Promise<Response> => {
+    const { type } = req.body;
 
+    const where: FindOptionsWhere<User> = {}
+    if (type != 'all'){
+      where.role = type
+    }
+
+    const users = await getRepository(User).find({ where: where });
+
+    const schema = [
+      {
+        column: 'PhoneNumber',
+        type: String,
+        value: user => user.phoneNumber?.toString()
+      }, 
+      {
+        column: 'Name',
+        type: String,
+        value: user => user.name?.toString()
+      },
+      {
+        column: 'Last Name',
+        type: String,
+        value: user => user.lastName?.toString()
+      },
+    ]
+    const time = moment().unix();
+    const filePath = path.join(process.cwd(), 'public', 'uploads', 'excel', 'user', time + '.xlsx')
+    await fsPromisses.writeFile(filePath , '');
+    await writeXlsxFile(users, {
+      schema,
+      filePath: filePath,
+    })
+
+    return res.status(200).send({
+      code: 200,
+      data: { link: req.protocol + '://' + req.get('host') + '/public/uploads/excel/user/' + time + '.xlsx'}
+    });
+  }
 }
 
 export default AdminUserController;
