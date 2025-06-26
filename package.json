@@ -49,6 +49,7 @@
       "tslib": "^1.14.1",
       "typeorm": "^0.3.17",
       "uniqid": "^5.4.0",
+      "unpipe": "^1.0.0",
       "write-excel-file": "^2.0.2",
       "zarinpal-checkout": "^0.2.8"
    },
