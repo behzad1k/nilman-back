@@ -490,10 +490,10 @@ class AdminUserController {
       schema,
       filePath: filePath,
     })
-
+    console.log(req.protocol);
     return res.status(200).send({
       code: 200,
-      data: { link: req.protocol + '://' + req.get('host') + '/public/uploads/excel/user/' + time + '.xlsx'}
+      data: { link: 'https://' + req.get('host') + '/public/uploads/excel/user/' + time + '.xlsx'}
     });
   }
 }

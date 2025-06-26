@@ -28,6 +28,7 @@ class Server {
   public config(): void {
     this.app.set("port", process.env.PORT || 9001);
     this.app.set('trust proxy', true)
+    this.app.enable('trust proxy')
     this.app.use(passport.initialize());
     this.app.use('/public', express.static('public'))
     this.app.use(bodyParser.json());
