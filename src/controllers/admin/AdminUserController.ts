@@ -464,7 +464,7 @@ class AdminUserController {
       where.role = type
     }
 
-    where.name = Not(IsNull())
+    where.name = IsNull()
 
     const users = await getRepository(User).find({ where: where });
 
