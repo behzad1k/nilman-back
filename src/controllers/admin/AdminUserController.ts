@@ -472,7 +472,7 @@ class AdminUserController {
       {
         column: 'PhoneNumber',
         type: String,
-        value: user => user.phoneNumber?.toString()
+        value: user => user.phoneNumber?.toString().substr(1)
       }, 
       {
         column: 'Name',
