@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import fsPromisses from 'fs/promises';
 import moment from 'jalali-moment';
 import path from 'path';
-import { FindManyOptions, FindOptionsWhere, getRepository, getTreeRepository, In, Like } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere, getRepository, getTreeRepository, In, IsNull, Like, Not } from 'typeorm';
 import writeXlsxFile from 'write-excel-file/node';
 import { Address } from '../../entity/Address';
 import { District } from '../../entity/District';
@@ -463,6 +463,8 @@ class AdminUserController {
     if (type != 'all'){
       where.role = type
     }
+
+    where.name = Not(IsNull())
 
     const users = await getRepository(User).find({ where: where });
 
