@@ -464,8 +464,6 @@ class AdminUserController {
       where.role = type
     }
 
-    where.name = IsNull()
-
     const users = await getRepository(User).find({ where: where });
 
     const schema = [
@@ -485,6 +483,7 @@ class AdminUserController {
         value: user => user.lastName?.toString()
       },
     ]
+
     const time = moment().unix();
     const filePath = path.join(process.cwd(), 'public', 'uploads', 'excel', 'user', time + '.xlsx')
     await fsPromisses.writeFile(filePath , '');
