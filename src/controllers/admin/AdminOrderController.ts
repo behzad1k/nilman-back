@@ -69,6 +69,23 @@ class AdminOrderController {
         relations: { worker: true, orderServices: { service: true }}
       });
 
+      // for (const order of allOrders.filter(e => e.createdAt > moment().subtract(5, 'd').toDate())) {
+      //   if (order.isUrgent) {
+      //     let price = 0;
+      //     for (const orderService of order.orderServices) {
+      //       const serviceObj = await getRepository(Service).findOneBy({ id: orderService.serviceId });
+      //
+      //       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
+      //       orderService.price = orderService.singlePrice * orderService.count;
+      //       price += orderService.price;
+      //
+      //       await getRepository(OrderService).save(orderService);
+      //     }
+      //     order.price = price;
+      //     order.finalPrice = price + order.transportation;
+      //     await getRepository(Order).save(order);
+      //   }
+      // }
 
       const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
         ...acc,
