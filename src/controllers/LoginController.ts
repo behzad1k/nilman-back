@@ -55,10 +55,9 @@ class LoginController {
       code: code
     }, '2m');
 
-    // if (!user.isBlockSMS){
-    //   await sms.welcome(code, phoneNumber);
-    // }
-    console.log(code);
+    if (!user.isBlockSMS){
+      await sms.welcome(code, phoneNumber);
+    }
     return res.status(200).send({
       token: token
     });
