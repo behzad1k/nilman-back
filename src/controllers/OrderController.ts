@@ -1081,6 +1081,7 @@ class OrderController {
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const userId = jwtDecode(req.headers.authorization);
     const { orderId } = req.body;
+    console.log(orderId);
     let user, orderObj;
     try {
       user = await this.users().findOneOrFail({

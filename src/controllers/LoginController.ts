@@ -55,9 +55,9 @@ class LoginController {
       code: code
     }, '2m');
 
-    if (!user.isBlockSMS){
-      await sms.welcome(code, phoneNumber);
-    }
+    // if (!user.isBlockSMS){
+    //   await sms.welcome(code, phoneNumber);
+    // }
     console.log(code);
     return res.status(200).send({
       token: token
@@ -178,7 +178,7 @@ class LoginController {
         'message': 'Code does not match'
       });
     }
-    const newToken = user.isVerified ? await signJWT(user) : await signTmpJWT(user);
+    const newToken = user.isVerified ? await signJWT(user) : await signTmpJWT(user, 2000);
 
     try {
       await getRepository(User).update({ id: userId }, { lastEntrance: new Date() });

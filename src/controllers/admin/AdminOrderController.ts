@@ -69,24 +69,6 @@ class AdminOrderController {
         relations: { worker: true, orderServices: { service: true }}
       });
 
-      // for (const order of allOrders.filter(e => e.createdAt > moment().subtract(5, 'd').toDate())) {
-      //   if (order.isUrgent) {
-      //     let price = 0;
-      //     for (const orderService of order.orderServices) {
-      //       const serviceObj = await getRepository(Service).findOneBy({ id: orderService.serviceId });
-      //
-      //       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
-      //       orderService.price = orderService.singlePrice * orderService.count;
-      //       price += orderService.price;
-      //
-      //       await getRepository(OrderService).save(orderService);
-      //     }
-      //     order.price = price;
-      //     order.finalPrice = price + order.transportation;
-      //     await getRepository(Order).save(order);
-      //   }
-      // }
-
       const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
         ...acc,
         [status]: {
@@ -272,11 +254,11 @@ class AdminOrderController {
       if (!orderService) {
         orderService = new OrderService();
         orderService.orderId = order.id;
-        orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       }
+      orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       orderService.serviceId = service.serviceId;
       orderService.count = service.count;
-      orderService.price = orderService.singlePrice * (order.isUrgent ? 1.5 : 1) * service.count;
+      orderService.price = orderService.singlePrice * service.count;
       if (service.colors && service.colors.length > 0) {
         orderService.colors = await getRepository(Color).findBy({ id: In(service.colors) });
       }
@@ -350,7 +332,6 @@ class AdminOrderController {
       return res.status(400).send({ code: 400, data: 'Invalid Order' });
     }
 
-    console.log(payment);
     if (!payment){
       payment = new Payment();
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');

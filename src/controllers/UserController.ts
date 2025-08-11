@@ -3,7 +3,9 @@ import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
+import * as jwt from 'jsonwebtoken';
 import { Between, getRepository, In } from 'typeorm';
+import config from '../config/config';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import Media from '../entity/Media';
@@ -60,7 +62,6 @@ class UserController {
     } catch (error) {
       res.status(401).send();
     }
-
     // Check if old password matchs
     // if (!user.checkIfUnencryptedPasswordIsValid(oldPassword)) {
     //   res.status(401).send("Invalid password or wrong email!");
@@ -134,7 +135,6 @@ class UserController {
           data: 'کد ملی با شماره تلفن تطابق ندارد'
         });
       }
-      console.log(birthday);
       // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-similarity', {
       //   nationalCode: nationalCode,
       //   birthDate: '1378/02/02',
@@ -187,7 +187,6 @@ class UserController {
       return res.status(409).send({ 'code': 409 });
 
     }
-
 
     return res.status(200).send({
       code: 200,
