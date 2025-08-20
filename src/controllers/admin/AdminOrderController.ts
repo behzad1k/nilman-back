@@ -557,7 +557,7 @@ class AdminOrderController {
     try {
       await this.orders().save(order);
       if (!order.user.isBlockSMS) {
-        sms.orderAssignUser(order.user.name, user.name + ' ' + user.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+        sms.orderAssignUser(order.user.name, user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
       }
       sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
       await getRepository(WorkerOffs).insert({

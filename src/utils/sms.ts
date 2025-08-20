@@ -6,11 +6,9 @@ const send = (text: string, to: string) => {
 }
 
 const afterPaid = (name: string, phoneNumber: string, date: string, time: string) => {
-  const text = `${name} عزیز
+  const text = `${name} عزیز؛
 
-کاربر گرامی نیلمان ؛
-
-با سلام و تشکر از اینکه مجموعه ما را برای انجام خدمات خود انتخاب کردید. سفارش شما برای تاریخ ${date} ثبت شد.`
+با تشکر از اینکه مجموعه نیلمان را برای انجام خدمات خود انتخاب کردید. سفارش شما برای تاریخ ${date} ساعت ${time} ثبت شد.`
   send(text, phoneNumber)
 }
 
@@ -44,8 +42,6 @@ const orderAssignWorker = (name: string, code: string, address: string, phoneNum
 
 سفارش ${code}   
 
-به آدرس ${address}
-
 در تاریخ ${date + ' ساعت ' + time}
 
 به شما محول شده است.`
@@ -72,13 +68,9 @@ const orderAssignUser = (name: string, worker: string, phoneNumber: string, date
 }
 
 const welcome = (code: string, phoneNumber: string) => {
-  const text = `کاربر گرامی
+  const text = `کد ورود شما: ${code}
 
-به نیلمان خوش آمدید.
-
-کد ورود شما: ${code}
-
-
+کاربر گرامی به نیلمان خوش آمدید
 
 @app.nilman.co #${code}`
   send(text, phoneNumber);

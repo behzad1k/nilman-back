@@ -36,6 +36,7 @@ class LoginController {
           code: 1005,
           data: "Inactive Login"
         })
+        
       }
     }else{
       user = new User();
@@ -54,7 +55,7 @@ class LoginController {
       id: user.id,
       code: code
     }, '2m');
-
+    console.log(code);
     if (!user.isBlockSMS){
       await sms.welcome(code, phoneNumber);
     }

@@ -31,6 +31,21 @@ class AddressController {
     })
   }
 
+  static geo = async (req: Request, res: Response): Promise<Response> => {
+    const { lat, lng } = req.query;
+    const result = await axios.get('https://api.neshan.org/v5/reverse', {
+      params: {
+        location: `${lat},${lng}`,
+        key: 'p148e068c76be34284b8441fd28a008be567e6dd4f'
+      },
+    });
+
+    return res.status(200).send({
+      code: 200,
+      data: result.data
+    })
+  }
+
   static geoCode = async (req: Request, res: Response): Promise<Response> => {
     const { lat, lng } = req.query;
     const result = await axios.get('https://api.neshan.org/v5/reverse', {
@@ -48,6 +63,7 @@ class AddressController {
       data: result.data
     })
   }
+
   static search = async (req: Request, res: Response): Promise<Response> => {
     const { term, lat, lng } = req.query;
     let result;
@@ -73,10 +89,36 @@ class AddressController {
       data: result.data?.items
     })
   }
+  // Parsimap
+  static simpleSearch = async (req: Request, res: Response): Promise<Response> => {
+    const { search_text, district } = req.query;
+    let result;
+    try {
+      result = await axios.get('https://api.parsimap.ir/geocode/forward', {
+        params: {
+          search_text,
+          district,
+          search_precision: 'full_address',
+          key: 'p148e068c76be34284b8441fd28a008be567e6dd4f'
+        },
+      });
+    }catch (e){
+      console.log(e);
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid Search Params'
+      })
+    }
+    return res.status(200).send({
+      code: 200,
+      data: result.data.results
+    })
+  }
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { title, description, longitude, floor, latitude, phoneNumber, pelak, vahed, district, postalCode } = req.body;
     const { id } = req.params;
+    console.log(req.body);
     const userId = jwtDecode(req.headers.authorization);
     let user;
     try {
@@ -86,7 +128,6 @@ class AddressController {
       });
     }
     catch (error) {
-
       res.status(400).send({code: 400, data: "Invalid UserId"});
       return;
     }

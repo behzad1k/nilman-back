@@ -430,8 +430,6 @@ class OrderController {
       order.discountAmount = discountAmount;
       totalPrice -= discountAmount;
     }
-    order.transportation = transportation;
-    totalPrice += transportation;
 
     if (totalPrice < 500000){
       return res.status(400).send({
@@ -439,6 +437,11 @@ class OrderController {
         data: 'Under Price Limit'
       });
     }
+
+    order.transportation = transportation;
+    totalPrice += transportation;
+
+
 
     order.finalPrice = totalPrice;
     order.service = serviceObj;
@@ -969,7 +972,7 @@ class OrderController {
             date: order.date
           })
           sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
-          sms.orderAssignUser(order.user.name, worker.name + ' ' + worker.lastName, order.user.phoneNumber, order.date, order.fromTime.toString());
+          sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
         const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)
@@ -1050,7 +1053,6 @@ class OrderController {
           sms.afterPaid(order.user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
-        sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09125190659');
         sms.notify(order.code, order.finalPrice.toString(), order.service.title.toString(), '09122251784');
       }
       await getRepository(Payment).update({ id: payment.id }, {
