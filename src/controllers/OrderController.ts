@@ -39,7 +39,7 @@ class OrderController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
-      });
+      });``
     } catch (error) {
       res.status(400).send({
         code: 400,
@@ -778,7 +778,7 @@ class OrderController {
         CellNumber: user.phoneNumber
       });
       authority = sepReq.data.token;
-
+      url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
     } else if (method == 'ap') {
       try {
         const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token', {
@@ -850,7 +850,6 @@ class OrderController {
         authority: authority
       }
     });
-
   };
   static paymentVerify = async (req: Request, res: Response): Promise<Response> => {
     const {

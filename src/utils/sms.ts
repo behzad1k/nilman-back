@@ -2,6 +2,9 @@ const send = (text: string, to: string) => {
   const Kavenegar = require('kavenegar');
   const apiKey = '41393854744470492B444C6E31723350692F577873503634546344323133566D6A476B2B4E72736F4B31773D'
   const api = Kavenegar.KavenegarApi({ apikey: apiKey });
+  if (process.env.NODE_ENV == 'development'){
+    return;
+  }
   api.Send({ message: text , sender: "1000000300033" , receptor: to });
 }
 
