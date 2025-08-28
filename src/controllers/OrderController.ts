@@ -755,30 +755,37 @@ class OrderController {
     if (isCredit && finalPrice == creditUsed){
       url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
     } else if (method == 'sep') {
-      const serverIP = networkInterfaces.eth0?.[0].address;
-      const axiosInstance = axios.create({
-        proxy: false,
-        httpAgent: new HttpAgent({
-          localAddress: serverIP,
-          lookup: lookup
-        }),
-        httpsAgent: new HttpsAgent({
+      try{
+        const serverIP = networkInterfaces.eth0?.[0].address;
+        const axiosInstance = axios.create({
+          proxy: false,
+          httpAgent: new HttpAgent({
+            localAddress: serverIP,
+            lookup: lookup
+          }),
+          httpsAgent: new HttpsAgent({
 
-          localAddress: serverIP,
-          lookup: lookup
-        })
-      });
+            localAddress: serverIP,
+            lookup: lookup
+          })
+        });
 
-      const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
-        action: 'token',
-        TerminalId: 14436606,
-        Amount: payment.finalPrice * 10,
-        ResNum: generateCode(8, dataTypes.number),
-        RedirectUrl: 'https://app.nilman.co/payment/verify',
-        CellNumber: user.phoneNumber
-      });
-      authority = sepReq.data.token;
-      url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
+        const sepReq = await axiosInstance.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
+          action: 'token',
+          TerminalId: 14436606,
+          Amount: payment.finalPrice * 10,
+          ResNum: generateCode(8, dataTypes.number),
+          RedirectUrl: 'https://app.nilman.co/payment/verify',
+          CellNumber: user.phoneNumber
+        });
+        console.log(sepReq.data);
+        console.log(sepReq);
+        authority = sepReq.data.token;
+        url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
+      } catch (e){
+        console.log(e);
+      }
+
     } else if (method == 'ap') {
       try {
         const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token', {
