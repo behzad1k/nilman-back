@@ -775,7 +775,7 @@ class OrderController {
           TerminalId: 14436606,
           Amount: payment.finalPrice * 10,
           ResNum: generateCode(8, dataTypes.number),
-          RedirectUrl: 'https://callback.nilman.co/verify',
+          RedirectUrl: 'https://callback.nilman.co/verify/',
           CellNumber: user.phoneNumber
         });
         console.log(sepReq.data);
