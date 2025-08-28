@@ -429,10 +429,11 @@ class AdminOrderController {
         TerminalId: 14436606,
         Amount: payment.finalPrice * 10,
         ResNum: generateCode(8, dataTypes.number),
-        RedirectUrl: 'https://app.nilman.co/payment/verify',
-        CellNumber: user.phoneNumber
+        RedirectUrl: 'https://callback.nilman.co/verify/',
+        CellNumber: orderObj?.user?.phoneNumber
       });
       authority = sepReq.data.token;
+      url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
 
     } else if (payment.method == PaymentMethods.Ap) {
       try {

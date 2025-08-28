@@ -778,8 +778,6 @@ class OrderController {
           RedirectUrl: 'https://callback.nilman.co/verify/',
           CellNumber: user.phoneNumber
         });
-        console.log(sepReq.data);
-        console.log(sepReq);
         authority = sepReq.data.token;
         url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
       } catch (e){
