@@ -2,7 +2,7 @@ import * as bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import jwtD from 'jwt-decode';
 import * as jwt from 'jsonwebtoken';
-import { getRepository } from 'typeorm';
+import { getRepository, In } from 'typeorm';
 import config from '../config/config';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
@@ -117,7 +117,7 @@ class LoginController {
       user = await this.users().findOneOrFail({
         where: {
           username: username,
-          role: 'SUPER_ADMIN'
+          role: In([roles.SUPER_ADMIN, roles.OPERATOR])
         }
       });
     } catch (e) {

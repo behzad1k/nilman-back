@@ -39,7 +39,8 @@ class OrderController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
-      });``
+      });
+      ``;
     } catch (error) {
       res.status(400).send({
         code: 400,
@@ -431,7 +432,7 @@ class OrderController {
       totalPrice -= discountAmount;
     }
 
-    if (totalPrice < 500000){
+    if (totalPrice < 500000) {
       return res.status(400).send({
         code: 1016,
         data: 'Under Price Limit'
@@ -640,6 +641,111 @@ class OrderController {
     });
   };
 
+  static applyDiscount = async (req: Request, res: Response): Promise<Response> => {
+    const { discount } = req.body;
+    const userId = jwtDecode(req.headers.authorization);
+    let discountObj, user, orderObj
+    try {
+      user = await this.users().findOneOrFail({
+        where: { id: userId },
+        relations: { orders: { service: true }}
+      });
+    } catch (error) {
+      res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
+      return;
+    }
+
+    if (!discount) {
+      return res.status(400).send({});
+    }
+    try {
+      discountObj = await this.discounts().findOneOrFail({ where: { code: discount } });
+      orderObj = discountObj.serviceId ? user.orders.find(e => e.inCart && e.serviceId == discountObj.serviceId) : user.orders[0]
+    } catch (error) {
+      res.status(400).send({
+        code: 1007,
+        data: 'Invalid discount'
+      });
+      return;
+    }
+
+    if (!discountObj.active) {
+      return res.status(400).send({
+        code: 1008,
+        data: 'Discount Not Active'
+      });
+    }
+
+    if (discountObj.timesUsed > discountObj.maxCount) {
+      return res.status(400).send({
+        code: 1009,
+        data: 'Discount Used Too Many Times'
+      });
+    }
+
+    if ((discountObj.forUserId && discountObj.forUserId !== userId) || discount.userId == userId) {
+      res.status(400).send({
+        code: 1010,
+        data: 'Invalid discount User'
+      });
+      return;
+    }
+
+    if (discountObj.code == user.code) {
+      res.status(400).send({
+        code: 1011,
+        data: 'Invalid discount User'
+      });
+      return;
+    }
+
+    if (discountObj.serviceId && (discountObj.serviceId != orderObj?.serviceId)) {
+      return res.status(400).send({
+        code: 1012,
+        data: 'Invalid Discount Service'
+      });
+    }
+    if (discountObj.expirationDay && moment().unix() > moment(discountObj.createdAt).add(discountObj.expirationDay, 'day').unix()) {
+      return res.status(400).send({
+        code: 1013,
+        data: 'Discount Expired'
+      });
+    }
+
+    if (await getRepository(Order).findOne({
+      where: {
+        userId: Number(userId),
+        discountId: discountObj.id
+      }
+    })) {
+      return res.status(400).send({
+        code: 1014,
+        data: 'Invalid discount User'
+      });
+    }
+
+    let totalPrice = orderObj.price;
+    if (discountObj && (discountObj.amount || discountObj.percent)) {
+      const discountAmount = discountObj.percent ? (totalPrice * discountObj.percent / 100) : discountObj.amount;
+      orderObj.discountId = discountObj.id;
+      orderObj.discountAmount = discountAmount;
+      totalPrice -= discountAmount;
+      orderObj.price = totalPrice
+      orderObj.finalPrice = orderObj.finalPrice - discountAmount
+    }
+    await this.orders().save(orderObj);
+    await this.discounts().update({ id: discountObj.id }, { timesUsed: discountObj.timesUsed + 1 });
+
+    return res.status(200).send({
+      code: 200,
+      data: {
+        totalPrice,
+      }
+    })
+  };
   static cart = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
     let user;
@@ -679,7 +785,7 @@ class OrderController {
       isCredit,
       method
     } = req.body;
-    let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
+    let user, orderObj, url, authority, payment: Payment, creditUsed = 0, success = false;
     try {
       user = await this.users().findOneOrFail({
         where: { id: userId },
@@ -712,7 +818,7 @@ class OrderController {
     }
 
     for (const order of orders) {
-      if (moment(moment().subtract(1, 'hour')).diff(order.createdAt, 'hour', true) > 1){
+      if (moment(moment().subtract(1, 'hour')).diff(order.createdAt, 'hour', true) > 1) {
         await getRepository(Order).delete({ id: In(orders.map(e => e.id)) });
         return res.status(400).send({
           code: 1015,
@@ -752,10 +858,12 @@ class OrderController {
         data: 'Invalid Payment'
       });
     }
-    if (isCredit && finalPrice == creditUsed){
+    if (isCredit && finalPrice == creditUsed) {
+      authority = payment.authority
       url = `https://app.nilman.co/payment/verify?State=OK&Authority=${payment.authority}`;
+      success = true
     } else if (method == 'sep') {
-      try{
+      try {
         const serverIP = networkInterfaces.eth0?.[0].address;
         const axiosInstance = axios.create({
           proxy: false,
@@ -780,7 +888,7 @@ class OrderController {
         });
         authority = sepReq.data.token;
         url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
-      } catch (e){
+      } catch (e) {
         console.log(e);
       }
 
@@ -851,6 +959,7 @@ class OrderController {
     return res.status(200).send({
       code: 200,
       data: {
+        success,
         url: url,
         authority: authority
       }
@@ -882,16 +991,21 @@ class OrderController {
             payment: { randomCode: decryptedValue.split(',')[1] }
           }
         ],
-        relations: { user: true, orderServices: { service: { triggerPackage: true } }, service: true, address: true }
+        relations: {
+          user: true,
+          orderServices: { service: { triggerPackage: true } },
+          service: true,
+          address: true
+        }
       });
 
       payment = await getRepository(Payment).findOne({
         where: [{
           authority: authority
         },
-        {
-          randomCode: decryptedValue.split(',')[1]
-        }]
+          {
+            randomCode: decryptedValue.split(',')[1]
+          }]
       });
     } catch (e) {
       console.log('no payment');
@@ -931,7 +1045,7 @@ class OrderController {
         refId = sepRes.data.TraceNo;
       } else if (payment.method == 'ap') {
         const apRes = await axios('https://ipgrest.asanpardakht.ir/v1/Verify', {
-          headers:{
+          headers: {
             usr: 'saln 5312721',
             pwd: 'MtK5786W'
           },
@@ -943,8 +1057,8 @@ class OrderController {
         });
         success = apRes.status == 200;
         refId = decryptedValue.split(',')[2];
-      } else if(payment.method == 'credit'){
-        success = true
+      } else if (payment.method == 'credit') {
+        success = true;
       }
 
       if (!success) {
@@ -966,33 +1080,36 @@ class OrderController {
           order.code = await getUniqueOrderCode();
         }
 
-        if (order.workerId){
-          const worker = await getRepository(User).findOneBy({ id: order.workerId})
+        if (order.workerId) {
+          const worker = await getRepository(User).findOneBy({ id: order.workerId });
           await getRepository(WorkerOffs).insert({
             userId: order.workerId,
             orderId: order.id,
             fromTime: order.fromTime,
             toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
             date: order.date
-          })
+          });
           sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
           sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
         }
 
-        const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id)
-        if (triggeredOrderService){
+        const triggeredOrderService = order.orderServices.find(e => e.service?.triggerPackage?.id);
+        if (triggeredOrderService) {
           const packageUsed = await getRepository(Package).findOne({
             where: { id: triggeredOrderService.service.triggerPackage.id },
-            relations: { services: true, triggerService: true }
+            relations: {
+              services: true,
+              triggerService: true
+            }
           });
 
-          const newOrders: any = {}
+          const newOrders: any = {};
 
           for (const newService of packageUsed.services) {
             const ancestors = await getTreeRepository(Service).findAncestors(newService);
 
             if (!newOrders[ancestors[0].id]) {
-              newOrders[ancestors[0].id] = []
+              newOrders[ancestors[0].id] = [];
             }
 
             newOrders[ancestors[0].id].push(newService);
@@ -1001,37 +1118,37 @@ class OrderController {
           let firstAvailableHour = order.fromTime;
 
           for (const [key, value] of Object.entries(newOrders)) {
-            const newOrder = new Order()
+            const newOrder = new Order();
             newOrder.showUser = false;
             newOrder.serviceId = Number(key);
-            newOrder.packageId = packageUsed.id
+            newOrder.packageId = packageUsed.id;
             newOrder.isWebsite = true;
             newOrder.transportation = 200000;
             newOrder.inCart = false;
             newOrder.status = orderStatus.Paid;
             newOrder.userId = order.userId;
             newOrder.addressId = order.addressId;
-            newOrder.date = order.date
+            newOrder.date = order.date;
             newOrder.price = 0;
             newOrder.code = await getUniqueOrderCode();
 
-            const newOrderServices = []
+            const newOrderServices = [];
 
             let orderTime = 0;
 
             if (isArray(value)) {
               for (const newService of value as any) {
-                const newOrderService = new OrderService()
+                const newOrderService = new OrderService();
 
                 newOrderService.price = newService.price;
                 newOrderService.singlePrice = newService.price;
                 newOrderService.count = 1;
                 newOrderService.serviceId = newService.id;
 
-                newOrder.price += newService.price
+                newOrder.price += newService.price;
 
-                orderTime += (newService.section / 4)
-                newOrderServices.push(newOrderService)
+                orderTime += (newService.section / 4);
+                newOrderServices.push(newOrderService);
               }
             }
 
@@ -1039,16 +1156,16 @@ class OrderController {
             newOrder.fromTime = order.fromTime;
             newOrder.toTime = order.fromTime + orderTime;
 
-            await getRepository(Order).save(newOrder)
+            await getRepository(Order).save(newOrder);
 
             for (const newOrderService of newOrderServices) {
-              newOrderService.orderId = newOrder.id
+              newOrderService.orderId = newOrder.id;
 
-              await getRepository(OrderService).save(newOrderService)
+              await getRepository(OrderService).save(newOrderService);
             }
           }
 
-          order.finalPrice = packageUsed.price
+          order.finalPrice = packageUsed.price;
         }
 
         await getRepository(Order).save(order);
@@ -1063,7 +1180,7 @@ class OrderController {
         isPaid: true,
         refId: refId
       });
-      if (payment.credit > 0){
+      if (payment.credit > 0) {
         const user = await getRepository(User).findOneBy({ id: Number(orders[0]?.userId) });
 
         user.walletBalance -= payment.credit;
@@ -1117,7 +1234,7 @@ class OrderController {
         body: 'Access Forbidden'
       });
     }
-    if (orderObj.status != orderStatus.Created){
+    if (orderObj.status != orderStatus.Created) {
       return res.status(400).send({
         code: 1017,
         body: 'Invalid Order Status'

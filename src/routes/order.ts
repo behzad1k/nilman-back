@@ -25,6 +25,7 @@ export class OrderRoutes {
     this.router.get("/cart", OrderController.cart);
     this.router.delete("/service/:id", OrderController.deleteCartService);
     this.router.post("/pay", OrderController.pay);
+    this.router.post("/discount", OrderController.applyDiscount);
     this.router.post("/pay/verify", OrderController.paymentVerify);
   }
 }
