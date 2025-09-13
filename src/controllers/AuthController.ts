@@ -42,7 +42,7 @@ export default class AuthController {
           'message': 'Token Expired'
         });
       }
-      if (user.role !== roles.SUPER_ADMIN || user.role !== roles.OPERATOR) {
+      if (user.role !== roles.SUPER_ADMIN && user.role !== roles.OPERATOR) {
         return res.status(403).json({ status: "error", code: "403" });
       } else {
         return next();
