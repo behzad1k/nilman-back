@@ -216,9 +216,10 @@ class AdminOrderController {
       }
       await this.orders().save(order);
 
-      if (workerId && order.workerId != workerId){
+      if (workerId){
         order.user = user;
         order.address = await getRepository(Address).findOneBy({ id: Number(addressId) })
+
         await this.assignOrder(order, workerId, shouldSendWorkerSMS)
       }
     } catch (e) {
@@ -745,7 +746,6 @@ class AdminOrderController {
   }
 
     private static assignOrder = async (order, workerId, shouldSendSms) => {
-      console.log('assign');
       let worker: User;
       if (order.workerId && order.workerId != workerId) {
         sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
@@ -778,11 +778,9 @@ class AdminOrderController {
       try {
         await this.orders().save(order);
         if (shouldSendSms) {
-          console.log('here');
           if (!order.user.isBlockSMS) {
             sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
           }
-          console.log('hi');
           sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
         }
         await getRepository(WorkerOffs).insert({
