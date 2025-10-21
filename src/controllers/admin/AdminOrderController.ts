@@ -108,7 +108,7 @@ class AdminOrderController {
     try {
       order = await this.orders().findOne({
         where: { id: Number(id) },
-        relations: ['payment', 'worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors']
+        relations: ['payment', 'worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors', 'orderServices.media']
       });
     } catch (e) {
       return res.status(400).send({
@@ -778,9 +778,11 @@ class AdminOrderController {
       try {
         await this.orders().save(order);
         if (shouldSendSms) {
+          console.log('here');
           if (!order.user.isBlockSMS) {
             sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
           }
+          console.log('hi');
           sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
         }
         await getRepository(WorkerOffs).insert({
