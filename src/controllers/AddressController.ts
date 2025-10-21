@@ -118,7 +118,6 @@ class AddressController {
   static basic = async (req: Request, res: Response): Promise<Response> => {
     const { title, description, longitude, floor, latitude, phoneNumber, pelak, vahed, district, postalCode } = req.body;
     const { id } = req.params;
-    console.log(req.body);
     const userId = jwtDecode(req.headers.authorization);
     let user;
     try {
@@ -155,10 +154,9 @@ class AddressController {
     // address.postalCode = postalCode;
     address.longitude = longitude;
     address.latitude = latitude;
-    address.districtId = 1;
     address.phoneNumber = phoneNumber;
     address.floor = floor;
-    address.districtId = district;
+    address.districtId = district || 1;
 
     const errors = await validate(address);
     if (errors.length > 0) {

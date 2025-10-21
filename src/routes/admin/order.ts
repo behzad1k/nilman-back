@@ -12,10 +12,10 @@ export class AdminOrderRoutes {
 
   routes() {
     this.router.get("/", AdminOrderController.index);
-    this.router.get("/relatedWorkers/:id", AdminOrderController.getRelatedWorkers);
     this.router.get("/single/:id", AdminOrderController.single);
     this.router.get("/feedback/:id", AdminOrderController.feedback);
     this.router.delete("/:id", AdminOrderController.delete);
+    this.router.post("/relatedWorkers/:id?", AdminOrderController.getRelatedWorkers);
     this.router.post("/basic/:id?", AdminOrderController.basic);
     this.router.put("/products/:id", AdminOrderController.services);
     this.router.put("/payment/:id", AdminOrderController.payment);

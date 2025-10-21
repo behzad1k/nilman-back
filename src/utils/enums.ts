@@ -1,10 +1,11 @@
-export enum roles  {
+export enum roles {
   SUPER_ADMIN = 'SUPER_ADMIN',
   OPERATOR = 'OPERATOR',
   WORKER = 'WORKER',
   USER = 'USER',
 };
-export enum orderStatus  {
+
+export enum orderStatus {
   Created = 'Created',
   AwaitingPayment = 'AwaitingPayment',
   Paid = 'Paid',
@@ -13,13 +14,16 @@ export enum orderStatus  {
   Canceled = 'Canceled',
   Done = 'Done'
 };
-export enum orderStatusNames  {
+
+export enum orderStatusNames {
   Created = 'سبد خرید',
   Paid = 'پرداخت شده',
   Assigned = 'محول شده',
   InProgress = 'در حال انجام',
   Canceled = 'کنسل شده',
-  Done = 'تمام شده'
+  Done = 'تمام شده',
+  AwaitingPayment = 'در انتظار پرداخت',
+
 };
 
 export enum dataTypes {

@@ -4,7 +4,9 @@ import { Request, Response } from 'express';
 import moment from 'jalali-moment';
 import { FindManyOptions, getRepository, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not } from 'typeorm';
 import ZarinPalCheckout from 'zarinpal-checkout';
+import { Address } from '../../entity/Address';
 import { Color } from '../../entity/Color';
+import { District } from '../../entity/District';
 import { Feedback } from '../../entity/Feedback';
 import { Order } from '../../entity/Order';
 import { OrderService } from '../../entity/OrderService';
@@ -132,8 +134,10 @@ class AdminOrderController {
       transportation,
       serviceId,
       addressId,
+      workerId,
       userId,
       isUrgent,
+      shouldSendWorkerSMS
     } = req.body;
     let order: Order, user: User
     if (id) {
@@ -212,6 +216,11 @@ class AdminOrderController {
       }
       await this.orders().save(order);
 
+      if (workerId && order.workerId != workerId){
+        order.user = user;
+        order.address = await getRepository(Address).findOneBy({ id: Number(addressId) })
+        await this.assignOrder(order, workerId, shouldSendWorkerSMS)
+      }
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
@@ -524,55 +533,15 @@ class AdminOrderController {
       return;
     }
 
-    if (order.workerId) {
-      sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
-
-      await getRepository(WorkerOffs).delete({
-        userId: order.workerId,
-        orderId: order.id
-      });
-    }
-
-    try {
-      user = await this.users().findOneOrFail({
-        where: {
-          id: workerId,
-        }
-      });
-    } catch (error) {
+    try{
+      await this.assignOrder(order, workerId, true)
+    }catch (e){
       res.status(400).send({
         code: 400,
-        data: 'Invalid Worker'
+        data: e.message
       });
-      return;
     }
 
-    order.worker = user;
-    order.status = orderStatus.Assigned;
-    order.workerPercent = user.percent;
-
-    const errors = await validate(order);
-    if (errors.length > 0) {
-      return res.status(400).send(errors);
-    }
-    try {
-      await this.orders().save(order);
-      if (!order.user.isBlockSMS) {
-        sms.orderAssignUser(order.user.name, user.name, order.user.phoneNumber, order.date, order.fromTime.toString());
-      }
-      sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, user.phoneNumber, order.date, order.fromTime.toString());
-      await getRepository(WorkerOffs).insert({
-        fromTime: order.fromTime,
-        toTime: order.toTime,
-        orderId: order.id,
-        userId: workerId,
-        date: order.date
-      });
-    } catch (e) {
-      console.log(e);
-      res.status(409).send('error try again later');
-      return;
-    }
     return res.status(200).send({
       code: 200,
       data: order
@@ -617,22 +586,65 @@ class AdminOrderController {
       data: feedback
     });
   };
+
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
+    const {
+      attributes,
+      fromTime: reqFromTime,
+      toTime: reqToTime,
+      address,
+      date: dueDate
+    } = req.body
 
-    let order: Order, users: User[];
-    try {
-      order = await this.orders().findOneOrFail({
-        where: { id: Number(id) },
-        relations: ['service', 'user', 'orderServices', 'address.district']
-      });
-    } catch (error) {
-      console.log(error);
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid Order'
-      });
-      return;
+    let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string
+
+    if (id) {
+      try {
+        order = await this.orders().findOneOrFail({
+          where: { id: Number(id) },
+          relations: ['service', 'user', 'orderServices', 'address.district']
+        });
+
+        orderServices = order.orderServices;
+        district = order?.address?.district;
+        fromTime = order?.fromTime;
+        toTime = order?.toTime;
+        date = order?.date;
+      } catch (error) {
+        console.log(error);
+        res.status(400).send({
+          code: 400,
+          data: 'Invalid Order'
+        });
+        return;
+      }
+    } else {
+      orderServices = attributes;
+      fromTime = reqFromTime;
+      toTime = reqToTime;
+      date = dueDate;
+      if (address) {
+
+        if (address.districtId) {
+          district = address.districtId
+        } else {
+          const {
+            lat,
+            lng
+          } = req.query;
+          const result = await axios.get('https://api.neshan.org/v5/reverse', {
+            params: {
+              lat: lat,
+              lng: lng
+            },
+            headers: {
+              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+            }
+          });
+          district = result.data?.municipality_zone;
+        }
+      }
     }
 
     const busyWorkerIds = await getRepository(WorkerOffs)
@@ -640,29 +652,28 @@ class AdminOrderController {
       select: ['userId'],
       where: [
         {
-          date: order.date,
-          fromTime: MoreThanOrEqual(order.fromTime),
-          toTime: LessThan(order.toTime)
+          date: date,
+          fromTime: MoreThanOrEqual(fromTime),
+          toTime: LessThan(toTime)
         },
         {
-          date: order.date,
-          fromTime: LessThanOrEqual(order.fromTime),
-          toTime: MoreThan(order.toTime)
+          date: date,
+          fromTime: LessThanOrEqual(fromTime),
+          toTime: MoreThan(toTime)
         },
         {
-          date: order.date,
-          fromTime: LessThanOrEqual(order.fromTime),
-          toTime: MoreThan(order.fromTime)
+          date: date,
+          fromTime: LessThanOrEqual(fromTime),
+          toTime: MoreThan(fromTime)
         },
         {
-          date: order.date,
-          fromTime: LessThan(order.toTime),
-          toTime: MoreThan(order.toTime)
+          date: date,
+          fromTime: LessThan(toTime),
+          toTime: MoreThan(toTime)
         }
       ]
     });
-    const requiredServiceIds = order.orderServices.map(e => e.serviceId);
-
+    const requiredServiceIds = orderServices?.map(e => e.serviceId);
     // First get the smaller set of potential workers
     const potentialWorkers = await this.users().find({
       select: ['id', 'name', 'lastName'],
@@ -687,7 +698,7 @@ class AdminOrderController {
         role: roles.WORKER,
         id: In(availableWorkers.map(w => w.id)),
         // districts: {
-        //   code: order.address.district.code
+        //   code: district
         // }
       },
       relations: {
@@ -696,37 +707,95 @@ class AdminOrderController {
     })
     let response: any = {}
 
-    const closeWorkers: any = {}
-    for (const suggestedWorker of suggestedWorkers) {
-      const closeOrder: Order = suggestedWorker.jobs.find(e => e.date == order.date && e.fromTime < order.fromTime && e.fromTime >= order.fromTime - 2);
-      if (closeOrder){
-        closeWorkers[suggestedWorker.id] = closeOrder.address;
+    if (id) {
+      const closeWorkers: any = {};
+      for (const suggestedWorker of suggestedWorkers) {
+        const closeOrder: Order = suggestedWorker.jobs.find(e => e.date == date && e.fromTime < fromTime && e.fromTime >= fromTime - 2);
+        if (closeOrder) {
+          closeWorkers[suggestedWorker.id] = closeOrder.address;
 
-        response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`,{
-          params: {
-            type: 'car',
-            origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
-            destinations: order.address.latitude + ',' + order.address.longitude,
-          },
-          headers: {
-            'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+          response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
+            params: {
+              type: 'car',
+              origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
+              destinations: order.address.latitude + ',' + order.address.longitude,
+            },
+            headers: {
+              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+            }
+          });
+
+          const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
+          suggestedWorkers[suggestedWorkerIndex] = {
+            ...suggestedWorkers[suggestedWorkerIndex],
+            approximatedDistance: response.data.rows[0].elements[0].distance,
+            approximatedTime: response.data.rows[0].elements[0].duration
+          };
+        }
+      }
+    }
+    return res.status(200).send({
+      code: 200,
+      data: {
+        availableWorkers,
+        suggestedWorkers,
+        data: response.data
+      }
+    });
+  }
+
+    private static assignOrder = async (order, workerId, shouldSendSms) => {
+      console.log('assign');
+      let worker: User;
+      if (order.workerId && order.workerId != workerId) {
+        sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
+
+        await getRepository(WorkerOffs).delete({
+          userId: order.workerId,
+          orderId: order.id
+        });
+      }
+
+      try {
+        worker = await this.users().findOneOrFail({
+          where: {
+            id: workerId,
           }
-        })
+        });
+      } catch (error) {
+        throw new Error('Invalid Worker');
+      }
 
-        const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
-        suggestedWorkers[suggestedWorkerIndex] = { ...suggestedWorkers[suggestedWorkerIndex], approximatedDistance: response.data.rows[0].elements[0].distance, approximatedTime: response.data.rows[0].elements[0].duration }
+      order.workerId = Number(workerId);
+      order.worker = worker;
+      order.status = orderStatus.Assigned;
+      order.workerPercent = worker.percent;
+
+      const errors = await validate(order);
+      if (errors.length > 0) {
+        throw Error(errors.reduce((acc, curr) => acc + curr + ',', ''))
+      }
+      try {
+        await this.orders().save(order);
+        if (shouldSendSms) {
+          if (!order.user.isBlockSMS) {
+            sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
+          }
+          sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
+        }
+        await getRepository(WorkerOffs).insert({
+          fromTime: order.fromTime,
+          toTime: order.toTime,
+          orderId: order.id,
+          userId: workerId,
+          date: order.date
+        });
+      } catch (e) {
+        console.log(e);
+        throw new Error('Error trying to submit');
       }
     }
 
-    // if (closeWorkers.length > 1){
-
-    // }
-
-    return res.status(200).send({
-      code: 200,
-      data: { availableWorkers, suggestedWorkers, data: response.data }
-    });
-  };
 }
 
 export default AdminOrderController;

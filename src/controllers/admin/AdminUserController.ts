@@ -391,7 +391,7 @@ class AdminUserController {
       user = await this.users().findOneOrFail({
         where: req.query,
         relations: {
-          addresses: true
+          addresses: { district: true }
         }
       });
     } catch (error) {

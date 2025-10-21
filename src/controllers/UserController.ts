@@ -1,25 +1,20 @@
 import axios from 'axios';
-import * as bcrypt from 'bcryptjs';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import moment from 'jalali-moment';
-import * as jwt from 'jsonwebtoken';
-import { Between, getRepository, In } from 'typeorm';
-import config from '../config/config';
+import { getRepository, In } from 'typeorm';
 import { Address } from '../entity/Address';
 import { Discount } from '../entity/Discount';
 import Media from '../entity/Media';
 import { Service } from '../entity/Service';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
-import { dataTypes, roles } from '../utils/enums';
-import { generateCode, jwtDecode, signJWT } from '../utils/funs';
+import { roles } from '../utils/enums';
+import { jwtDecode, signJWT } from '../utils/funs';
 import media from '../utils/media';
-import sms from '../utils/sms';
 
 class UserController {
   static users = () => getRepository(User);
-  static workerOffs = () => getRepository(WorkerOffs);
 
   static getUser = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
