@@ -114,22 +114,43 @@ class UserController {
       });
     }
     if (!user.isVerified) {
-      const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
-        nationalCode: nationalCode,
-        mobileNumber: user.phoneNumber
-      }, {
-        headers: {
-          Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-          'Content-type': 'application/json'
-        }
-      });
+      try {
 
-      if (!res2.data?.matched) {
+        const res2 = await axios.post('https://service.zohal.io/api/v0/services/inquiry/shahkar', {
+          national_code: nationalCode,
+          mobile: user.phoneNumber
+        }, {
+          headers: {
+            Authorization: 'Bearer a44b70323d6f54bda1a2a49900fdede2b7f92a92',
+            'Content-type': 'application/json'
+          }
+        });
+        console.log(res2?.data?.response_body);
+      }catch (e) {
+        console.log(e.response.data);
         return res.status(400).send({
           code: 1005,
           data: 'کد ملی با شماره تلفن تطابق ندارد'
         });
       }
+    }
+      // ehraz.io
+      // const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+      //   nationalCode: nationalCode,
+      //   mobileNumber: user.phoneNumber
+      // }, {
+      //   headers: {
+      //     Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+      //     'Content-type': 'application/json'
+      //   }
+      // });
+      //
+      // if (!res2.data?.matched) {
+      //   return res.status(400).send({
+      //     code: 1005,
+      //     data: 'کد ملی با شماره تلفن تطابق ندارد'
+      //   });
+      // }
       // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-similarity', {
       //   nationalCode: nationalCode,
       //   birthDate: '1378/02/02',
@@ -150,7 +171,6 @@ class UserController {
       //     data: res3.data
       //   });
       // }
-    }
     if (!user.isBlockSMS) {
       // sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
     }
