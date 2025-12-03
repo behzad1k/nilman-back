@@ -784,8 +784,8 @@ class AdminOrderController {
           sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
         }
         await getRepository(WorkerOffs).insert({
-          fromTime: order.fromTime,
-          toTime: order.toTime,
+          fromTime: order.fromTime - 1,
+          toTime: order.toTime + 1,
           orderId: order.id,
           userId: workerId,
           date: order.date

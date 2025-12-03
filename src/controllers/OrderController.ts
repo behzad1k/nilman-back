@@ -275,9 +275,8 @@ class OrderController {
       isUrgent
     } = req.body;
     let user, serviceObj, attributeObjs: Service[] = [], addressObj, worker, discountObj: Discount;
+
     if ((!isUrgent ? date == moment().format('jYYYY/jMM/jDD') || (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().add(24, 'h').format('HH')) > time) : false) ||
-      (date == '1403/12/30') ||
-      (date == '1403/12/29') ||
       (date == moment().format('jYYYY/jMM/jDD') && Number(moment().format('HH')) > (time - 5)) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 16 && Number(moment().format('HH')) < 18 && time < 10) ||
       (date == moment().add(1, 'd').format('jYYYY/jMM/jDD') && Number(moment().format('HH')) >= 18 && time < 12)) {
@@ -1085,8 +1084,8 @@ class OrderController {
           await getRepository(WorkerOffs).insert({
             userId: order.workerId,
             orderId: order.id,
-            fromTime: order.fromTime,
-            toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime,
+            fromTime: order.fromTime - 1,
+            toTime: order.fromTime == order.toTime ? order.fromTime + 2 : order.toTime + 1,
             date: order.date
           });
           sms.orderAssignWorker(worker.name + ' ' + worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());

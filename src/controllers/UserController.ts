@@ -313,7 +313,7 @@ class UserController {
     if (!worker.districts.find(e => e.id == districtId)){
       return res.status(400).send({
         code: 3000,
-        data: 'Invalid Worker'
+        data: 'Invalid Worker District'
       });
     }
 
@@ -405,12 +405,12 @@ class UserController {
 
   private static getTimeSlots(fromTime: number, toTime: number): number[] {
     const slots = [];
-    for (let i = 8; i <= 20; i += 2) {
+    for (let i = 8; i <= 20; i++) {
       if (
         (i >= fromTime && i < toTime) || // Slot starts within the off period
-        (fromTime >= i && fromTime < i + 2) || // Off period starts within this slot
-        (toTime > i && toTime < i + 2) || // Off period ends within this slot
-        (fromTime <= i && toTime >= i + 2) // Slot is completely within off period
+        (fromTime >= i && fromTime < i + 1) || // Off period starts within this slot
+        (toTime > i && toTime < i + 1) || // Off period ends within this slot
+        (fromTime <= i && toTime >= i + 1) // Slot is completely within off period
       ) {
         slots.push(i);
       }
@@ -442,11 +442,11 @@ class UserController {
       }
 
       // Add the original off time
-      for (let i = 8; i <= 20; i = i + 2) {
-        if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 2)) ||
+      for (let i = 8; i <= 20; i++) {
+        if ((workerOff.fromTime >= i && workerOff.fromTime < (i + 1)) ||
           (workerOff.fromTime <= i && workerOff.toTime >= (i))) {
           result[workerOff.date].push(i);
-        } else if ((workerOff.fromTime >= i && workerOff.toTime <= (i + 2))) {
+        } else if ((workerOff.fromTime >= i && workerOff.toTime <= (i + 1))) {
           result[workerOff.date].push(i);
         }
       }
