@@ -17,6 +17,7 @@ export class AuthRoutes {
     // User
     this.router.post("/login", LoginController.login);
     this.router.post("/check", LoginController.authCheck);
+    this.router.put("/verify-user", LoginController.verifyUser);
     // Worker
     this.router.post("/login/worker", LoginController.loginWorker);
     this.router.post("/check/worker", LoginController.authCheckWorker);

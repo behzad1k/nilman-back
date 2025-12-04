@@ -1,13 +1,15 @@
+import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import jwtD from 'jwt-decode';
 import * as jwt from 'jsonwebtoken';
 import { getRepository, In } from 'typeorm';
 import config from '../config/config';
+import { Discount } from '../entity/Discount';
 import { User } from '../entity/User';
 import { WorkerOffs } from '../entity/WorkerOffs';
 import { dataTypes, roles } from '../utils/enums';
-import { generateCode, signJWT, signTmpJWT } from '../utils/funs';
+import { generateCode, jwtDecode, signJWT, signTmpJWT } from '../utils/funs';
 import sms from '../utils/sms';
 
 class LoginController {
@@ -57,7 +59,7 @@ class LoginController {
     }, '2m');
     console.log(code);
     if (!user.isBlockSMS){
-      await sms.welcome(code, phoneNumber);
+      sms.welcome(code, phoneNumber);
     }
     return res.status(200).send({
       token: token
@@ -91,7 +93,7 @@ class LoginController {
     user.lastEntrance = new Date();
     user = await this.users().save(user);
 
-    const token = await signJWT(user);
+    const token = await signTmpJWT(user, '4m');
 
     return res.status(200).send({
       code: 200,
@@ -178,7 +180,7 @@ class LoginController {
         'message': 'Code does not match'
       });
     }
-    const newToken = user.isVerified ? await signJWT(user) : await signTmpJWT(user, 2000);
+    const newToken = user.isVerified ? await signJWT(user) : null;
 
     try {
       await getRepository(User).update({ id: userId }, { lastEntrance: new Date() });
@@ -248,6 +250,139 @@ class LoginController {
       }
     });
   };
+
+  static verifyUser = async (req: Request, res: Response): Promise<Response> => {
+    const {
+      name,
+      lastName,
+      nationalCode,
+      phoneNumber,
+      birthday,
+      token
+    } = req.body;
+    const id = jwtDecode(token)
+
+    let user;
+    try {
+      user = await this.users().findOneOrFail({
+        where: { id: id },
+      });
+    } catch (e) {
+      return res.status(400).send({
+        code: 400,
+        data: 'Invalid User'
+      });
+    }
+
+    if (!name) {
+      return res.status(400).send({
+        code: 1002,
+        data: 'Invalid name'
+      });
+    }
+
+    if (!user.nationalCode && !nationalCode) {
+      return res.status(400).send({
+        code: 1003,
+        data: 'Invalid National Code'
+      });
+    }
+    if (!user.isVerified) {
+      try {
+
+        const res2 = await axios.post('https://service.zohal.io/api/v0/services/inquiry/shahkar', {
+          national_code: nationalCode,
+          mobile: user.phoneNumber
+        }, {
+          headers: {
+            Authorization: 'Bearer a44b70323d6f54bda1a2a49900fdede2b7f92a92',
+            'Content-type': 'application/json'
+          }
+        });
+      }catch (e) {
+        console.log(e.response.data);
+        return res.status(400).send({
+          code: 1005,
+          data: 'کد ملی با شماره تلفن تطابق ندارد'
+        });
+      }
+    }
+    // ehraz.io
+    // const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+    //   nationalCode: nationalCode,
+    //   mobileNumber: user.phoneNumber
+    // }, {
+    //   headers: {
+    //     Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+    //     'Content-type': 'application/json'
+    //   }
+    // });
+    //
+    // if (!res2.data?.matched) {
+    //   return res.status(400).send({
+    //     code: 1005,
+    //     data: 'کد ملی با شماره تلفن تطابق ندارد'
+    //   });
+    // }
+    // const res3 = await axios.post('https://ehraz.io/api/v1/info/identity-similarity', {
+    //   nationalCode: nationalCode,
+    //   birthDate: '1378/02/02',
+    //   firstName: name,
+    //   lastName: lastName,
+    //   fatherName: 'بابک',
+    //   fullName: name + ' ' + lastName
+    // }, {
+    //   headers: {
+    //     Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+    //     'Content-type': 'application/json'
+    //   }
+    // });
+    // console.log(res3.data);
+    // if (!res3.data?.matched) {
+    //   return res.status(400).send({
+    //     code: 1006,
+    //     data: res3.data
+    //   });
+    // }
+    // if (!user.isBlockSMS) {
+      // sms.referral(user.name + ' ' + user.lastName, user.code, user.phoneNumber);
+    // }
+    // try {
+    //   await getRepository(Discount).insert({
+    //     userId: user.id,
+    //     title: 'welcome',
+    //     percent: 10,
+    //     code: user.code,
+    //     active: true,
+    //     maxCount: 10,
+    //   });
+    // } catch (e) {
+    //   console.log(e);
+    //   return res.status(409).send({ 'code': 409 });
+    // }
+
+    user.name = name;
+    user.lastName = lastName;
+    user.nationalCode = nationalCode;
+    user.phoneNumber = phoneNumber;
+    user.birthday = birthday;
+    user.isVerified = true;
+
+    try {
+      await this.users().save(user);
+
+    } catch (e) {
+      return res.status(409).send({ 'code': 409 });
+
+    }
+
+    return res.status(200).send({
+      code: 200,
+      user: user,
+      token: await signJWT(user)
+    });
+  };
+
 }
 
 export default LoginController;
