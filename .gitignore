@@ -11,3 +11,4 @@ public/
 yarn.lock
 .env
 .env.development
+src/logs
