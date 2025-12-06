@@ -1033,7 +1033,7 @@ class AdminOrderController {
       console.log(e);
       throw new Error('Error trying to submit');
     }
-  };
+  }
 }
 
 export default AdminOrderController;
