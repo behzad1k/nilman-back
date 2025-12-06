@@ -33,7 +33,7 @@ class AdminUserController {
       query,
       page
     } = req.query;
-
+    let users
     // If no pagination, return minimal data with only essential relations
     if (!page) {
       users = await getRepository(User).find({
