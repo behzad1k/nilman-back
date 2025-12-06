@@ -701,26 +701,17 @@ class AdminOrderController {
       toTime: reqToTime,
       address,
       date: dueDate
-    } = req.body;
-    let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string;
+    } = req.body
+
+    let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string
 
     if (id) {
       try {
         order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
-          relations: {
-            orderServices: true,
-            address: true,
-            service: true,
-            user: true,
-          },
-          select: {
-            id: true,
-            fromTime: true,
-            toTime: true,
-            date: true
-          }
+          relations: ['service', 'user', 'orderServices', 'address.district']
         });
+
         orderServices = order.orderServices;
         district = order?.address?.district;
         fromTime = order?.fromTime;
@@ -728,36 +719,40 @@ class AdminOrderController {
         date = order?.date;
       } catch (error) {
         console.log(error);
-        return res.status(400).send({
+        res.status(400).send({
           code: 400,
           data: 'Invalid Order'
         });
+        return;
       }
     } else {
       orderServices = attributes;
       fromTime = reqFromTime;
       toTime = reqToTime;
       date = dueDate;
-
       if (address) {
+
         if (address.districtId) {
-          district = address.districtId;
+          district = address.districtId
         } else {
-          const { lat, lng } = req.query;
-          try {
-            const result = await axios.get('https://api.neshan.org/v5/reverse', {
-              params: { lat, lng },
-              headers: { 'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0' },
-              timeout: 5000
-            });
-            district = result.data?.municipality_zone;
-          } catch (e) {
-            console.log('Location API error:', e);
-          }
+          const {
+            lat,
+            lng
+          } = req.query;
+          const result = await axios.get('https://api.neshan.org/v5/reverse', {
+            params: {
+              lat: lat,
+              lng: lng
+            },
+            headers: {
+              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+            }
+          });
+          district = result.data?.municipality_zone;
         }
       }
     }
-    // Get busy workers using optimized query
+
     const busyWorkerIds = await getRepository(WorkerOffs)
     .find({
       select: ['userId'],
@@ -814,7 +809,7 @@ class AdminOrderController {
       },
       relations: {
         jobs: { address: true }
-    }
+      }
     })
     let response: any = {}
 
@@ -826,26 +821,25 @@ class AdminOrderController {
           closeWorkers[suggestedWorker.id] = closeOrder.address;
 
           response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
-              params: {
-                type: 'car',
+            params: {
+              type: 'car',
               origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
               destinations: order.address.latitude + ',' + order.address.longitude,
-              },
+            },
             headers: {
               'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
             }
-            });
+          });
 
           const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
           suggestedWorkers[suggestedWorkerIndex] = {
             ...suggestedWorkers[suggestedWorkerIndex],
             approximatedDistance: response.data.rows[0].elements[0].distance,
             approximatedTime: response.data.rows[0].elements[0].duration
-              };
-            }
+          };
         }
       }
-
+    }
     return res.status(200).send({
       code: 200,
       data: {
@@ -853,9 +847,8 @@ class AdminOrderController {
         suggestedWorkers,
         data: response.data
       }
-    })
-  };
-
+    });
+  }
   private static assignOrder = async (order: Order, workerId: number, shouldSendSms: boolean) => {
     let worker: User;
 
