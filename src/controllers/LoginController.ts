@@ -93,7 +93,7 @@ class LoginController {
     user.lastEntrance = new Date();
     user = await this.users().save(user);
 
-    const token = await signTmpJWT(user, '4m');
+    const token = await signJWT(user, '30d');
 
     return res.status(200).send({
       code: 200,

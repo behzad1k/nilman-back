@@ -57,6 +57,7 @@ export default class AuthController {
       if (!user) {
         return res.status(401).json({ status: "error", code: "401" });
       }
+      console.log(user);
       if (user.role !== roles.WORKER) {
         return res.status(403).json({ status: "error", code: "403" });
       } else {
