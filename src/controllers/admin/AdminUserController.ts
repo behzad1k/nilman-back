@@ -33,15 +33,28 @@ class AdminUserController {
       query,
       page
     } = req.query;
-    let users;
 
+    // If no pagination, return minimal data with only essential relations
     if (!page) {
       users = await getRepository(User).find({
         where: {
-          role: role ? role : In(Object.values(roles)) as any
+          role: role ? role as any : In(Object.values(roles)) as any
         },
         relations: {
           services: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          lastName: true,
+          phoneNumber: true,
+          role: true,
+          status: true,
+          services: {
+            id: true,
+            title: true,
+            slug: true
+          }
         }
       });
       return res.status(200).send({ code: 200, data: users });
@@ -53,53 +66,78 @@ class AdminUserController {
       { phoneNumber: Like(`%${query}%`) },
     ];
 
-    const relationsObj = {
-      jobs: true
-    };
+    const relationsObj: any = {};
 
+    // Only load jobs count, not full relations for list view
     if (Array.isArray(relations)) {
-      await Promise.all(relations.map(async e => {
-        if (await getRepository(User).metadata.relations.find(relation => relation.propertyName == e)) {
-          relationsObj[e] = true;
+      relations.forEach(relationName => {
+        const relation = getRepository(User).metadata.relations.find(r => r.propertyName === relationName);
+        if (relation) {
+          relationsObj[relationName] = true;
         }
-      }));
+      });
     }
 
     const options: FindManyOptions = {
       relations: {
         services: true,
-        jobs: true,
         ...relationsObj
+      },
+      select: {
+        id: true,
+        name: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        status: true,
+        nationalCode: true,
+        isVerified: true,
+        walletBalance: true,
+        createdAt: true,
+        lastEntrance: true,
+        services: {
+          id: true,
+          title: true,
+          slug: true
+        }
       },
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
       order: {
-        id: 'ASC',
+        id: 'DESC', // DESC is usually faster for recent records
       },
       where: role ? baseWhere.map(condition => ({ ...condition, role })) : baseWhere
     };
 
-    if (role) {
-      options.where['role'] = role;
-    }
-
     if (phoneNumber) {
-      options.where['phoneNumber'] = Like(`%${phoneNumber}%`);
+      options.where = { phoneNumber: Like(`%${phoneNumber}%`) };
     }
+
     try {
-      const [users, count] = await getRepository(User).findAndCount(options);
+      // Use parallel queries for better performance
+      const [usersResult, rolesCountResult] = await Promise.all([
+        getRepository(User).findAndCount(options),
+        // Use aggregation for role counts instead of loading all users
+        getRepository(User)
+        .createQueryBuilder('user')
+        .select('user.role', 'role')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('user.role')
+        .getRawMany()
+      ]);
 
-      const allUsers = await getRepository(User).find();
+      const [users, count] = usersResult;
 
-      const rolesCount = Object.entries(roles).reduce((acc, [role, roleTitle]) => ({
-        ...acc,
-        [role]: {
-          count: allUsers.filter(e => e.role === role).length,
-          title: roleTitle
-        }
-      }), {
+      // Transform role counts into the expected format
+      const rolesCount = rolesCountResult.reduce((acc, item) => {
+        acc[item.role] = {
+          count: parseInt(item.count),
+          title: roles[item.role] || item.role
+        };
+        return acc;
+      }, {
         all: {
-          count: allUsers.length,
+          count: count,
           title: 'All'
         }
       });
@@ -145,12 +183,32 @@ class AdminUserController {
 
     const { id } = req.params;
 
-    let user = undefined;
-    const isEdit = id != null || id == ''
+    let user: User;
 
     if (id) {
       try {
-        user = await getRepository(User).findOneOrFail({ where: { id: Number(id) } });
+        user = await getRepository(User).findOneOrFail({
+          where: { id: Number(id) },
+          select: {
+            id: true,
+            name: true,
+            lastName: true,
+            phoneNumber: true,
+            role: true,
+            status: true,
+            nationalCode: true,
+            username: true,
+            code: true,
+            percent: true,
+            isVerified: true,
+            isWorkerChoosable: true,
+            walletBalance: true,
+            shebaNumber: true,
+            bankName: true,
+            hesabNumber: true,
+            cardNumber: true
+          }
+        });
       } catch (e) {
         console.log(e);
         return res.status(400).send({
@@ -182,26 +240,40 @@ class AdminUserController {
     }
     user.role = role || roles.USER;
 
-    if (role == roles.SUPER_ADMIN || role == roles.OPERATOR || role == roles.WORKER && password && username) {
+    if ((role == roles.SUPER_ADMIN || role == roles.OPERATOR || role == roles.WORKER) && password && username) {
       user.username = username;
       user.password = password;
       await user.hashPassword();
     }
 
-
     if (role == roles.WORKER){
       if (services){
-        let allServices = services;
-          for (const serviceId of services) {
-            const serviceChildren = await getTreeRepository(Service).findDescendants(await getRepository(Service).findOneBy({ id: serviceId }), { depth: 5 });
-            allServices = [...allServices, ...serviceChildren.map(e => e.id)];
-          }
-        user.services = await getRepository(Service).findBy({ id: In(allServices) });
+        // Optimize: Use Set to avoid duplicates and reduce DB queries
+        const allServiceIds = new Set<number>(services);
+
+        // Batch load all service descendants
+        const serviceDescendants = await Promise.all(
+          services.map(async (serviceId: number) => {
+            const service = await getRepository(Service).findOneBy({ id: serviceId });
+            if (!service) return [];
+            const descendants = await getTreeRepository(Service).findDescendants(service, { depth: 5 });
+            return descendants.map(s => s.id);
+          })
+        );
+
+        // Flatten and add to Set
+        serviceDescendants.flat().forEach(id => allServiceIds.add(id));
+
+        user.services = await getRepository(Service).findBy({
+          id: In(Array.from(allServiceIds))
+        });
       }
+
       if (districts){
-        user.districts = await getRepository(District).findBy({ id: In(districts)})
+        user.districts = await getRepository(District).findBy({ id: In(districts) });
       }
-      user.isVerified = true
+
+      user.isVerified = true;
       user.shebaNumber = shebaNumber;
       user.bankName = bankName;
       user.hesabNumber = hesabNumber;
@@ -213,9 +285,9 @@ class AdminUserController {
       res.status(400).send(errors);
       return;
     }
+
     try {
       await this.users().save(user);
-
     } catch (e) {
       console.log(e);
       return res.status(409).send({
@@ -232,25 +304,26 @@ class AdminUserController {
 
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let user;
+
     try {
-      user = await this.users().findOneOrFail({
-        where: { id: Number(id) },
-      });
-    } catch (error) {
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid UserId'
-      });
-      return;
-    }
-    try {
-      await this.users().delete(user.id);
+      const result = await this.users().delete({ id: Number(id) });
+
+      if (result.affected === 0) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid UserId'
+        });
+      }
     } catch (e) {
-      res.status(409).send('error try again later');
+      console.log(e);
+      return res.status(409).send({
+        code: 409,
+        data: 'error try again later'
+      });
     }
+
     return res.status(200).send({
-      code: 204,
+      code: 200,
       data: 'Success'
     });
   };
@@ -260,7 +333,10 @@ class AdminUserController {
     let user;
 
     try {
-      user = await this.users().findOneOrFail({ where: { id: Number(id) } });
+      user = await this.users().findOneOrFail({
+        where: { id: Number(id) },
+        select: ['id', 'name', 'lastName', 'profileId']
+      });
     } catch (error) {
       return res.status(400).send({
         code: 1002,
@@ -290,213 +366,312 @@ class AdminUserController {
 
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let user: User = null;
+
     try {
-      user = await this.users().findOneOrFail({
-        where: { id: Number(id) },
-        relationLoadStrategy: 'query',
-        relations: {
-          services: true,
-          workerOffs: { order: true },
-          profilePic: true,
-          districts: true,
-          transactions: { media: true },
-          jobs: { feedback: true }
+      // Use query builder for better control over loaded data
+      const user = await this.users()
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.services', 'services')
+      .leftJoinAndSelect('user.profilePic', 'profilePic')
+      .leftJoinAndSelect('user.districts', 'districts')
+      .leftJoinAndSelect('user.transactions', 'transactions')
+      .leftJoinAndSelect('transactions.media', 'transactionMedia')
+      .leftJoinAndSelect('user.workerOffs', 'workerOffs', 'workerOffs.date >= :date', {
+        date: moment().subtract(1, 'day').format('jYYYY/jMM/jDD')
+      })
+      .leftJoinAndSelect('workerOffs.order', 'order')
+      .loadRelationCountAndMap('user.jobsCount', 'user.jobs')
+      .loadRelationCountAndMap('user.ordersCount', 'user.orders')
+      .where('user.id = :id', { id: Number(id) })
+      .getOne();
+
+      if (!user) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid Id'
+        });
+      }
+
+      // Load jobs separately with pagination/limit to avoid loading too much data
+      const recentJobs = await getRepository(Order).find({
+        where: { workerId: Number(id) },
+        relations: { feedback: true, service: true },
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          date: true,
+          fromTime: true,
+          toTime: true,
+          finalPrice: true,
+          createdAt: true,
+          service: {
+            id: true,
+            title: true
+          },
+          feedback: {
+            id: true,
+            rating: true,
+            description: true
+          }
+        },
+        order: { createdAt: 'DESC' },
+        take: 50 // Limit to recent 50 jobs
+      });
+
+      return res.status(200).send({
+        code: 200,
+        data: {
+          ...user,
+          recentJobs
         }
       });
     } catch (error) {
-      res.status(400).send({
-        code: 1002,
+      console.log(error);
+      return res.status(400).send({
+        code: 400,
         data: 'Invalid Id'
       });
-      return;
     }
-    return res.status(200).send({
-      code: 200,
-      data: user
-    });
   };
+
   static active = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const { status } = req.body;
-    let user = null;
+
     try {
-      user = await this.users().update(
+      const result = await this.users().update(
         { id: Number(id) },
         { status: status }
       );
+
+      if (result.affected === 0) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Invalid UserId'
+        });
+      }
+
+      return res.status(200).send({
+        code: 200,
+        data: 'Success'
+      });
     } catch (error) {
-      res.status(409).send({
+      console.log(error);
+      return res.status(409).send({
         code: 409,
         data: 'Something went wrong'
       });
-      return;
     }
-    return res.status(200).send({
-      code: 200,
-      data: user
-    });
   };
-  static verifyUser = async (req: Request, res: Response): Promise<Response> => {
-    const { nationalCode, phoneNumber} = req.body;
-    const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
-      nationalCode: nationalCode,
-      mobileNumber: phoneNumber
-    }, {
-      headers: {
-        Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
-        'Content-type': 'application/json'
-      }
-    });
 
-    if (!res2.data?.matched) {
-      return res.status(400).send({
-        code: 1005,
-        data: 'کد ملی با شماره تلفن تطابق ندارد'
+  static verifyUser = async (req: Request, res: Response): Promise<Response> => {
+    const { nationalCode, phoneNumber } = req.body;
+
+    try {
+      const res2 = await axios.post('https://ehraz.io/api/v1/match/national-with-mobile', {
+        nationalCode: nationalCode,
+        mobileNumber: phoneNumber
+      }, {
+        headers: {
+          Authorization: 'Token 51ee79f712dd7b0e9e19cb4f35a972ade6f3f42f',
+          'Content-type': 'application/json'
+        },
+        timeout: 10000 // Add timeout
+      });
+
+      if (!res2.data?.matched) {
+        return res.status(400).send({
+          code: 1005,
+          data: 'کد ملی با شماره تلفن تطابق ندارد'
+        });
+      }
+
+      return res.status(200).send({
+        code: 200,
+        data: 'Successful'
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({
+        code: 500,
+        data: 'Verification service error'
       });
     }
-    return res.status(200).send({
-      code: 200,
-      data: 'Successful'
-    });
-  }
+  };
 
   static textMessage = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const { text } = req.body
-    let user: User;
+    const { text } = req.body;
+
     try {
-      user = await this.users().findOneOrFail({
-        where: {
-          id: Number(id)
-        },
+      const user = await this.users().findOneOrFail({
+        where: { id: Number(id) },
+        select: ['id', 'name', 'lastName', 'phoneNumber']
+      });
+
+      sms.send(text, user.phoneNumber);
+
+      return res.status(200).send({
+        code: 200,
+        data: { user, text }
       });
     } catch (error) {
-      res.status(400).send({
-        code: 1002,
+      console.log(error);
+      return res.status(400).send({
+        code: 400,
         data: 'Invalid Id'
       });
-      return;
     }
-    sms.send(text, user.phoneNumber)
-    return res.status(200).send({
-      code: 200,
-      data: { user, text }
-    });
-  }
+  };
 
   static findBy = async (req: Request, res: Response): Promise<Response> => {
-    let user: User;
     try {
-      user = await this.users().findOneOrFail({
-        where: req.query,
+      const user = await this.users().findOneOrFail({
+        where: req.query as any,
         relations: {
           addresses: { district: true }
+        },
+        select: {
+          id: true,
+          name: true,
+          lastName: true,
+          phoneNumber: true,
+          nationalCode: true,
+          role: true,
+          status: true,
+          addresses: {
+            id: true,
+            title: true,
+            description: true,
+            latitude: true,
+            longitude: true,
+            district: {
+              id: true,
+              title: true,
+              code: true
+            }
+          }
         }
       });
-    } catch (error) {
-      res.status(400).send({
-        code: 1002,
-        data: 'Invalid Id'
-      });
-      return;
-    }
 
-    return res.status(200).send({
-      code: 200,
-      data: user
-    });
-  }
+      return res.status(200).send({
+        code: 200,
+        data: user
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(400).send({
+        code: 400,
+        data: 'User not found'
+      });
+    }
+  };
+
   static workerOff = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const {
-      date,
-      fromTime,
-      toTime
-    } = req.body;
-    let user = null;
+    const { date, fromTime, toTime } = req.body;
+
     try {
-      user = await getRepository(WorkerOffs).insert(
-        {
-          userId: Number(id),
-          date: date,
-          fromTime: Number(fromTime),
-          toTime: Number(toTime)
-        }
-      );
+      const result = await getRepository(WorkerOffs).insert({
+        userId: Number(id),
+        date: date,
+        fromTime: Number(fromTime),
+        toTime: Number(toTime)
+      });
+
+      return res.status(200).send({
+        code: 200,
+        data: result
+      });
     } catch (error) {
-      res.status(409).send({
+      console.log(error);
+      return res.status(409).send({
         code: 409,
         data: 'Something went wrong'
       });
-      return;
     }
-    return res.status(200).send({
-      code: 200,
-      data: user
-    });
   };
+
   static deleteWorkerOff = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
+
     try {
-      await getRepository(WorkerOffs).delete(
-        {
-          id: Number(id)
-        }
-      );
+      const result = await getRepository(WorkerOffs).delete({ id: Number(id) });
+
+      if (result.affected === 0) {
+        return res.status(400).send({
+          code: 400,
+          data: 'WorkerOff not found'
+        });
+      }
+
+      return res.status(200).send({
+        code: 200,
+        data: 'Successful'
+      });
     } catch (error) {
-      res.status(409).send({
+      console.log(error);
+      return res.status(409).send({
         code: 409,
         data: 'Something went wrong'
       });
-      return;
     }
-    return res.status(200).send({
-      code: 200,
-      data: 'Successful'
-    });
   };
+
   static excelExport = async (req: Request, res: Response): Promise<Response> => {
     const { type } = req.body;
 
-    const where: FindOptionsWhere<User> = {}
-    if (type != 'all'){
-      where.role = type
+    const where: FindOptionsWhere<User> = {};
+    if (type != 'all') {
+      where.role = type as any;
     }
 
-    const users = await getRepository(User).find({ where: where });
+    // Only select necessary fields for export
+    const users = await getRepository(User).find({
+      where: where,
+      select: ['phoneNumber', 'name', 'lastName']
+    });
 
     const schema = [
       {
         column: 'PhoneNumber',
         type: String,
-        value: user => user.phoneNumber?.toString().substr(1)
-      }, 
+        value: (user: User) => user.phoneNumber?.toString().substring(1) || ''
+      },
       {
         column: 'Name',
         type: String,
-        value: user => user.name?.toString()
+        value: (user: User) => user.name?.toString() || ''
       },
       {
         column: 'Last Name',
         type: String,
-        value: user => user.lastName?.toString()
+        value: (user: User) => user.lastName?.toString() || ''
       },
-    ]
+    ];
 
     const time = moment().unix();
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'excel', 'user', time + '.xlsx')
-    await fsPromisses.writeFile(filePath , '');
-    await writeXlsxFile(users, {
-      schema,
-      filePath: filePath,
-    })
-    console.log(req.protocol);
-    return res.status(200).send({
-      code: 200,
-      data: { link: 'https://' + req.get('host') + '/public/uploads/excel/user/' + time + '.xlsx'}
-    });
-  }
+    const filePath = path.join(process.cwd(), 'public', 'uploads', 'excel', 'user', time + '.xlsx');
+
+    try {
+      await writeXlsxFile(users, {
+        schema,
+        filePath: filePath,
+      });
+
+      return res.status(200).send({
+        code: 200,
+        data: { link: 'https://' + req.get('host') + '/public/uploads/excel/user/' + time + '.xlsx' }
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({
+        code: 500,
+        data: 'Error generating Excel file'
+      });
+    }
+  };
 }
 
 export default AdminUserController;
