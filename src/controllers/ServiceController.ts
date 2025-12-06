@@ -24,7 +24,7 @@ class ServiceController {
       } else {
         services = await getTreeRepository(Service).findTrees({
           depth: 4,
-          relations: ['media', 'parent']
+          relations: ['media', 'parent', 'addOns', 'attributes']
         });
       }
       serviceCache.set(cacheKey, services);
