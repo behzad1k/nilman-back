@@ -55,6 +55,8 @@ class AdminUserController {
             title: true,
             slug: true
           }
+        }, order: {
+          status: 'DESC'
         }
       });
       return res.status(200).send({ code: 200, data: users });
