@@ -711,6 +711,8 @@ class AdminOrderController {
           relations: {
             orderServices: true,
             address: true,
+            service: true,
+            user: true,
           },
           select: {
             id: true,
@@ -755,114 +757,103 @@ class AdminOrderController {
         }
       }
     }
-
     // Get busy workers using optimized query
     const busyWorkerIds = await getRepository(WorkerOffs)
-    .createQueryBuilder('wo')
-    .select('DISTINCT wo.userId', 'userId')
-    .where('wo.date = :date', { date })
-    .andWhere(
-      '(wo.fromTime >= :fromTime AND wo.toTime < :toTime) OR ' +
-      '(wo.fromTime <= :fromTime AND wo.toTime > :toTime) OR ' +
-      '(wo.fromTime <= :fromTime AND wo.toTime > :fromTime) OR ' +
-      '(wo.fromTime < :toTime AND wo.toTime > :toTime)',
-      { fromTime, toTime }
-    )
-    .getRawMany();
-
-    const busyIds = busyWorkerIds.map(w => w.userId);
+    .find({
+      select: ['userId'],
+      where: [
+        {
+          date: date,
+          fromTime: MoreThanOrEqual(fromTime),
+          toTime: LessThan(toTime)
+        },
+        {
+          date: date,
+          fromTime: LessThanOrEqual(fromTime),
+          toTime: MoreThan(toTime)
+        },
+        {
+          date: date,
+          fromTime: LessThanOrEqual(fromTime),
+          toTime: MoreThan(fromTime)
+        },
+        {
+          date: date,
+          fromTime: LessThan(toTime),
+          toTime: MoreThan(toTime)
+        }
+      ]
+    });
     const requiredServiceIds = orderServices?.map(e => e.serviceId);
-    // Optimized worker query
-    const potentialWorkers = await this.users()
-    .createQueryBuilder('user')
-    .leftJoinAndSelect('user.services', 'services')
-    .where('user.role = :role', { role: roles.WORKER })
-    .andWhere('user.status = 1')
-    .andWhere('services.id IN (:...serviceIds)', { serviceIds: requiredServiceIds })
-    .andWhere(busyIds.length > 0 ? 'user.id NOT IN (:...busyIds)' : '1=1', busyIds.length > 0 ? { busyIds } : {})
-    .select(['user.id', 'user.name', 'user.lastName'])
-    .addSelect(['services.id'])
-    .getMany();
+    // First get the smaller set of potential workers
+    const potentialWorkers = await this.users().find({
+      select: ['id', 'name', 'lastName'],
+      relations: ['services'],
+      where: {
+        role: roles.WORKER,
+        status: 1,
+        services: { id: In(requiredServiceIds) },
+        id: Not(In(busyWorkerIds.map(w => w.userId)))
+      }
+    });
 
-    // Filter for exact service matches
+    // Then filter for exact service matches on the smaller array
     const availableWorkers = potentialWorkers.filter(worker =>
       requiredServiceIds.every(serviceId =>
         worker.services.some(service => service.id === serviceId)
       )
     );
 
-    if (availableWorkers.length === 0) {
-      return res.status(200).send({
-        code: 200,
-        data: {
-          availableWorkers: [],
-          suggestedWorkers: [],
-          data: null
-        }
-      });
+    const suggestedWorkers: any = await getRepository(User).find({
+      where: {
+        role: roles.WORKER,
+        id: In(availableWorkers.map(w => w.id)),
+        // districts: {
+        //   code: district
+        // }
+      },
+      relations: {
+        jobs: { address: true }
     }
-
-    // Get suggested workers with recent jobs
-    const suggestedWorkers: any = await getRepository(User)
-    .createQueryBuilder('user')
-    .leftJoinAndSelect('user.jobs', 'jobs', 'jobs.date = :date AND jobs.fromTime < :fromTime AND jobs.fromTime >= :minTime', {
-      date,
-      fromTime,
-      minTime: fromTime - 2
     })
-    .leftJoinAndSelect('jobs.address', 'jobAddress')
-    .where('user.id IN (:...ids)', { ids: availableWorkers.map(w => w.id) })
-    .select(['user.id', 'user.name', 'user.lastName'])
-    .addSelect(['jobs.id', 'jobs.date', 'jobs.fromTime'])
-    .addSelect(['jobAddress.latitude', 'jobAddress.longitude'])
-    .getMany();
+    let response: any = {}
 
-    let response: any = {};
+    if (id) {
+      const closeWorkers: any = {};
+      for (const suggestedWorker of suggestedWorkers) {
+        const closeOrder: Order = suggestedWorker.jobs.find(e => e.date == date && e.fromTime < fromTime && e.fromTime >= fromTime - 2);
+        if (closeOrder) {
+          closeWorkers[suggestedWorker.id] = closeOrder.address;
 
-    // Calculate distances for workers with nearby jobs (limit API calls)
-    if (id && order) {
-      const workersWithJobs = suggestedWorkers.filter(w => w.jobs && w.jobs.length > 0);
-
-      for (const worker of workersWithJobs.slice(0, 5)) { // Limit to 5 API calls
-        const closeOrder = worker.jobs[0];
-        if (closeOrder?.address) {
-          try {
-            const distanceResult = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
+          response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
               params: {
                 type: 'car',
-                origins: `${closeOrder.address.latitude},${closeOrder.address.longitude}`,
-                destinations: `${order.address.latitude},${order.address.longitude}`,
+              origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
+              destinations: order.address.latitude + ',' + order.address.longitude,
               },
-              headers: { 'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0' },
-              timeout: 5000
+            headers: {
+              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+            }
             });
 
-            const workerIndex = suggestedWorkers.findIndex(w => w.id === worker.id);
-            if (workerIndex !== -1 && distanceResult.data?.rows?.[0]?.elements?.[0]) {
-              suggestedWorkers[workerIndex] = {
-                ...suggestedWorkers[workerIndex],
-                approximatedDistance: distanceResult.data.rows[0].elements[0].distance,
-                approximatedTime: distanceResult.data.rows[0].elements[0].duration
+          const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
+          suggestedWorkers[suggestedWorkerIndex] = {
+            ...suggestedWorkers[suggestedWorkerIndex],
+            approximatedDistance: response.data.rows[0].elements[0].distance,
+            approximatedTime: response.data.rows[0].elements[0].duration
               };
             }
-          } catch (e) {
-            console.log('Distance calculation error for worker:', worker.id);
-          }
         }
       }
-    }
 
     return res.status(200).send({
       code: 200,
       data: {
-        availableWorkers: availableWorkers.map(w => ({ id: w.id, name: w.name, lastName: w.lastName })),
-        suggestedWorkers: suggestedWorkers.map(w => {
-          const { jobs, ...rest } = w;
-          return rest;
-        }),
+        availableWorkers,
+        suggestedWorkers,
         data: response.data
       }
-    });
+    })
   };
 
   private static assignOrder = async (order: Order, workerId: number, shouldSendSms: boolean) => {
