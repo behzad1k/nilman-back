@@ -947,7 +947,7 @@ class AdminOrderController {
     }
 
     // Get suggested workers with recent jobs
-    const suggestedWorkers = await getRepository(User)
+    const suggestedWorkers: any = await getRepository(User)
     .createQueryBuilder('user')
     .leftJoinAndSelect('user.jobs', 'jobs', 'jobs.date = :date AND jobs.fromTime < :fromTime AND jobs.fromTime >= :minTime', {
       date,
