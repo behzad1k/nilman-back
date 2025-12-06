@@ -44,29 +44,6 @@ class AdminOrderController {
           toTime: true,
           finalPrice: true,
           price: true,
-          worker: {
-            id: true,
-            name: true,
-            lastName: true
-          },
-          service: {
-            id: true,
-            title: true
-          },
-          orderServices: {
-            id: true,
-            serviceId: true,
-            service: {
-              id: true,
-              title: true
-            }
-          },
-          user: {
-            id: true,
-            name: true,
-            lastName: true,
-            phoneNumber: true
-          }
         }
       });
       return res.status(200).send({ code: 200, data: orders });
@@ -216,20 +193,6 @@ class AdminOrderController {
             finalPrice: true,
             workerId: true,
             workerPercent: true,
-            orderServices: {
-              id: true,
-              serviceId: true,
-              service: {
-                id: true,
-                section: true
-              }
-            },
-            worker: {
-              id: true,
-              name: true,
-              lastName: true,
-              phoneNumber: true
-            }
           }
         });
       } catch (error) {
@@ -329,13 +292,6 @@ class AdminOrderController {
           isUrgent: true,
           workerId: true,
           date: true,
-          orderServices: {
-            id: true,
-            serviceId: true,
-            service: {
-              section: true
-            }
-          }
         }
       });
     } catch (error) {
@@ -454,10 +410,6 @@ class AdminOrderController {
           paymentId: true,
           finalPrice: true,
           status: true,
-          user: {
-            id: true,
-            walletBalance: true
-          }
         }
       });
 
@@ -545,15 +497,6 @@ class AdminOrderController {
           id: true,
           finalPrice: true,
           paymentId: true,
-          user: {
-            name: true,
-            lastName: true,
-            phoneNumber: true
-          },
-          payment: {
-            id: true,
-            randomCode: true
-          }
         }
       });
 
@@ -676,33 +619,6 @@ class AdminOrderController {
           toTime: true,
           workerId: true,
           status: true,
-          service: {
-            id: true,
-            title: true
-          },
-          user: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-            isBlockSMS: true
-          },
-          worker: {
-            id: true,
-            name: true,
-            lastName: true,
-            phoneNumber: true
-          },
-          orderServices: {
-            id: true,
-            service: {
-              id: true,
-              title: true
-            }
-          },
-          address: {
-            id: true,
-            description: true
-          }
         }
       });
     } catch (error) {
