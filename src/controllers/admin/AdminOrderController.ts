@@ -786,28 +786,23 @@ class AdminOrderController {
       address,
       date: dueDate
     } = req.body;
-
     let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string;
 
     if (id) {
       try {
-        order = await this.orders().findOne({
+        order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
           relations: {
             orderServices: true,
-            address: {
-              district: true
-            }
+            address: true,
+          },
+          select: {
+            id: true,
+            fromTime: true,
+            toTime: true,
+            date: true
           }
         });
-
-        if (!order) {
-          return res.status(400).send({
-            code: 400,
-            data: 'Invalid Order'
-          });
-        }
-
         orderServices = order.orderServices;
         district = order?.address?.district;
         fromTime = order?.fromTime;
@@ -828,9 +823,7 @@ class AdminOrderController {
 
       if (address) {
         if (address.districtId) {
-          district = await getRepository(District).findOne({
-            where: { id: address.districtId }
-          });
+          district = address.districtId;
         } else {
           const { lat, lng } = req.query;
           try {
@@ -847,42 +840,115 @@ class AdminOrderController {
       }
     }
 
+    // Get busy workers using optimized query
     const busyWorkerIds = await getRepository(WorkerOffs)
     .createQueryBuilder('wo')
     .select('DISTINCT wo.userId', 'userId')
     .where('wo.date = :date', { date })
     .andWhere(
-      '((wo.fromTime < :toTime) AND (wo.toTime > :fromTime))',
+      '(wo.fromTime >= :fromTime AND wo.toTime < :toTime) OR ' +
+      '(wo.fromTime <= :fromTime AND wo.toTime > :toTime) OR ' +
+      '(wo.fromTime <= :fromTime AND wo.toTime > :fromTime) OR ' +
+      '(wo.fromTime < :toTime AND wo.toTime > :toTime)',
       { fromTime, toTime }
     )
     .getRawMany();
 
     const busyIds = busyWorkerIds.map(w => w.userId);
     const requiredServiceIds = orderServices?.map(e => e.serviceId);
+    // Optimized worker query
+    const potentialWorkers = await this.users()
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.services', 'services')
+    .where('user.role = :role', { role: roles.WORKER })
+    .andWhere('user.status = 1')
+    .andWhere('services.id IN (:...serviceIds)', { serviceIds: requiredServiceIds })
+    .andWhere(busyIds.length > 0 ? 'user.id NOT IN (:...busyIds)' : '1=1', busyIds.length > 0 ? { busyIds } : {})
+    .select(['user.id', 'user.name', 'user.lastName'])
+    .addSelect(['services.id'])
+    .getMany();
 
-    if (!requiredServiceIds || requiredServiceIds.length === 0) {
-      return res.status(400).send({
-        code: 400,
-        data: 'No services specified'
+    // Filter for exact service matches
+    const availableWorkers = potentialWorkers.filter(worker =>
+      requiredServiceIds.every(serviceId =>
+        worker.services.some(service => service.id === serviceId)
+      )
+    );
+
+    if (availableWorkers.length === 0) {
+      return res.status(200).send({
+        code: 200,
+        data: {
+          availableWorkers: [],
+          suggestedWorkers: [],
+          data: null
+        }
       });
     }
 
-    const queryBuilder = this.users()
+    // Get suggested workers with recent jobs
+    const suggestedWorkers: any = await getRepository(User)
     .createQueryBuilder('user')
-    .innerJoin('user.services', 'services', 'services.id IN (:...serviceIds)', { serviceIds: requiredServiceIds })
-    .where('user.role = :role', { role: roles.WORKER })
-    .andWhere('user.status = 1')
-    .select(['user.id', 'user.name', 'user.lastName']);
+    .leftJoinAndSelect('user.jobs', 'jobs', 'jobs.date = :date AND jobs.fromTime < :fromTime AND jobs.fromTime >= :minTime', {
+      date,
+      fromTime,
+      minTime: fromTime - 2
+    })
+    .leftJoinAndSelect('jobs.address', 'jobAddress')
+    .where('user.id IN (:...ids)', { ids: availableWorkers.map(w => w.id) })
+    .select(['user.id', 'user.name', 'user.lastName'])
+    .addSelect(['jobs.id', 'jobs.date', 'jobs.fromTime'])
+    .addSelect(['jobAddress.latitude', 'jobAddress.longitude'])
+    .getMany();
 
-    if (busyIds.length > 0) {
-      queryBuilder.andWhere('user.id NOT IN (:...busyIds)', { busyIds });
+    let response: any = {};
+
+    // Calculate distances for workers with nearby jobs (limit API calls)
+    if (id && order) {
+      const workersWithJobs = suggestedWorkers.filter(w => w.jobs && w.jobs.length > 0);
+
+      for (const worker of workersWithJobs.slice(0, 5)) { // Limit to 5 API calls
+        const closeOrder = worker.jobs[0];
+        if (closeOrder?.address) {
+          try {
+            const distanceResult = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
+              params: {
+                type: 'car',
+                origins: `${closeOrder.address.latitude},${closeOrder.address.longitude}`,
+                destinations: `${order.address.latitude},${order.address.longitude}`,
+              },
+              headers: { 'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0' },
+              timeout: 5000
+            });
+
+            const workerIndex = suggestedWorkers.findIndex(w => w.id === worker.id);
+            if (workerIndex !== -1 && distanceResult.data?.rows?.[0]?.elements?.[0]) {
+              suggestedWorkers[workerIndex] = {
+                ...suggestedWorkers[workerIndex],
+                approximatedDistance: distanceResult.data.rows[0].elements[0].distance,
+                approximatedTime: distanceResult.data.rows[0].elements[0].duration
+              };
+            }
+          } catch (e) {
+            console.log('Distance calculation error for worker:', worker.id);
+          }
+        }
+      }
     }
 
-    const potentialWorkers = await queryBuilder.getMany();
-
-    // Continue with rest of the logic...
-    // (Keep the rest of your implementation)
+    return res.status(200).send({
+      code: 200,
+      data: {
+        availableWorkers: availableWorkers.map(w => ({ id: w.id, name: w.name, lastName: w.lastName })),
+        suggestedWorkers: suggestedWorkers.map(w => {
+          const { jobs, ...rest } = w;
+          return rest;
+        }),
+        data: response.data
+      }
+    });
   };
+
   private static assignOrder = async (order: Order, workerId: number, shouldSendSms: boolean) => {
     let worker: User;
 
