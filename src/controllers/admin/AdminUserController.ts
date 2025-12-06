@@ -92,6 +92,7 @@ class AdminUserController {
         walletBalance: true,
         createdAt: true,
         lastEntrance: true,
+        tmpCode: true,
       },
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
