@@ -106,8 +106,8 @@ class AdminUserController {
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
       order: {
-        id: 'ASC',
-        status: 'DESC'
+        status: 'DESC',
+        id: 'ASC'
       },
       where: role ? baseWhere.map(condition => ({ ...condition, role })) : baseWhere
     };
@@ -138,11 +138,6 @@ class AdminUserController {
           title: roles[item.role] || item.role
         };
         return acc;
-      }, {
-        all: {
-          count: count,
-          title: 'All'
-        }
       });
 
       return res.status(200).send({

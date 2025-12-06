@@ -82,9 +82,7 @@ class AdminOrderController {
     ];
 
     try {
-      // Use parallel queries for better performance
       const [ordersResult, statusCountResult] = await Promise.all([
-        // Orders query - simplified without nested select to avoid duplicate columns
         getRepository(Order).findAndCount({
           relations: {
             worker: true,
@@ -95,12 +93,12 @@ class AdminOrderController {
           take: Number(perPage),
           skip: Number(perPage) * (Number(page) - 1 || 0),
           order: {
-            id: 'DESC',
+            date: status == orderStatus.Assigned ? 'ASC' : 'DESC',
+            fromTime: status == orderStatus.Assigned ? 'ASC' : 'DESC',
           },
           where: status ? baseWhere.map(condition => ({ ...condition, status })) : baseWhere
         }),
 
-        // Status count aggregation
         getRepository(Order)
         .createQueryBuilder('order')
         .select('order.status', 'status')
@@ -112,19 +110,13 @@ class AdminOrderController {
 
       const [orders, count] = ordersResult;
 
-      // Transform status counts into the expected format
       const statusCount = statusCountResult.reduce((acc, item) => {
         acc[item.status] = {
           count: parseInt(item.count),
           title: orderStatusNames[item.status] || item.status
         };
         return acc;
-      }, {
-        all: {
-          count: count,
-          title: 'All'
-        }
-      });
+      }, {});
 
       return res.status(200).send({
         code: 200,
