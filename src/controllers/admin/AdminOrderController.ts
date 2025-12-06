@@ -20,11 +20,13 @@ import sms from '../../utils/sms';
 
 class AdminOrderController {
   static users = () => getRepository(User);
-  static workerOffs = () => getRepository(User);
+  static workerOffs = () => getRepository(WorkerOffs);
   static orders = () => getRepository(Order);
+
   static index = async (req: Request, res: Response): Promise<Response> => {
     const { page, perPage = 25, status, query } = req.query;
 
+    // If no pagination, return minimal data
     if (!page) {
       const orders = await getRepository(Order).find({
         relations: {
@@ -32,6 +34,38 @@ class AdminOrderController {
           service: true,
           orderServices: { service: true },
           user: true
+        },
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          date: true,
+          fromTime: true,
+          toTime: true,
+          finalPrice: true,
+          price: true,
+          worker: {
+            id: true,
+            name: true,
+            lastName: true
+          },
+          service: {
+            id: true,
+            title: true
+          },
+          orderServices: {
+            id: true,
+            service: {
+              id: true,
+              title: true
+            }
+          },
+          user: {
+            id: true,
+            name: true,
+            lastName: true,
+            phoneNumber: true
+          }
         }
       });
       return res.status(200).send({ code: 200, data: orders });
@@ -53,33 +87,79 @@ class AdminOrderController {
         orderServices: { service: true },
         user: true
       },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        date: true,
+        fromTime: true,
+        toTime: true,
+        finalPrice: true,
+        price: true,
+        transportation: true,
+        isUrgent: true,
+        createdAt: true,
+        worker: {
+          id: true,
+          name: true,
+          lastName: true,
+          phoneNumber: true
+        },
+        service: {
+          id: true,
+          title: true,
+          slug: true
+        },
+        orderServices: {
+          id: true,
+          count: true,
+          price: true,
+          service: {
+            id: true,
+            title: true
+          }
+        },
+        user: {
+          id: true,
+          name: true,
+          lastName: true,
+          phoneNumber: true
+        }
+      },
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
       order: {
-        date: 'DESC',
-        fromTime: 'DESC'
+        id: 'DESC', // Changed to DESC for better performance
       },
       where: status ? baseWhere.map(condition => ({ ...condition, status })) : baseWhere
     };
 
     try {
-      const orderRepository = getRepository(Order);
-      const [orders, count] = await orderRepository.findAndCount(options);
+      // Use parallel queries for better performance
+      const [ordersResult, statusCountResult] = await Promise.all([
+        getRepository(Order).findAndCount(options),
+        // Use aggregation for status counts instead of loading all orders
+        getRepository(Order)
+        .createQueryBuilder('order')
+        .select('order.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('order.inCart = :inCart', { inCart: false })
+        .groupBy('order.status')
+        .getRawMany()
+      ]);
 
-      const allOrders = await orderRepository.find({
-        where: { inCart: false },
-        relations: { worker: true, orderServices: { service: true }}
-      });
+      const [orders, count] = ordersResult;
 
-      const statusCount = Object.entries(orderStatusNames).reduce((acc, [status, statusTitle]) => ({
-        ...acc,
-        [status]: {
-          count: allOrders.filter(e => e.status === status).length,
-          title: statusTitle
-        }
-      }), {
+      // Transform status counts into the expected format
+      const statusCount = statusCountResult.reduce((acc, item) => {
+        acc[item.status] = {
+          count: parseInt(item.count),
+          title: orderStatusNames[item.status] || item.status
+        };
+        return acc;
+      }, {
         all: {
-          count: allOrders.length,
+          count: count,
           title: 'All'
         }
       });
@@ -101,25 +181,46 @@ class AdminOrderController {
     }
   };
 
-
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let order: Order;
+
     try {
-      order = await this.orders().findOne({
-        where: { id: Number(id) },
-        relations: ['payment', 'worker', 'service.parent', 'address', 'orderServices', 'user.addresses', 'finalImage', 'orderServices.colors', 'orderServices.media']
+      // Use QueryBuilder for better control
+      const order = await this.orders()
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.payment', 'payment')
+      .leftJoinAndSelect('order.worker', 'worker')
+      .leftJoinAndSelect('order.service', 'service')
+      .leftJoinAndSelect('service.parent', 'serviceParent')
+      .leftJoinAndSelect('order.address', 'address')
+      .leftJoinAndSelect('order.orderServices', 'orderServices')
+      .leftJoinAndSelect('orderServices.service', 'orderServiceService')
+      .leftJoinAndSelect('orderServices.colors', 'colors')
+      .leftJoinAndSelect('orderServices.media', 'orderServiceMedia')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('user.addresses', 'userAddresses')
+      .leftJoinAndSelect('order.finalImage', 'finalImage')
+      .where('order.id = :id', { id: Number(id) })
+      .getOne();
+
+      if (!order) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Order Not Found'
+        });
+      }
+
+      return res.status(200).send({
+        code: 200,
+        data: order
       });
     } catch (e) {
+      console.log(e);
       return res.status(400).send({
         code: 400,
         data: 'Unexpected Error'
       });
     }
-    return res.status(200).send({
-      code: 200,
-      data: order
-    });
   };
 
   static basic = async (req: Request, res: Response): Promise<Response> => {
@@ -139,7 +240,9 @@ class AdminOrderController {
       isUrgent,
       shouldSendWorkerSMS
     } = req.body;
-    let order: Order, user: User
+
+    let order: Order, user: User;
+
     if (id) {
       try {
         order = await this.orders().findOneOrFail({
@@ -148,16 +251,40 @@ class AdminOrderController {
             orderServices: { service: true },
             worker: true,
             payment: true
+          },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            date: true,
+            fromTime: true,
+            toTime: true,
+            price: true,
+            finalPrice: true,
+            workerId: true,
+            workerPercent: true,
+            orderServices: {
+              id: true,
+              serviceId: true,
+              service: {
+                id: true,
+                section: true
+              }
+            },
+            worker: {
+              id: true,
+              name: true,
+              lastName: true,
+              phoneNumber: true
+            }
           }
         });
-
       } catch (error) {
         console.log(error);
-        res.status(400).send({
+        return res.status(400).send({
           code: 400,
           data: 'Invalid Order'
         });
-        return;
       }
     } else {
       order = new Order();
@@ -167,14 +294,14 @@ class AdminOrderController {
     try {
       user = await this.users().findOneOrFail({
         where: { id: Number(userId) },
+        select: ['id', 'name', 'phoneNumber', 'isBlockSMS']
       });
     } catch (error) {
       console.log(error);
-      res.status(400).send({
+      return res.status(400).send({
         code: 400,
-        data: 'Invalid Order'
+        data: 'Invalid User'
       });
-      return;
     }
 
     order.inCart = (status == orderStatus.Created);
@@ -196,7 +323,6 @@ class AdminOrderController {
 
     if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
       order.doneDate = new Date();
-      // await getRepository(User).update({ id: order.workerId }, { walletBalance: order?.worker.walletBalance + ((order.price * order.workerPercent / 100) + order.transportation)})
     }
 
     order.status = status;
@@ -205,28 +331,29 @@ class AdminOrderController {
     if (errors.length > 0) {
       return res.status(400).send(errors);
     }
+
     try {
-      if (status == orderStatus.Canceled){
+      if (status == orderStatus.Canceled) {
         if (order.worker) {
           sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
         }
         await getRepository(WorkerOffs).delete({
           orderId: order.id
-        })
+        });
       }
+
       await this.orders().save(order);
 
-      if (workerId){
+      if (workerId) {
         order.user = user;
-        order.address = await getRepository(Address).findOneBy({ id: Number(addressId) })
-
-        await this.assignOrder(order, workerId, shouldSendWorkerSMS)
+        order.address = await getRepository(Address).findOneBy({ id: Number(addressId) });
+        await this.assignOrder(order, workerId, shouldSendWorkerSMS);
       }
     } catch (e) {
       console.log(e);
-      res.status(409).send('error try again later');
-      return;
+      return res.status(409).send('error try again later');
     }
+
     return res.status(200).send({
       code: 200,
       data: order
@@ -236,43 +363,78 @@ class AdminOrderController {
   static services = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const { services } = req.body;
+
     let order: Order;
+
     try {
       order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
-        relations: { orderServices: { service: true } }
+        relations: { orderServices: { service: true } },
+        select: {
+          id: true,
+          fromTime: true,
+          isUrgent: true,
+          workerId: true,
+          date: true,
+          orderServices: {
+            id: true,
+            serviceId: true,
+            service: {
+              section: true
+            }
+          }
+        }
       });
-
     } catch (error) {
       console.log(error);
-      res.status(400).send({
+      return res.status(400).send({
         code: 400,
         data: 'Invalid Order'
       });
-      return;
     }
 
-    for (const orderService of order.orderServices) {
-      if (!services.find(e => e.serviceId == orderService.serviceId)) {
-        await getRepository(OrderService).delete({ id: orderService.id });
-      }
+    // Delete removed services
+    const servicesToDelete = order.orderServices.filter(
+      orderService => !services.find(s => s.serviceId == orderService.serviceId)
+    );
+
+    if (servicesToDelete.length > 0) {
+      await getRepository(OrderService).delete(
+        servicesToDelete.map(s => s.id)
+      );
     }
+
+    // Batch load all service data
+    const serviceIds = services.map(s => s.serviceId);
+    const serviceObjects = await getRepository(Service).findBy({
+      id: In(serviceIds)
+    });
+
+    const serviceMap = new Map(serviceObjects.map(s => [s.id, s]));
+
     const newOrderServices = [];
+
     for (const service of services) {
-      const serviceObj = await getRepository(Service).findOneBy({ id: service.serviceId });
+      const serviceObj = serviceMap.get(service.serviceId);
+      if (!serviceObj) continue;
+
       let orderService = order.orderServices.find(e => e.serviceId == service.serviceId);
       if (!orderService) {
         orderService = new OrderService();
         orderService.orderId = order.id;
       }
+
       orderService.singlePrice = serviceObj.price * (order.isUrgent ? 1.5 : 1);
       orderService.serviceId = service.serviceId;
       orderService.count = service.count;
       orderService.price = orderService.singlePrice * service.count;
+
       if (service.colors && service.colors.length > 0) {
         orderService.colors = await getRepository(Color).findBy({ id: In(service.colors) });
       }
+
       await getRepository(OrderService).save(orderService);
+
       newOrderServices.push({
         ...orderService,
         service: { section: serviceObj.section }
@@ -280,17 +442,20 @@ class AdminOrderController {
     }
 
     try {
+      const totalSections = newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0);
+
       await this.orders().update({ id: order.id }, {
         isMulti: services.filter(e => e.count > 1).length > 0,
-        toTime: Number(order.fromTime) + (newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0) / 4)
+        toTime: Number(order.fromTime) + (totalSections / 4)
       });
-      if (order.workerId){
+
+      if (order.workerId) {
         let workerOff = await getRepository(WorkerOffs).findOneBy({
           userId: order.workerId,
           orderId: order.id
         });
 
-        if(!workerOff){
+        if (!workerOff) {
           workerOff = new WorkerOffs();
           workerOff.userId = order.workerId;
           workerOff.orderId = order.id;
@@ -298,20 +463,20 @@ class AdminOrderController {
 
         workerOff.date = order.date;
         workerOff.fromTime = order.fromTime;
-        workerOff.toTime = Number(order.fromTime) + (newOrderServices.reduce((acc, curr) => acc + curr.service.section, 0) / 4);
+        workerOff.toTime = Number(order.fromTime) + (totalSections / 4);
+
         await getRepository(WorkerOffs).save(workerOff);
       }
     } catch (e) {
       console.log(e);
-      res.status(409).send('error try again later');
-      return;
+      return res.status(409).send('error try again later');
     }
+
     return res.status(200).send({
       code: 200,
       data: order
     });
   };
-
 
   static payment = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
@@ -321,14 +486,25 @@ class AdminOrderController {
       finalPrice,
       refId,
       description
-    } = req.body
+    } = req.body;
+
     let order: Order, payment: Payment;
 
-    try{
+    try {
       order = await getRepository(Order).findOneOrFail({
         where: { id: Number(id) },
         relations: {
           user: true,
+        },
+        select: {
+          id: true,
+          paymentId: true,
+          finalPrice: true,
+          status: true,
+          user: {
+            id: true,
+            walletBalance: true
+          }
         }
       });
 
@@ -337,12 +513,12 @@ class AdminOrderController {
           where: { id: order.paymentId },
         });
       }
-    }catch (e){
+    } catch (e) {
       console.log(e);
       return res.status(400).send({ code: 400, data: 'Invalid Order' });
     }
 
-    if (!payment){
+    if (!payment) {
       payment = new Payment();
       payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8), 'randomCode');
     }
@@ -355,7 +531,8 @@ class AdminOrderController {
     payment.isPaid = ![orderStatus.Canceled, orderStatus.AwaitingPayment, orderStatus.Created].includes(order?.status as any);
 
     let newWalletBalance = order?.user?.walletBalance || 0;
-    if (shouldUseWallet && order?.user?.walletBalance > 0){
+
+    if (shouldUseWallet && order?.user?.walletBalance > 0) {
       const walletDiff = order?.user?.walletBalance - order?.finalPrice;
       if (walletDiff >= 0) {
         newWalletBalance = walletDiff;
@@ -368,22 +545,23 @@ class AdminOrderController {
       }
     }
 
-    if (method == PaymentMethods.Credit){
+    if (method == PaymentMethods.Credit) {
       payment.finalPrice = 0;
     }
 
-    try{
+    try {
       await getRepository(Payment).save(payment);
+
       if (shouldUseWallet && order?.user?.walletBalance > 0) {
         await getRepository(User).update({ id: order?.user?.id }, {
           walletBalance: newWalletBalance
         });
       }
+
       await getRepository(Order).update({ id: order.id }, {
         paymentId: payment.id
       });
-
-    }catch (e){
+    } catch (e) {
       console.log(e);
       return res.status(400).send({
         code: 400,
@@ -395,27 +573,40 @@ class AdminOrderController {
       code: 200,
       data: payment
     });
-  }
+  };
 
   static sendPortal = async (req: Request, res: Response): Promise<Response> => {
     const { finalPrice, method, refId, description } = req.body;
     const { id } = req.params;
-    let user, orderObj, url, authority, payment: Payment, creditUsed = 0;
+
+    let orderObj: Order, url: string, authority: string, payment: Payment;
+
     try {
       orderObj = await getRepository(Order).findOneOrFail({
-        where: {
-          id: Number(id)
-        },
-        relations:{
+        where: { id: Number(id) },
+        relations: {
           user: true,
           payment: true
+        },
+        select: {
+          id: true,
+          finalPrice: true,
+          paymentId: true,
+          user: {
+            name: true,
+            lastName: true,
+            phoneNumber: true
+          },
+          payment: {
+            id: true,
+            randomCode: true
+          }
         }
       });
 
-      payment = { ...orderObj.payment }
+      payment = orderObj.payment ? { ...orderObj.payment } : new Payment();
 
-      if (!payment) {
-        payment = new Payment();
+      if (!payment.id) {
         payment.randomCode = await getUniqueSlug(getRepository(Payment), generateCode(8, dataTypes.number), 'randomCode');
       }
 
@@ -424,7 +615,6 @@ class AdminOrderController {
       payment.method = method;
       payment.description = description;
       payment.refId = refId;
-
     } catch (e) {
       console.log(e);
       return res.status(400).send({
@@ -432,21 +622,21 @@ class AdminOrderController {
         data: 'Invalid Payment'
       });
     }
-    if (payment.method == PaymentMethods.Sep) {
 
-      const sepReq = await axios.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
-        action: 'token',
-        TerminalId: 14436606,
-        Amount: payment.finalPrice * 10,
-        ResNum: generateCode(8, dataTypes.number),
-        RedirectUrl: 'https://callback.nilman.co/verify/',
-        CellNumber: orderObj?.user?.phoneNumber
-      });
-      authority = sepReq.data.token;
-      url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
+    try {
+      if (payment.method == PaymentMethods.Sep) {
+        const sepReq = await axios.post('https://sep.shaparak.ir/onlinepg/onlinepg', {
+          action: 'token',
+          TerminalId: 14436606,
+          Amount: payment.finalPrice * 10,
+          ResNum: generateCode(8, dataTypes.number),
+          RedirectUrl: 'https://callback.nilman.co/verify/',
+          CellNumber: orderObj?.user?.phoneNumber
+        }, { timeout: 10000 });
 
-    } else if (payment.method == PaymentMethods.Ap) {
-      try {
+        authority = sepReq.data.token;
+        url = `https://sep.shaparak.ir/OnlinePG/SendToken?token=${authority}`;
+      } else if (payment.method == PaymentMethods.Ap) {
         const apReq = await axios('https://ipgrest.asanpardakht.ir/v1/Token', {
           data: {
             'serviceTypeId': 1,
@@ -461,131 +651,177 @@ class AdminOrderController {
             usr: 'saln 5312721',
             pwd: 'MtK5786W'
           },
-          method: 'POST'
+          method: 'POST',
+          timeout: 10000
         });
+
         authority = apReq.data;
-      } catch (e) {
-        console.log(e);
-        console.log(e.response.data);
-      }
-    } else if (payment.method == PaymentMethods.Zarinpal) {
-      const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
-      const zarinpalResult = await zarinpal.PaymentRequest({
-        Amount: payment.finalPrice, // In Tomans
-        CallbackURL: 'https://app.nilman.co/payment/verify',
-        Description: 'A Payment from Nilman',
-        Mobile: orderObj.user.phoneNumber
-      }).then(response => {
-        if (response.status === 100) {
-          return response;
-        }
-      }).catch(err => {
-        console.error(err);
-      });
-      if (!zarinpalResult) {
-        return res.status(400).send({
-          code: 400,
-          data: 'Invalid Portal'
+        url = `https://ipgrest.asanpardakht.ir/purchase?token=${authority}`;
+      } else if (payment.method == PaymentMethods.Zarinpal) {
+        const zarinpal = ZarinPalCheckout.create('f04f4d8f-9b8c-4c9b-b4de-44a1687d4855', false);
+        const zarinpalResult = await zarinpal.PaymentRequest({
+          Amount: payment.finalPrice,
+          CallbackURL: 'https://app.nilman.co/payment/verify',
+          Description: 'A Payment from Nilman',
+          Mobile: orderObj.user.phoneNumber
         });
+
+        if (zarinpalResult.status !== 100) {
+          return res.status(400).send({
+            code: 400,
+            data: 'Invalid Portal'
+          });
+        }
+
+        url = zarinpalResult.url;
+        authority = zarinpalResult.authority;
       }
 
-      console.log(zarinpalResult);;
-      url = zarinpalResult.url;
-      authority = zarinpalResult.authority;
-    }
-    try {
       payment.authority = authority;
 
       await getRepository(Payment).save(payment);
-
       await getRepository(Order).update({ id: orderObj.id }, { paymentId: payment.id });
-      sms.sendPortal(orderObj.user.name + ' ' + orderObj.user.lastName, payment.finalPrice.toString(), url, orderObj.user.phoneNumber);
+
+      sms.sendPortal(
+        orderObj.user.name + ' ' + orderObj.user.lastName,
+        payment.finalPrice.toString(),
+        url,
+        orderObj.user.phoneNumber
+      );
+
+      return res.status(200).send({
+        code: 200,
+        data: {
+          url: url,
+          authority: authority
+        }
+      });
     } catch (e) {
       console.log(e);
       return res.status(400).send({
         code: 400,
-        data: 'Invalid Payment'
+        data: 'Payment gateway error'
       });
     }
-    return res.status(200).send({
-      code: 200,
-      data: {
-        url: url,
-        authority: authority
-      }
-    });
-  }
+  };
+
   static assign = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    const {
-      workerId
-    } = req.body;
-    let order: Order, user: User;
+    const { workerId } = req.body;
+
+    let order: Order;
+
     try {
       order = await this.orders().findOneOrFail({
         where: { id: Number(id) },
-        relations: ['service', 'user', 'worker', 'orderServices', 'address']
+        relations: ['service', 'user', 'worker', 'orderServices', 'address'],
+        select: {
+          id: true,
+          code: true,
+          date: true,
+          fromTime: true,
+          toTime: true,
+          workerId: true,
+          status: true,
+          service: {
+            id: true,
+            title: true
+          },
+          user: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            isBlockSMS: true
+          },
+          worker: {
+            id: true,
+            name: true,
+            lastName: true,
+            phoneNumber: true
+          },
+          orderServices: {
+            id: true,
+            service: {
+              id: true,
+              title: true
+            }
+          },
+          address: {
+            id: true,
+            description: true
+          }
+        }
       });
     } catch (error) {
-      res.status(400).send({
+      console.log(error);
+      return res.status(400).send({
         code: 400,
         data: 'Invalid Order'
       });
-      return;
     }
 
-    try{
-      await this.assignOrder(order, workerId, true)
-    }catch (e){
-      res.status(400).send({
+    try {
+      await this.assignOrder(order, workerId, true);
+
+      return res.status(200).send({
+        code: 200,
+        data: order
+      });
+    } catch (e) {
+      console.log(e);
+      return res.status(400).send({
         code: 400,
         data: e.message
       });
     }
-
-    return res.status(200).send({
-      code: 200,
-      data: order
-    });
   };
 
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
 
     try {
-      await getRepository(Order).delete({ id: Number(id) });
+      const result = await getRepository(Order).delete({ id: Number(id) });
+
+      if (result.affected === 0) {
+        return res.status(400).send({
+          code: 400,
+          data: 'Order not found'
+        });
+      }
+
+      return res.status(200).send({
+        code: 200,
+        data: 'Successful'
+      });
     } catch (e) {
       console.log(e);
-      res.status(409).send({
+      return res.status(409).send({
         code: 409,
         data: 'error try again later'
       });
-      return;
     }
-    return res.status(200).send({
-      code: 204,
-      data: 'Successful'
-    });
   };
+
   static feedback = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-    let feedback: Feedback;
+
     try {
-      feedback = await getRepository(Feedback).findOneOrFail({
+      const feedback = await getRepository(Feedback).findOneOrFail({
         where: { orderId: Number(id) },
         relations: { feedbackFactors: true }
       });
-    } catch (error) {
-      res.status(400).send({
-        code: 400,
-        data: 'Invalid Order'
+
+      return res.status(200).send({
+        code: 200,
+        data: feedback
       });
-      return;
+    } catch (error) {
+      console.log(error);
+      return res.status(400).send({
+        code: 400,
+        data: 'Feedback not found'
+      });
     }
-    return res.status(200).send({
-      code: 200,
-      data: feedback
-    });
   };
 
   static getRelatedWorkers = async (req: Request, res: Response): Promise<Response> => {
@@ -596,15 +832,34 @@ class AdminOrderController {
       toTime: reqToTime,
       address,
       date: dueDate
-    } = req.body
+    } = req.body;
 
-    let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string
+    let order: Order, district: District, orderServices: OrderService[], fromTime: number, toTime: number, date: string;
 
     if (id) {
       try {
         order = await this.orders().findOneOrFail({
           where: { id: Number(id) },
-          relations: ['service', 'user', 'orderServices', 'address.district']
+          relations: ['orderServices', 'address.district'],
+          select: {
+            id: true,
+            fromTime: true,
+            toTime: true,
+            date: true,
+            orderServices: {
+              id: true,
+              serviceId: true
+            },
+            address: {
+              id: true,
+              latitude: true,
+              longitude: true,
+              district: {
+                id: true,
+                code: true
+              }
+            }
+          }
         });
 
         orderServices = order.orderServices;
@@ -614,188 +869,218 @@ class AdminOrderController {
         date = order?.date;
       } catch (error) {
         console.log(error);
-        res.status(400).send({
+        return res.status(400).send({
           code: 400,
           data: 'Invalid Order'
         });
-        return;
       }
     } else {
       orderServices = attributes;
       fromTime = reqFromTime;
       toTime = reqToTime;
       date = dueDate;
-      if (address) {
 
+      if (address) {
         if (address.districtId) {
-          district = address.districtId
+          district = address.districtId;
         } else {
-          const {
-            lat,
-            lng
-          } = req.query;
-          const result = await axios.get('https://api.neshan.org/v5/reverse', {
-            params: {
-              lat: lat,
-              lng: lng
-            },
-            headers: {
-              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
-            }
-          });
-          district = result.data?.municipality_zone;
+          const { lat, lng } = req.query;
+          try {
+            const result = await axios.get('https://api.neshan.org/v5/reverse', {
+              params: { lat, lng },
+              headers: { 'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0' },
+              timeout: 5000
+            });
+            district = result.data?.municipality_zone;
+          } catch (e) {
+            console.log('Location API error:', e);
+          }
         }
       }
     }
 
+    // Get busy workers using optimized query
     const busyWorkerIds = await getRepository(WorkerOffs)
-    .find({
-      select: ['userId'],
-      where: [
-        {
-          date: date,
-          fromTime: MoreThanOrEqual(fromTime),
-          toTime: LessThan(toTime)
-        },
-        {
-          date: date,
-          fromTime: LessThanOrEqual(fromTime),
-          toTime: MoreThan(toTime)
-        },
-        {
-          date: date,
-          fromTime: LessThanOrEqual(fromTime),
-          toTime: MoreThan(fromTime)
-        },
-        {
-          date: date,
-          fromTime: LessThan(toTime),
-          toTime: MoreThan(toTime)
-        }
-      ]
-    });
-    const requiredServiceIds = orderServices?.map(e => e.serviceId);
-    // First get the smaller set of potential workers
-    const potentialWorkers = await this.users().find({
-      select: ['id', 'name', 'lastName'],
-      relations: ['services'],
-      where: {
-        role: roles.WORKER,
-        status: 1,
-        services: { id: In(requiredServiceIds) },
-        id: Not(In(busyWorkerIds.map(w => w.userId)))
-      }
-    });
+    .createQueryBuilder('wo')
+    .select('DISTINCT wo.userId', 'userId')
+    .where('wo.date = :date', { date })
+    .andWhere(
+      '(wo.fromTime >= :fromTime AND wo.toTime < :toTime) OR ' +
+      '(wo.fromTime <= :fromTime AND wo.toTime > :toTime) OR ' +
+      '(wo.fromTime <= :fromTime AND wo.toTime > :fromTime) OR ' +
+      '(wo.fromTime < :toTime AND wo.toTime > :toTime)',
+      { fromTime, toTime }
+    )
+    .getRawMany();
 
-    // Then filter for exact service matches on the smaller array
+    const busyIds = busyWorkerIds.map(w => w.userId);
+    const requiredServiceIds = orderServices?.map(e => e.serviceId);
+
+    // Optimized worker query
+    const potentialWorkers = await this.users()
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.services', 'services')
+    .where('user.role = :role', { role: roles.WORKER })
+    .andWhere('user.status = 1')
+    .andWhere('services.id IN (:...serviceIds)', { serviceIds: requiredServiceIds })
+    .andWhere(busyIds.length > 0 ? 'user.id NOT IN (:...busyIds)' : '1=1', busyIds.length > 0 ? { busyIds } : {})
+    .select(['user.id', 'user.name', 'user.lastName'])
+    .addSelect(['services.id'])
+    .getMany();
+
+    // Filter for exact service matches
     const availableWorkers = potentialWorkers.filter(worker =>
       requiredServiceIds.every(serviceId =>
         worker.services.some(service => service.id === serviceId)
       )
     );
 
-    const suggestedWorkers: any = await getRepository(User).find({
-      where: {
-        role: roles.WORKER,
-        id: In(availableWorkers.map(w => w.id)),
-        // districts: {
-        //   code: district
-        // }
-      },
-      relations: {
-        jobs: { address: true }
-      }
+    if (availableWorkers.length === 0) {
+      return res.status(200).send({
+        code: 200,
+        data: {
+          availableWorkers: [],
+          suggestedWorkers: [],
+          data: null
+        }
+      });
+    }
+
+    // Get suggested workers with recent jobs
+    const suggestedWorkers = await getRepository(User)
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.jobs', 'jobs', 'jobs.date = :date AND jobs.fromTime < :fromTime AND jobs.fromTime >= :minTime', {
+      date,
+      fromTime,
+      minTime: fromTime - 2
     })
-    let response: any = {}
+    .leftJoinAndSelect('jobs.address', 'jobAddress')
+    .where('user.id IN (:...ids)', { ids: availableWorkers.map(w => w.id) })
+    .select(['user.id', 'user.name', 'user.lastName'])
+    .addSelect(['jobs.id', 'jobs.date', 'jobs.fromTime'])
+    .addSelect(['jobAddress.latitude', 'jobAddress.longitude'])
+    .getMany();
 
-    if (id) {
-      const closeWorkers: any = {};
-      for (const suggestedWorker of suggestedWorkers) {
-        const closeOrder: Order = suggestedWorker.jobs.find(e => e.date == date && e.fromTime < fromTime && e.fromTime >= fromTime - 2);
-        if (closeOrder) {
-          closeWorkers[suggestedWorker.id] = closeOrder.address;
+    let response: any = {};
 
-          response = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
-            params: {
-              type: 'car',
-              origins: closeOrder.address.latitude + ',' + closeOrder.address.longitude,
-              destinations: order.address.latitude + ',' + order.address.longitude,
-            },
-            headers: {
-              'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0'
+    // Calculate distances for workers with nearby jobs (limit API calls)
+    if (id && order) {
+      const workersWithJobs = suggestedWorkers.filter(w => w.jobs && w.jobs.length > 0);
+
+      for (const worker of workersWithJobs.slice(0, 5)) { // Limit to 5 API calls
+        const closeOrder = worker.jobs[0];
+        if (closeOrder?.address) {
+          try {
+            const distanceResult = await axios.get(`https://api.neshan.org/v1/distance-matrix/no-traffic`, {
+              params: {
+                type: 'car',
+                origins: `${closeOrder.address.latitude},${closeOrder.address.longitude}`,
+                destinations: `${order.address.latitude},${order.address.longitude}`,
+              },
+              headers: { 'Api-Key': 'service.6e9aff7b5cd6457dae762930a57542a0' },
+              timeout: 5000
+            });
+
+            const workerIndex = suggestedWorkers.findIndex(w => w.id === worker.id);
+            if (workerIndex !== -1 && distanceResult.data?.rows?.[0]?.elements?.[0]) {
+              suggestedWorkers[workerIndex] = {
+                ...suggestedWorkers[workerIndex],
+                approximatedDistance: distanceResult.data.rows[0].elements[0].distance,
+                approximatedTime: distanceResult.data.rows[0].elements[0].duration
+              };
             }
-          });
-
-          const suggestedWorkerIndex = suggestedWorkers.findIndex(e => e.id == suggestedWorker.id);
-          suggestedWorkers[suggestedWorkerIndex] = {
-            ...suggestedWorkers[suggestedWorkerIndex],
-            approximatedDistance: response.data.rows[0].elements[0].distance,
-            approximatedTime: response.data.rows[0].elements[0].duration
-          };
+          } catch (e) {
+            console.log('Distance calculation error for worker:', worker.id);
+          }
         }
       }
     }
+
     return res.status(200).send({
       code: 200,
       data: {
-        availableWorkers,
-        suggestedWorkers,
+        availableWorkers: availableWorkers.map(w => ({ id: w.id, name: w.name, lastName: w.lastName })),
+        suggestedWorkers: suggestedWorkers.map(w => {
+          const { jobs, ...rest } = w;
+          return rest;
+        }),
         data: response.data
       }
     });
-  }
+  };
 
-    private static assignOrder = async (order, workerId, shouldSendSms) => {
-      let worker: User;
-      if (order.workerId && order.workerId != workerId) {
-        sms.orderAssignWorkerChange(order.worker.name + ' ' + order.worker.lastName, order.code, order.worker.phoneNumber);
+  private static assignOrder = async (order: Order, workerId: number, shouldSendSms: boolean) => {
+    let worker: User;
 
-        await getRepository(WorkerOffs).delete({
-          userId: order.workerId,
-          orderId: order.id
-        });
-      }
+    if (order.workerId && order.workerId != workerId) {
+      sms.orderAssignWorkerChange(
+        order.worker.name + ' ' + order.worker.lastName,
+        order.code,
+        order.worker.phoneNumber
+      );
 
-      try {
-        worker = await this.users().findOneOrFail({
-          where: {
-            id: workerId,
-          }
-        });
-      } catch (error) {
-        throw new Error('Invalid Worker');
-      }
-
-      order.workerId = Number(workerId);
-      order.worker = worker;
-      order.status = orderStatus.Assigned;
-      order.workerPercent = worker.percent;
-
-      const errors = await validate(order);
-      if (errors.length > 0) {
-        throw Error(errors.reduce((acc, curr) => acc + curr + ',', ''))
-      }
-      try {
-        await this.orders().save(order);
-        if (shouldSendSms) {
-          if (!order.user.isBlockSMS) {
-            sms.orderAssignUser(order.user.name, worker.name, order.user.phoneNumber, order.date, order.fromTime.toString());
-          }
-          sms.orderAssignWorker(order.worker.name + ' ' + order.worker.lastName, order.orderServices?.reduce((acc, cur) => acc + '-' + cur.service.title, '').toString(), order.address.description, worker.phoneNumber, order.date, order.fromTime.toString());
-        }
-        await getRepository(WorkerOffs).insert({
-          fromTime: order.fromTime - 1,
-          toTime: order.toTime + 1,
-          orderId: order.id,
-          userId: workerId,
-          date: order.date
-        });
-      } catch (e) {
-        console.log(e);
-        throw new Error('Error trying to submit');
-      }
+      await getRepository(WorkerOffs).delete({
+        userId: order.workerId,
+        orderId: order.id
+      });
     }
 
+    try {
+      worker = await AdminOrderController.users().findOneOrFail({
+        where: { id: workerId },
+        select: ['id', 'name', 'lastName', 'phoneNumber', 'percent']
+      });
+    } catch (error) {
+      throw new Error('Invalid Worker');
+    }
+
+    order.workerId = Number(workerId);
+    order.worker = worker;
+    order.status = orderStatus.Assigned;
+    order.workerPercent = worker.percent;
+
+    const errors = await validate(order);
+    if (errors.length > 0) {
+      throw new Error(errors.map(e => Object.values(e.constraints || {}).join(', ')).join('; '));
+    }
+
+    try {
+      await AdminOrderController.orders().save(order);
+
+      if (shouldSendSms) {
+        if (!order.user.isBlockSMS) {
+          sms.orderAssignUser(
+            order.user.name,
+            worker.name,
+            order.user.phoneNumber,
+            order.date,
+            order.fromTime.toString()
+          );
+        }
+
+        const servicesTitles = order.orderServices?.map(os => os.service.title).join('-') || '';
+        sms.orderAssignWorker(
+          worker.name + ' ' + worker.lastName,
+          servicesTitles,
+          order.address.description,
+          worker.phoneNumber,
+          order.date,
+          order.fromTime.toString()
+        );
+      }
+
+      await getRepository(WorkerOffs).insert({
+        fromTime: order.fromTime - 1,
+        toTime: order.toTime + 1,
+        orderId: order.id,
+        userId: workerId,
+        date: order.date
+      });
+    } catch (e) {
+      console.log(e);
+      throw new Error('Error trying to submit');
+    }
+  };
 }
 
 export default AdminOrderController;

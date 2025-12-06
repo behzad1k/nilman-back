@@ -106,7 +106,8 @@ class AdminUserController {
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
       order: {
-        id: 'DESC', // DESC is usually faster for recent records
+        id: 'ASC',
+        status: 'DESC'
       },
       where: role ? baseWhere.map(condition => ({ ...condition, role })) : baseWhere
     };
