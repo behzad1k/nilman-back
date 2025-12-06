@@ -50,11 +50,6 @@ class AdminUserController {
           phoneNumber: true,
           role: true,
           status: true,
-          services: {
-            id: true,
-            title: true,
-            slug: true
-          }
         }, order: {
           status: 'DESC'
         }
@@ -97,11 +92,6 @@ class AdminUserController {
         walletBalance: true,
         createdAt: true,
         lastEntrance: true,
-        services: {
-          id: true,
-          title: true,
-          slug: true
-        }
       },
       take: Number(perPage),
       skip: Number(perPage) * (Number(page) - 1 || 0),
@@ -403,15 +393,6 @@ class AdminUserController {
           toTime: true,
           finalPrice: true,
           createdAt: true,
-          service: {
-            id: true,
-            title: true
-          },
-          feedback: {
-            id: true,
-            rating: true,
-            description: true
-          }
         },
         order: { createdAt: 'DESC' },
         take: 50 // Limit to recent 50 jobs
@@ -538,18 +519,6 @@ class AdminUserController {
           nationalCode: true,
           role: true,
           status: true,
-          addresses: {
-            id: true,
-            title: true,
-            description: true,
-            latitude: true,
-            longitude: true,
-            district: {
-              id: true,
-              title: true,
-              code: true
-            }
-          }
         }
       });
 
