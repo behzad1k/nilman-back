@@ -1,31 +1,51 @@
 import moment from 'jalali-moment';
-import { getRepository } from 'typeorm';
-import { Log } from '../entity/Log';
+import fs from 'fs';
+import path from 'path';
 import { isEmpty, jwtDecode } from '../utils/funs';
 
-const log = async (req, res, next) =>{
-  const log = new Log();
-  log.ipAddress = req.ip || req.socket.remoteAddress;
-  log.pathname = req.originalUrl;
-  log.userAgent = req.get('User-Agent');
-  log.date = moment().format('jYYYY/jMM/jDD');
-  log.time = moment().format('HH:mm');
-  log.method = req.method;
-  if (!isEmpty(req.body)){
-    log.data = JSON.stringify(req.body)
+const log = async (req, res, next) => {
+  const logData = {
+    ipAddress: req.ip || req.socket.remoteAddress,
+    pathname: req.originalUrl,
+    userAgent: req.get('User-Agent'),
+    date: moment().format('jYYYY/jMM/jDD'),
+    time: moment().format('HH:mm'),
+    method: req.method,
+    data: null,
+    userId: null,
+  };
+
+  if (!isEmpty(req.body)) {
+    logData.data = JSON.stringify(req.body);
   }
+
   if (req.headers.authorization) {
     const userId = jwtDecode(req.headers.authorization);
     if (userId != -1) {
-      log.userId = userId;
+      logData.userId = userId;
     }
   }
 
   try {
-    await getRepository(Log).save(log);
-  }catch (e){
-    console.log(e);
+    // Define log file path
+    const logDir = path.join(__dirname, '../logs');
+    const logFile = path.join(logDir, `access-${moment().format('jYYYY-jMM-jDD')}.log`);
+
+    // Create logs directory if it doesn't exist
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+
+    // Format log entry
+    const logEntry = `${JSON.stringify(logData)}\n`;
+
+    // Append to log file
+    fs.appendFileSync(logFile, logEntry, 'utf8');
+  } catch (e) {
+    console.log('Error writing log:', e);
   }
-  next()
-}
+
+  next();
+};
+
 export default log;
