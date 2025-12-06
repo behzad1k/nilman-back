@@ -55,6 +55,7 @@ class AdminOrderController {
           },
           orderServices: {
             id: true,
+            serviceId: true,
             service: {
               id: true,
               title: true
@@ -80,65 +81,26 @@ class AdminOrderController {
       { code: Like(`%${query}%`), inCart: false }
     ];
 
-    const options: FindManyOptions = {
-      relations: {
-        worker: true,
-        service: true,
-        orderServices: { service: true },
-        user: true
-      },
-      select: {
-        id: true,
-        code: true,
-        status: true,
-        date: true,
-        fromTime: true,
-        toTime: true,
-        finalPrice: true,
-        price: true,
-        transportation: true,
-        isUrgent: true,
-        createdAt: true,
-        worker: {
-          id: true,
-          name: true,
-          lastName: true,
-          phoneNumber: true
-        },
-        service: {
-          id: true,
-          title: true,
-          slug: true
-        },
-        orderServices: {
-          id: true,
-          count: true,
-          price: true,
-          service: {
-            id: true,
-            title: true
-          }
-        },
-        user: {
-          id: true,
-          name: true,
-          lastName: true,
-          phoneNumber: true
-        }
-      },
-      take: Number(perPage),
-      skip: Number(perPage) * (Number(page) - 1 || 0),
-      order: {
-        id: 'DESC', // Changed to DESC for better performance
-      },
-      where: status ? baseWhere.map(condition => ({ ...condition, status })) : baseWhere
-    };
-
     try {
       // Use parallel queries for better performance
       const [ordersResult, statusCountResult] = await Promise.all([
-        getRepository(Order).findAndCount(options),
-        // Use aggregation for status counts instead of loading all orders
+        // Orders query - simplified without nested select to avoid duplicate columns
+        getRepository(Order).findAndCount({
+          relations: {
+            worker: true,
+            service: true,
+            orderServices: { service: true },
+            user: true
+          },
+          take: Number(perPage),
+          skip: Number(perPage) * (Number(page) - 1 || 0),
+          order: {
+            id: 'DESC',
+          },
+          where: status ? baseWhere.map(condition => ({ ...condition, status })) : baseWhere
+        }),
+
+        // Status count aggregation
         getRepository(Order)
         .createQueryBuilder('order')
         .select('order.status', 'status')
@@ -180,7 +142,6 @@ class AdminOrderController {
       });
     }
   };
-
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
 
