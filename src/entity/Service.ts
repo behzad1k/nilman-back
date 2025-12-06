@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation, DeleteDateColumn, OneToOne
+  ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, TreeChildren, Tree, TreeParent, Relation, DeleteDateColumn, OneToOne, Index
 } from 'typeorm';
 import { Length } from "class-validator";
 import { dataTypes } from '../utils/enums';
@@ -16,8 +16,10 @@ import { OrderServiceAddOn } from './OrderServiceAddOn';
 import { Package } from './Package';
 import { User } from "./User";
 import "reflect-metadata";
+
 @Entity()
 @Tree('materialized-path')
+@Index(["slug"])
 export class Service {
   @PrimaryGeneratedColumn()
   id: number;
@@ -25,14 +27,11 @@ export class Service {
   @Column(dataTypes.text)
   title: string;
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.string, { length: 255 })
   slug: string;
 
   @Column(dataTypes.text, { nullable: true })
   description: string;
-
-  // @Column(dataTypes.text, { nullable: true })
-  // parentId: string;
 
   @Column(dataTypes.integer, { nullable: true, default: null })
   mediaId: number;
@@ -114,16 +113,6 @@ export class Service {
   @ManyToMany(() => Service, service => service.addOns, { onDelete: 'CASCADE'})
   @JoinTable({
     name: 'addOns',
-    // joinColumns: [
-    //   {
-    //     name: 'serviceId',
-    //     referencedColumnName: 'id'
-    //   },
-    //   {
-    //     name: 'addOn',
-    //     referencedColumnName: 'id'
-    //   }
-    // ],
   })
   addOns: Service[];
 

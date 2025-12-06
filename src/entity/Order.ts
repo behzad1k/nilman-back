@@ -6,7 +6,8 @@ import {
   ManyToOne,
   OneToMany, OneToOne,
   PrimaryGeneratedColumn, Relation,
-  UpdateDateColumn
+  UpdateDateColumn,
+  Index
 } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Address } from "./Address";
@@ -20,8 +21,14 @@ import { Service } from "./Service";
 import { Transaction } from './Transaction';
 import { User } from "./User";
 import "reflect-metadata";
-@Entity()
 
+@Entity()
+@Index(["userId", "inCart"])
+@Index(["workerId", "status"])
+@Index(["date", "fromTime"])
+@Index(["status"])
+@Index(["serviceId"])
+@Index(["code"])
 export class Order {
 
   @PrimaryGeneratedColumn()
@@ -63,7 +70,7 @@ export class Order {
   @Column(dataTypes.integer, { nullable: true })
   paymentId?: number
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.string, { length: 100})
   status: string
 
   @Column(dataTypes.integer, {
@@ -88,7 +95,7 @@ export class Order {
   @Column(dataTypes.integer, { nullable: true, default: null })
   packageId?: number
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.string, { length: 10 } )
   date: string
 
   @Column(dataTypes.float)

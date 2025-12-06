@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
-  ManyToOne, Relation, ManyToMany, JoinTable
+  ManyToOne, Relation, ManyToMany, JoinTable, Index
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from "bcryptjs";
@@ -24,11 +24,15 @@ import { WorkerOffs } from './WorkerOffs';
 import "reflect-metadata";
 
 @Entity()
+@Index(["phoneNumber"])
+@Index(["role", "status"])
+@Index(["nationalCode"])
+@Index(["username"])
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.string, { nullable: false, length: 12 })
   phoneNumber: string;
 
   @Column(dataTypes.text, {
@@ -36,7 +40,8 @@ export class User {
   })
   name: string
 
-  @Column(dataTypes.text, {
+  @Column(dataTypes.string, {
+    length: 255,
     nullable: true
   })
   username: string
@@ -54,8 +59,9 @@ export class User {
   @Column(dataTypes.text)
   code: string;
 
-  @Column(dataTypes.text, {
-    nullable: true
+  @Column(dataTypes.string, {
+    nullable: true,
+    length: 12
   })
   nationalCode: string;
 
@@ -104,11 +110,11 @@ export class User {
   })
   status: number;
 
-  @Column(dataTypes.text, {nullable: true})
+  @Column(dataTypes.text, { nullable: true })
   @Exclude()
   password: string;
 
-  @Column(dataTypes.text, {nullable: false})
+  @Column(dataTypes.string, { nullable: false, length: 100 })
   role: string;
 
   @Column(dataTypes.string, {
@@ -147,13 +153,13 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Address , address => address.user, { eager: true, onDelete: 'CASCADE'  })
+  @OneToMany(() => Address , address => address.user, { onDelete: 'CASCADE'  })
   addresses: Relation<Address[]>;
 
-  @OneToMany(() => Order, order => order.user,{ eager: true, onDelete: 'CASCADE' })
+  @OneToMany(() => Order, order => order.user, { onDelete: 'CASCADE' })
   orders: Relation<Order[]>
 
-  @OneToMany(() => Discount, discount => discount.user,{ eager: true, onDelete: 'CASCADE' })
+  @OneToMany(() => Discount, discount => discount.user, { onDelete: 'CASCADE' })
   discounts: Relation<Discount[]>
 
   @OneToMany(() => Order, order => order.worker, { nullable: true, onDelete: 'CASCADE' })
@@ -189,7 +195,6 @@ export class User {
     referencedColumnName: 'id'
   })
   profilePic: Relation<Media>
-  // eslint-disable-next-line @typescript-eslint/require-await
 
   @Exclude()
   hashPassword = async (): Promise<void> => {

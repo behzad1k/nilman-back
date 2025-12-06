@@ -20,100 +20,90 @@ class WorkerDashboardController {
     const id = jwtDecode(req.headers.authorization);
     const { from, to } = req.query;
 
-    const orders = await this.orders().find({
-      where: {
-        workerId: Number(id),
-        status: orderStatus.Done,
-        doneDate: Between(
-          new Date(moment(from.toString(), 'jYYYY-jMM-jDD-HH-mm').locale('en').format('YYYY-MM-DD HH:mm')),
-          new Date(moment(to.toString(), 'jYYYY-jMM-jDD-HH-mm').locale('en').format('YYYY-MM-DD HH:mm'))
-        ),
+    const result = await this.orders()
+    .createQueryBuilder('order')
+    .select([
+      'COALESCE(SUM(order.finalPrice), 0) as total',
+      'COALESCE(SUM((order.price * order.workerPercent / 100) + order.transportation), 0) as totalProfit'
+    ])
+    .where('order.workerId = :id', { id: Number(id) })
+    .andWhere('order.status = :status', { status: orderStatus.Done })
+    .andWhere(
+      'order.doneDate BETWEEN :from AND :to',
+      {
+        from: new Date(moment(from.toString(), 'jYYYY-jMM-jDD-HH-mm').locale('en').format('YYYY-MM-DD HH:mm')),
+        to: new Date(moment(to.toString(), 'jYYYY-jMM-jDD-HH-mm').locale('en').format('YYYY-MM-DD HH:mm'))
       }
-    });
-
-    let total = 0;
-    let totalProfit = 0;
-
-    for (const dt of orders) {
-      total += dt.finalPrice;
-      totalProfit += ((dt.price * dt.workerPercent / 100) + dt.transportation);
-    }
+    )
+    .getRawOne();
 
     return res.status(200).send({
       code: 200,
       data: {
-        total: total,
-        profit: totalProfit,
+        total: parseFloat(result.total) || 0,
+        profit: parseFloat(result.totalProfit) || 0,
       }
     })
   }
 
   static chart = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
-    const result = []
 
-    const orders = await this.orders().find({
-      where: {
-        workerId: Number(id),
-        status: orderStatus.Done,
-      },
-      order: {
-        doneDate: 'ASC'
-      }
+    const result = await getRepository(Order)
+    .createQueryBuilder('order')
+    .select([
+      "DATE_FORMAT(order.doneDate, '%Y-%m') as monthKey",
+      "COALESCE(SUM(CASE WHEN DAY(order.doneDate) <= 15 THEN order.finalPrice ELSE 0 END), 0) as firstPeriodTotal",
+      "COALESCE(SUM(CASE WHEN DAY(order.doneDate) <= 15 THEN (order.price * order.workerPercent / 100) + order.transportation ELSE 0 END), 0) as firstPeriodProfit",
+      "COALESCE(COUNT(CASE WHEN DAY(order.doneDate) <= 15 THEN 1 END), 0) as firstPeriodCount",
+      "COALESCE(SUM(CASE WHEN DAY(order.doneDate) > 15 THEN order.finalPrice ELSE 0 END), 0) as secondPeriodTotal",
+      "COALESCE(SUM(CASE WHEN DAY(order.doneDate) > 15 THEN (order.price * order.workerPercent / 100) + order.transportation ELSE 0 END), 0) as secondPeriodProfit",
+      "COALESCE(COUNT(CASE WHEN DAY(order.doneDate) > 15 THEN 1 END), 0) as secondPeriodCount"
+    ])
+    .where('order.workerId = :id', { id: Number(id) })
+    .andWhere('order.status = :status', { status: orderStatus.Done })
+    .groupBy("DATE_FORMAT(order.doneDate, '%Y-%m')")
+    .orderBy("DATE_FORMAT(order.doneDate, '%Y-%m')", 'ASC')
+    .getRawMany();
+
+    // Format the month names
+    const formattedResult = result.map(item => {
+      const [year, month] = item.monthKey.split('-');
+      const jalaliDate = moment(`${year}-${month}-01`, 'YYYY-MM-DD');
+
+      return {
+        month: jalaliDate.locale('fa').format('jMMMM'),
+        firstPeriodTotal: parseFloat(item.firstPeriodTotal) || 0,
+        firstPeriodProfit: parseFloat(item.firstPeriodProfit) || 0,
+        firstPeriodCount: parseInt(item.firstPeriodCount) || 0,
+        secondPeriodTotal: parseFloat(item.secondPeriodTotal) || 0,
+        secondPeriodProfit: parseFloat(item.secondPeriodProfit) || 0,
+        secondPeriodCount: parseInt(item.secondPeriodCount) || 0,
+      };
     });
 
-    if (orders.length == 0) {
-      return res.status(400).send({
-        code: 400,
-        data: {}
-      });
-    }
-    moment.locale('fa', { useGregorianParser: true });
-    let currMonth = moment(moment(orders[0].doneDate).format('jYYYY/jMM/jDD'), 'jYYYY/jMM/jDD').locale('fa');
-    while (currMonth.isSameOrBefore(moment())){
-      currMonth = currMonth.startOf('month');
-
-      const firstPeriod = orders.filter(e => moment(e.doneDate).unix() >= currMonth.startOf('jmonth').unix() && moment(e.doneDate).unix() < currMonth.startOf('jmonth').add(15, 'day').unix());
-      const secondPeriod = orders.filter(e => moment(e.doneDate).unix() >= currMonth.startOf('jmonth').add(15, 'day').unix() && moment(e.doneDate).unix() < currMonth.endOf('jmonth').unix());
-
-      result.push({
-        month: currMonth.locale('fa').format('jMMMM'),
-        firstPeriodTotal: firstPeriod.reduce((acc, curr) => acc + curr.finalPrice, 0),
-        firstPeriodProfit: firstPeriod.reduce((acc, curr) => acc + ((curr.price * curr.workerPercent / 100) + curr.transportation), 0),
-        firstPeriodCount: firstPeriod.length,
-        secondPeriodTotal: secondPeriod.reduce((acc, curr) => acc + curr.finalPrice, 0),
-        secondPeriodProfit:secondPeriod.reduce((acc, curr) => acc + ((curr.price * curr.workerPercent / 100) + curr.transportation), 0),
-        secondPeriodCount: secondPeriod.length,
-      })
-
-      currMonth = currMonth.endOf('month').add(1, 'day');
-    }
     return res.status(200).send({
       code: 200,
-      data: result
+      data: formattedResult
     })
   }
+
   static income = async (req: Request, res: Response): Promise<Response> => {
     const id = jwtDecode(req.headers.authorization);
 
-    const orders = await this.orders().find({
-      where: {
-        workerId: Number(id),
-        status: orderStatus.Done,
-        transactionId: IsNull(),
-      }
-    });
-
-    let total = 0;
-    let totalProfit = 0;
-
-    for (const dt of orders) {
-      total = dt.finalPrice + total;
-      totalProfit += ((dt.price * dt.workerPercent / 100) + dt.transportation);
-    }
+    const result = await this.orders()
+    .createQueryBuilder('order')
+    .select([
+      'COALESCE(SUM(order.finalPrice), 0) as total',
+      'COALESCE(SUM((order.price * order.workerPercent / 100) + order.transportation), 0) as totalProfit'
+    ])
+    .where('order.workerId = :id', { id: Number(id) })
+    .andWhere('order.status = :status', { status: orderStatus.Done })
+    .andWhere('order.transactionId IS NULL')
+    .getRawOne();
 
     const lastTransaction = await getRepository(Transaction).findOne({
-      where: {},
+      where: { userId: Number(id) },
       select: ['createdAt'],
       order: { createdAt: 'DESC'}
     })
@@ -121,12 +111,13 @@ class WorkerDashboardController {
     return res.status(200).send({
       code: 200,
       data: {
-        total: total,
-        profit: totalProfit,
-        lastTransactionDate: moment(lastTransaction.createdAt).format('jYYYY/jMM/jDD')
+        total: parseFloat(result.total) || 0,
+        profit: parseFloat(result.totalProfit) || 0,
+        lastTransactionDate: lastTransaction ? moment(lastTransaction.createdAt).format('jYYYY/jMM/jDD') : null
       }
     })
   }
+
   static index = async (req: Request, res: Response): Promise<Response> => {
     const services = await this.services().find({
       relations: ['parent']
@@ -136,6 +127,7 @@ class WorkerDashboardController {
       data: services
     })
   }
+
   static create = async (req: Request, res: Response): Promise<Response> => {
     const { title, description, price, parent, section, hasColor } = req.body;
     let parentObj;
@@ -156,7 +148,6 @@ class WorkerDashboardController {
     service.price = parseFloat(price);
     service.slug = await getUniqueSlug(this.services(),title)
     service.section = section
-    // service.parentId = parentObj?.id || null
     if (hasColor)
       service.hasColor = hasColor
     const errors = await validate(service);
@@ -194,7 +185,6 @@ class WorkerDashboardController {
     }
     return res.status(200).send({code: 204, data: 'Successful'});
   };
-
 
 }
 

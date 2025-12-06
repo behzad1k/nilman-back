@@ -7,6 +7,7 @@ import { Service } from '../../entity/Service';
 import { User } from '../../entity/User';
 import { getUniqueSlug } from '../../utils/funs';
 import media from '../../utils/media';
+import ServiceController from '../ServiceController';
 
 class AdminServiceController {
   static users = () => getRepository(User);
@@ -15,13 +16,15 @@ class AdminServiceController {
 
   static index = async (req: Request, res: Response): Promise<Response> => {
     const services = await this.services().find({
-      relations: ['parent']
+      relations: ['parent'],
+      select: ['id', 'title', 'slug', 'price', 'section', 'description', 'hasColor', 'hasMedia', 'isMulti', 'openDrawer', 'showInList', 'sort']
     });
     return res.status(200).send({
       code: 200,
       data: services
     });
   };
+
   static single = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     let service;
@@ -71,9 +74,9 @@ class AdminServiceController {
       res.status(400).send(errors);
       return;
     }
-    console.log(service);
     try {
       await this.services().save(service);
+      ServiceController.clearCache(); // Clear cache
     } catch (e) {
       console.log(e);
       res.status(409).send({'code': 409});
@@ -131,6 +134,7 @@ class AdminServiceController {
     }
     try {
       await this.services().save(serviceObj);
+      ServiceController.clearCache(); // Clear cache
     } catch (e) {
       console.log(e);
       res.status(409).send('error try again later');
@@ -157,6 +161,7 @@ class AdminServiceController {
 
     try {
       await this.services().save(service);
+      ServiceController.clearCache(); // Clear cache
     } catch (e) {
       console.log(e);
       return res.status(409).send({
@@ -190,7 +195,7 @@ class AdminServiceController {
       serviceObj.mediaId = null;
       await getRepository(Service).save(serviceObj);
       await getRepository(Media).delete({ id: mediaId });
-
+      ServiceController.clearCache(); // Clear cache
 
     }catch (e){
       console.log(e);
@@ -198,6 +203,7 @@ class AdminServiceController {
     }
     return res.status(200).send({code: 200, data: 'Successful'});
   };
+
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     let serviceObj;
@@ -213,6 +219,7 @@ class AdminServiceController {
     }
     try{
       await this.services().softDelete({ id: serviceObj.id })
+      ServiceController.clearCache(); // Clear cache
 
     }catch (e){
       console.log(e);

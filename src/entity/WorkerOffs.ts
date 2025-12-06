@@ -1,9 +1,13 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Relation } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Relation } from 'typeorm';
 import { dataTypes } from '../utils/enums';
 import { Order } from './Order';
 import { User } from './User';
 import "reflect-metadata";
+
 @Entity()
+@Index(["userId", "date"])
+@Index(["date", "fromTime", "toTime"])
+@Index(["orderId"])
 export class WorkerOffs {
   @PrimaryGeneratedColumn()
   id: number
@@ -14,7 +18,7 @@ export class WorkerOffs {
   @Column(dataTypes.integer)
   toTime: number
 
-  @Column(dataTypes.text)
+  @Column(dataTypes.string, { length: 10 })
   date: string
 
   @Column(dataTypes.integer, { nullable: true })
@@ -33,5 +37,4 @@ export class WorkerOffs {
   @ManyToOne(() => Order, order => order.worker, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'orderId', referencedColumnName: 'id'})
   order: Relation<Order>
-
 }
