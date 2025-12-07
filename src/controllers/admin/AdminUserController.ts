@@ -385,18 +385,7 @@ class AdminUserController {
       const jobs = await getRepository(Order).find({
         where: { workerId: Number(id) },
         relations: { feedback: true, service: true },
-        select: {
-          id: true,
-          code: true,
-          status: true,
-          date: true,
-          fromTime: true,
-          toTime: true,
-          finalPrice: true,
-          createdAt: true,
-          price: true,
-          transportation: true,
-        },
+
         order: { createdAt: 'DESC' },
         take: 100 // Limit to recent 50 jobs
       });
