@@ -394,6 +394,8 @@ class AdminUserController {
           toTime: true,
           finalPrice: true,
           createdAt: true,
+          price: true,
+          transportation: true,
         },
         order: { createdAt: 'DESC' },
         take: 100 // Limit to recent 50 jobs
