@@ -385,7 +385,10 @@ class AdminUserController {
       });
 
       const workerOffs = await getRepository(WorkerOffs).find({
-        where: { date: MoreThan(moment().subtract(2, 'day').format('jYYYY/jMM/jDD'))},
+        where: {
+          date: MoreThan(moment().subtract(2, 'day').format('jYYYY/jMM/jDD')),
+          userId: Number(id)
+        },
       })
       return res.status(200).send({
         code: 200,
