@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import fsPromisses from 'fs/promises';
 import moment from 'jalali-moment';
 import path from 'path';
-import { FindManyOptions, FindOptionsWhere, getRepository, getTreeRepository, In, IsNull, Like, Not } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere, getRepository, getTreeRepository, In, IsNull, Like, Not, MoreThan } from 'typeorm';
 import writeXlsxFile from 'write-excel-file/node';
 import { Address } from '../../entity/Address';
 import { District } from '../../entity/District';
@@ -365,11 +365,6 @@ class AdminUserController {
       .leftJoinAndSelect('user.districts', 'districts')
       .leftJoinAndSelect('user.transactions', 'transactions')
       .leftJoinAndSelect('transactions.media', 'transactionMedia')
-      .leftJoinAndSelect('user.workerOffs', 'workerOffs', 'workerOffs.date >= :date', {
-        date: moment().subtract(1, 'day').format('jYYYY/jMM/jDD')
-      })
-      .leftJoinAndSelect('workerOffs.order', 'order')
-      .loadRelationCountAndMap('user.jobsCount', 'user.jobs')
       .loadRelationCountAndMap('user.ordersCount', 'user.orders')
       .where('user.id = :id', { id: Number(id) })
       .getOne();
@@ -380,7 +375,6 @@ class AdminUserController {
           data: 'Invalid Id'
         });
       }
-
       // Load jobs separately with pagination/limit to avoid loading too much data
       const jobs = await getRepository(Order).find({
         where: { workerId: Number(id) },
@@ -390,11 +384,15 @@ class AdminUserController {
         take: 100 // Limit to recent 50 jobs
       });
 
+      const workerOffs = await getRepository(WorkerOffs).find({
+        where: { date: MoreThan(moment().subtract(2, 'day').format('jYYYY/jMM/jDD'))},
+      })
       return res.status(200).send({
         code: 200,
         data: {
           ...user,
-          jobs
+          jobs,
+          workerOffs
         }
       });
     } catch (error) {
