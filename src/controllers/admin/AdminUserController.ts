@@ -382,7 +382,7 @@ class AdminUserController {
       }
 
       // Load jobs separately with pagination/limit to avoid loading too much data
-      const recentJobs = await getRepository(Order).find({
+      const jobs = await getRepository(Order).find({
         where: { workerId: Number(id) },
         relations: { feedback: true, service: true },
         select: {
@@ -396,14 +396,14 @@ class AdminUserController {
           createdAt: true,
         },
         order: { createdAt: 'DESC' },
-        take: 50 // Limit to recent 50 jobs
+        take: 100 // Limit to recent 50 jobs
       });
 
       return res.status(200).send({
         code: 200,
         data: {
           ...user,
-          recentJobs
+          jobs
         }
       });
     } catch (error) {
