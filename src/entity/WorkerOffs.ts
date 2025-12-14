@@ -1,7 +1,15 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Relation } from 'typeorm';
-import { dataTypes } from '../utils/enums';
-import { Order } from './Order';
-import { User } from './User';
+import {
+	Column,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	Relation,
+} from "typeorm";
+import { dataTypes } from "../utils/enums";
+import { Order } from "./Order";
+import { User } from "./User";
 import "reflect-metadata";
 
 @Entity()
@@ -9,32 +17,32 @@ import "reflect-metadata";
 @Index(["date", "fromTime", "toTime"])
 @Index(["orderId"])
 export class WorkerOffs {
-  @PrimaryGeneratedColumn()
-  id: number
+	@PrimaryGeneratedColumn()
+	id: number;
 
-  @Column(dataTypes.integer)
-  fromTime: number
+	@Column(dataTypes.float)
+	fromTime: number;
 
-  @Column(dataTypes.integer)
-  toTime: number
+	@Column(dataTypes.float)
+	toTime: number;
 
-  @Column(dataTypes.string, { length: 10 })
-  date: string
+	@Column(dataTypes.string, { length: 10 })
+	date: string;
 
-  @Column(dataTypes.integer, { nullable: true })
-  orderId: number
+	@Column(dataTypes.integer, { nullable: true })
+	orderId: number;
 
-  @Column(dataTypes.integer)
-  userId: number
+	@Column(dataTypes.integer)
+	userId: number;
 
-  @Column(dataTypes.boolean, { default: true })
-  isStrict: boolean
+	@Column(dataTypes.boolean, { default: true })
+	isStrict: boolean;
 
-  @ManyToOne(() => User, user => user.workerOffs, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId', referencedColumnName: 'id'})
-  worker: Relation<User>
+	@ManyToOne(() => User, (user) => user.workerOffs, { onDelete: "CASCADE" })
+	@JoinColumn({ name: "userId", referencedColumnName: "id" })
+	worker: Relation<User>;
 
-  @ManyToOne(() => Order, order => order.worker, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'orderId', referencedColumnName: 'id'})
-  order: Relation<Order>
+	@ManyToOne(() => Order, (order) => order.worker, { onDelete: "CASCADE" })
+	@JoinColumn({ name: "orderId", referencedColumnName: "id" })
+	order: Relation<Order>;
 }
