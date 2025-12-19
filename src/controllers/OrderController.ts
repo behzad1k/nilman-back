@@ -322,17 +322,17 @@ class OrderController {
 			worker,
 			discountObj: Discount;
 
-		const validationError = BookingValidator.validateDateTime(
-			date,
-			time,
-			isUrgent,
-		);
-		if (validationError) {
-			return res.status(400).send({
-				code: 1020,
-				data: validationError,
-			});
-		}
+		// const validationError = BookingValidator.validateDateTime(
+		// 	date,
+		// 	time,
+		// 	isUrgent,
+		// );
+		// if (validationError) {
+		// 	return res.status(400).send({
+		// 		code: 1020,
+		// 		data: validationError,
+		// 	});
+		// }
 
 		try {
 			user = await this.users().findOneOrFail({

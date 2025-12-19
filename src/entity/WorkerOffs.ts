@@ -13,6 +13,7 @@ import { User } from "./User";
 import "reflect-metadata";
 
 @Entity()
+@Index(["id"])
 @Index(["userId", "date"])
 @Index(["date", "fromTime", "toTime"])
 @Index(["orderId"])

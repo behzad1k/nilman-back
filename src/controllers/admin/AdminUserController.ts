@@ -397,6 +397,7 @@ class AdminUserController {
 				.leftJoinAndSelect("user.districts", "districts")
 				.leftJoinAndSelect("user.transactions", "transactions")
 				.leftJoinAndSelect("user.addresses", "addresses")
+				.leftJoinAndSelect("user.orders", "orders")
 				.leftJoinAndSelect("transactions.media", "transactionMedia")
 				.loadRelationCountAndMap("user.ordersCount", "user.orders")
 				.where("user.id = :id", { id: Number(id) })

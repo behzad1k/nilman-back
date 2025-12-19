@@ -271,27 +271,27 @@ class AdminOrderController {
 		}
 
 		try {
-			if (status == orderStatus.Canceled) {
-				if (order.worker) {
+			await this.orders().save(order);
+			if (workerId) {
+				order.worker = await getRepository(User).findOneBy({
+					id: Number(workerId),
+				});
+				order.user = user;
+				order.address = await getRepository(Address).findOneBy({
+					id: Number(addressId),
+				});
+				if (status == orderStatus.Canceled) {
 					sms.orderAssignWorkerChange(
 						order.worker.name + " " + order.worker.lastName,
 						order.code,
 						order.worker.phoneNumber,
 					);
+					await getRepository(WorkerOffs).delete({
+						orderId: order.id,
+					});
+				} else {
+					await this.assignOrder(order, workerId, shouldSendWorkerSMS);
 				}
-				await getRepository(WorkerOffs).delete({
-					orderId: order.id,
-				});
-			}
-
-			await this.orders().save(order);
-
-			if (workerId) {
-				order.user = user;
-				order.address = await getRepository(Address).findOneBy({
-					id: Number(addressId),
-				});
-				await this.assignOrder(order, workerId, shouldSendWorkerSMS);
 			}
 		} catch (e) {
 			console.log(e);
@@ -396,25 +396,6 @@ class AdminOrderController {
 					toTime: Number(order.fromTime) + totalSections / 4,
 				},
 			);
-
-			if (order.workerId) {
-				let workerOff = await getRepository(WorkerOffs).findOneBy({
-					userId: order.workerId,
-					orderId: order.id,
-				});
-
-				if (!workerOff) {
-					workerOff = new WorkerOffs();
-					workerOff.userId = order.workerId;
-					workerOff.orderId = order.id;
-				}
-
-				workerOff.date = order.date;
-				workerOff.fromTime = order.fromTime;
-				workerOff.toTime = Number(order.fromTime) + totalSections / 4;
-
-				await getRepository(WorkerOffs).save(workerOff);
-			}
 		} catch (e) {
 			console.log(e);
 			return res.status(409).send("error try again later");
@@ -952,7 +933,7 @@ class AdminOrderController {
 		}
 
 		try {
-			worker = await AdminOrderController.users().findOneOrFail({
+			worker = await this.users().findOneOrFail({
 				where: { id: workerId },
 				select: ["id", "name", "lastName", "phoneNumber", "percent"],
 			});
@@ -1000,13 +981,18 @@ class AdminOrderController {
 				);
 			}
 
-			await getRepository(WorkerOffs).insert({
-				fromTime: order.fromTime - 0.5,
-				toTime: order.toTime + 0.5,
+			const orderWorkerOff = await getRepository(WorkerOffs).findOneBy({
 				orderId: order.id,
-				userId: workerId,
-				date: order.date,
 			});
+			if (!orderWorkerOff) {
+				await getRepository(WorkerOffs).insert({
+					fromTime: order.fromTime - 0.5,
+					toTime: order.toTime + 0.5,
+					orderId: order.id,
+					userId: workerId,
+					date: order.date,
+				});
+			}
 		} catch (e) {
 			console.log(e);
 			throw new Error("Error trying to submit");
