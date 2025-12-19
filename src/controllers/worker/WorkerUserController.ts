@@ -117,7 +117,7 @@ class WorkerUserController {
 							date: date,
 							fromTime: off.fromTime,
 							toTime: off.toTime,
-							isStrict: off.isStrict || 0,
+							isStrict: false,
 						});
 					}
 				}
@@ -125,6 +125,7 @@ class WorkerUserController {
 
 			// Delete worker offs that are no longer in the list
 			const offsToDelete = existingWorkerOffs
+				.filter((off) => !off.isStrict)
 				.filter((off) => !offsToKeep.has(off.id))
 				.map((off) => off.id);
 
