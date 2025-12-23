@@ -50,8 +50,11 @@ class WorkerUserController {
 	): Promise<Response> => {
 		const userId = jwtDecode(req.headers.authorization);
 
-		const workerOffs = await getRepository(WorkerOffs).findBy({
-			userId: Number(userId),
+		const workerOffs = await getRepository(WorkerOffs).find({
+			where: {
+				userId: Number(userId),
+				date: MoreThan(moment().subtract(1, "day").format("jYYYY/jMM/jDD")),
+			},
 		});
 
 		const formattedWorkerOffs: any = {};
