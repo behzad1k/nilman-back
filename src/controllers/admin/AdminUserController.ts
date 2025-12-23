@@ -421,7 +421,7 @@ class AdminUserController {
 			const workerOffs = await getRepository(WorkerOffs).find({
 				relations: { order: true },
 				where: {
-					date: MoreThan(moment().subtract(2, "day").format("jYYYY/jMM/jDD")),
+					date: MoreThan(moment().subtract(14, "day").format("jYYYY/jMM/jDD")),
 					userId: Number(id),
 				},
 			});

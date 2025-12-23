@@ -263,15 +263,13 @@ class AdminOrderController {
 			order.doneDate = new Date();
 		}
 
-		order.status = status;
-
 		const errors = await validate(order);
 		if (errors.length > 0) {
 			return res.status(400).send(errors);
 		}
 
 		try {
-			await this.orders().save(order);
+			console.log(order);
 			if (workerId) {
 				order.worker = await getRepository(User).findOneBy({
 					id: Number(workerId),
@@ -293,6 +291,9 @@ class AdminOrderController {
 					await this.assignOrder(order, workerId, shouldSendWorkerSMS);
 				}
 			}
+			order.status = status;
+
+			await this.orders().save(order);
 		} catch (e) {
 			console.log(e);
 			return res.status(409).send("error try again later");
