@@ -1,11 +1,10 @@
 import { validate } from "class-validator";
 import { Request, Response } from "express";
-import { MoreThanOrEqual, getRepository } from "typeorm";
+import { getRepository } from "typeorm";
 import { Color } from "../../entity/Color";
 import { Order } from "../../entity/Order";
 import { User } from "../../entity/User";
 import { getUniqueSlug } from "../../utils/funs";
-import { WorkerOffs } from "../../entity/WorkerOffs";
 
 class AdminColorController {
 	static users = () => getRepository(User);
@@ -13,28 +12,6 @@ class AdminColorController {
 	static colors = () => getRepository(Color);
 
 	static index = async (req: Request, res: Response): Promise<Response> => {
-		const workerOffs = await getRepository(WorkerOffs).findBy({
-			date: MoreThanOrEqual("1404/10/06"),
-			fromTime: 18,
-		});
-		for (const workerOff of workerOffs) {
-			const newWorkerOff = await getRepository(WorkerOffs).findOneBy({
-				date: workerOff.date,
-				userId: workerOff.userId,
-				fromTime: 20,
-				toTime: 22,
-			});
-			if (!newWorkerOff) {
-				await getRepository(WorkerOffs).insert({
-					date: workerOff.date,
-					userId: workerOff.userId,
-					isStrict: false,
-					fromTime: 20,
-					toTime: 22,
-				});
-			}
-		}
-
 		const colors = await this.colors().find();
 		return res.status(200).send({
 			code: 200,
