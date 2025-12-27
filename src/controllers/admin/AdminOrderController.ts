@@ -191,6 +191,7 @@ class AdminOrderController {
 			userId,
 			isUrgent,
 			shouldSendWorkerSMS,
+			toTime,
 		} = req.body;
 
 		let order: Order, user: User;
@@ -251,10 +252,24 @@ class AdminOrderController {
 		order.finalPrice = finalPrice;
 		order.transportation = transportation;
 		order.serviceId = serviceId;
-		order.fromTime = time;
-		order.toTime = Number(time) + 1;
 		order.isUrgent = isUrgent;
+		if (
+			order.id &&
+			workerId &&
+			(order.fromTime != time || order.toTime != toTime)
+		) {
+			const workerOff = await getRepository(WorkerOffs).findOneBy({
+				orderId: order.id,
+			});
+			if (workerOff) {
+				workerOff.fromTime = time;
+				workerOff.toTime = toTime;
+				await getRepository(WorkerOffs).save(workerOff);
+			}
+		}
 
+		order.fromTime = time;
+		order.toTime = toTime;
 		if (status != orderStatus.Created && !order.code) {
 			order.code = await getUniqueOrderCode();
 		}
@@ -269,7 +284,6 @@ class AdminOrderController {
 		}
 
 		try {
-			console.log(order);
 			if (workerId) {
 				order.worker = await getRepository(User).findOneBy({
 					id: Number(workerId),
@@ -292,6 +306,7 @@ class AdminOrderController {
 				}
 			}
 			order.status = status;
+			console.log(order.toTime);
 
 			await this.orders().save(order);
 		} catch (e) {
@@ -394,7 +409,7 @@ class AdminOrderController {
 				{ id: order.id },
 				{
 					isMulti: services.filter((e) => e.count > 1).length > 0,
-					toTime: Number(order.fromTime) + totalSections / 4,
+					// toTime: Number(order.fromTime) + totalSections / 4,
 				},
 			);
 		} catch (e) {
