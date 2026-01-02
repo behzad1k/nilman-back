@@ -58,7 +58,6 @@ class WorkerDashboardController {
 			.createQueryBuilder("order")
 			.select([
 				"DATE_FORMAT(order.doneDate, '%Y-%m') as monthKey",
-				"DATE_FORMAT(order.date, '%Y-%m') as monthKeyFallback",
 				"COALESCE(SUM(CASE WHEN DAY(order.doneDate) <= 15 THEN order.finalPrice ELSE 0 END), 0) as firstPeriodTotal",
 				"COALESCE(SUM(CASE WHEN DAY(order.doneDate) <= 15 THEN (order.price * order.workerPercent / 100) + order.transportation ELSE 0 END), 0) as firstPeriodProfit",
 				"COALESCE(COUNT(CASE WHEN DAY(order.doneDate) <= 15 THEN 1 END), 0) as firstPeriodCount",
@@ -71,13 +70,10 @@ class WorkerDashboardController {
 			.groupBy("DATE_FORMAT(order.doneDate, '%Y-%m')")
 			.orderBy("DATE_FORMAT(order.doneDate, '%Y-%m')", "ASC")
 			.getRawMany();
-		console.log(result);
+
 		// Format the month names
 		const formattedResult = result.map((item) => {
-			const [year, month] = (item.monthKey || item.monthKeyFallback)?.split(
-				"-",
-			);
-
+			const [year, month] = item.monthKey.split("-");
 			const jalaliDate = moment(`${year}-${month}-01`, "YYYY-MM-DD");
 
 			return {
@@ -116,7 +112,7 @@ class WorkerDashboardController {
 			select: ["createdAt"],
 			order: { createdAt: "DESC" },
 		});
-		console.log(lastTransaction);
+
 		return res.status(200).send({
 			code: 200,
 			data: {

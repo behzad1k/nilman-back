@@ -205,18 +205,6 @@ class AdminOrderController {
 						worker: true,
 						payment: true,
 					},
-					select: {
-						id: true,
-						code: true,
-						status: true,
-						date: true,
-						fromTime: true,
-						toTime: true,
-						price: true,
-						finalPrice: true,
-						workerId: true,
-						workerPercent: true,
-					},
 				});
 			} catch (error) {
 				console.log(error);
@@ -273,7 +261,6 @@ class AdminOrderController {
 		if (status != orderStatus.Created && !order.code) {
 			order.code = await getUniqueOrderCode();
 		}
-
 		if (id && order.status != orderStatus.Done && status == orderStatus.Done) {
 			order.doneDate = new Date();
 		}
@@ -306,7 +293,6 @@ class AdminOrderController {
 				}
 			}
 			order.status = status;
-			console.log(order.toTime);
 
 			await this.orders().save(order);
 		} catch (e) {
